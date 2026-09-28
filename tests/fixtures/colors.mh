@@ -1,0 +1,7 @@
+# modc-mh/1
+@module colors
+@format 1
+export enum Color complete
+export const Red complete
+export const Green complete
+export const Blue complete

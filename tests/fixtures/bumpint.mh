@@ -1,0 +1,5 @@
+# modc-mh/1
+@module bumpint
+@format 1
+export type TBump opaque
+export procedure bumpint complete (ref integer)

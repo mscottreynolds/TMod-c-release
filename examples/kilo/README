@@ -1,0 +1,35 @@
+(**
+ * From "Build Your Own Text Editor" at https://viewsourcecode.org/snaptoken/kilo/index.html.
+ *
+ * Author of this file: M. Scott Reynolds
+ * Start date: 7 September 2026
+ * Language: TMod-c
+ *
+ * An experiment to follow a tutor for a program in C, written in TMod-c to explore
+ * TMod-c's current features and abilities.
+ *
+ * 12 Sept 2026: Steps upto 130 completed.
+ * 17 Sept 2026: Converted abAppend(ABuf, string, length) to ABuffer::append(string, length), and related type bound functions.
+ * 18 Sept 2026: Converted to use ERow:: and Editor:: type bound procedures and functions.
+ * 19 Sept 2026: FINISHED!
+ *)
+
+
+To create (requires ../../bin/tmodc to have been built with `make tmodc` at project root.):
+
+`make kilo`
+
+to make kilo runtime. To compile read_key utility:
+
+` make read_key`
+
+to make both:
+
+`make all`
+
+Running `make run` will compile and execute ./kilo. To clean:
+
+`make clean`
+
+
+(* msr/msr *)

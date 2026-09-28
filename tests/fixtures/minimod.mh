@@ -1,0 +1,5 @@
+# modc-mh/1
+@module minimod
+@format 1
+export function mini_answer complete
+export type MiniCounter opaque

@@ -1,0 +1,5 @@
+# modc-mh/1
+@module badwidth
+@format 1
+export type TBad complete struct (x: integer 99)
+export procedure badwidth complete

@@ -1,0 +1,46 @@
+module tmodc()
+
+(**
+ * some additional type definitions.
+ *)
+
+import from "stddef.h"
+import from "stdint.h"
+import from "stdbool.h"
+import from "limits.h"
+import from "float.h"
+import from "assert.h"
+import from "stdlib.h"
+import from "string.h"
+import from "stdio.h"
+import from "math.h"
+
+export type int8 = int8_t
+export type int16 = int16_t
+export type int32 = int32_t
+export type int64 = int64_t
+export type uint8 = uint8_t
+export type uint16 = uint16_t
+export type uint32 = uint32_t
+export type uint64 = uint64_t
+
+// export type integer = int
+
+// typedef char byte;
+// typedef char* string;
+// typedef int integer;
+// typedef unsigned int cardinal;
+// typedef double_t real;
+
+
+(**
+ * Basic string type.
+ *)
+export type TString = struct
+    value: const ^char
+    length: size_t
+end
+
+
+begin
+end

@@ -1,0 +1,5 @@
+# modc-mh/1
+@module i32alias
+@format 1
+export type I32 complete integer 32
+export procedure i32alias complete

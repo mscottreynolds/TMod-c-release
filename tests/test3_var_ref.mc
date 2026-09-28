@@ -1,0 +1,55 @@
+program test2_var_ref()
+
+import printf from "stdio.h"
+
+(**
+ * Test VAR (mutable alias), REF (immutable pointer), and default immutable parameters.
+ *)
+
+
+(* Good *)
+procedure Swap(VAR a: integer, VAR b: integer)
+begin
+	var temp: integer = a
+  	a := b
+  	b := temp
+end Swap
+
+
+
+(* Bad *)
+procedure Swap1(VAR a: integer, REF b: integer)
+begin
+	var temp: integer = a
+  	a := b
+  	b := temp
+end Swap
+
+
+(* Also bad *)
+procedure Swap2(VAR a: integer, b: integer)
+begin
+	var temp: integer = a
+  	a := b
+  	b := temp
+end Swap
+
+procedure Swap3(VAR a: integer, REF b: integer)
+begin
+	var temp: integer = a
+  	a := b
+  	b := temp
+end Swap
+
+
+begin
+	var x: integer = 10
+	var y: integer = 20
+
+	printf("Before swap: x=%d, y=%d\n", x, y)
+	Swap(x, y)
+	printf("After swap: x=%d, y=%d\n", x, y)
+
+	printf("VAR/REF test passed.\n")
+end test_var_ref
+
