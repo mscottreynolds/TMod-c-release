@@ -39,11 +39,11 @@ module Tsds()
 (* ==== Imports ==== *)
 
 
-import from "stdio.h"
+import printf from "stdio.h"
 import from "stdlib.h"
-import memset, memcpy, strlen, strchr, memmove, from "string.h"
-import from "ctype.h"
-import LLONG_MIN, LLONG_MAX from "limits.h"
+import memset, memcpy, strlen, strchr, memmove, memcmp, from "string.h"
+import tolower, toupper, isprint, isspace, from "ctype.h"
+import LLONG_MIN, LLONG_MAX, UINT_MAX, ULLONG_MAX, from "limits.h"
 import void, size_t from "stddef.h"
 import ssize_t from "sys/types.h"
 import va_list, va_copy, vsnprintf, va_end, va_start, va_arg from "stdarg.h"
@@ -386,10 +386,6 @@ export function sdsAllocPtr(s: sds): ^VOID forward
 export function sds_malloc(size: size_t): ^VOID forward
 export function sds_realloc(ptr: ^VOID, size: size_t): ^VOID forward
 export procedure sds_free(ptr: ^VOID) forward
-
-#ifdef REDIS_TEST
-export function sdsTest(argc: int, argv: ^char[]): int forward
-#endif
 
 
 (* ==== static inlined sds.c functions ==== *)
@@ -739,7 +735,7 @@ end sdsRemoveFreeSpace
 export function sdsAllocSize(s: sds): size_t
 begin
     var alloc: size_t = sdsalloc(s)
-    return sdsHdrSize(s[-1] + alloc + 1)
+    return sdsHdrSize(s[-1]) + alloc + 1
 end sdsAllocSize
 
 
@@ -907,7 +903,7 @@ begin
     var new_s: sds = s
 
     if sdsalloc(new_s) < length then
-        new_s := sdsMakeRoomFor(new_s, sdslen(new_s))
+        new_s := sdsMakeRoomFor(new_s, length - sdslen(new_s))
         if new_s == nil then
             return nil
         end
@@ -938,8 +934,12 @@ end
  * The function returns the length of the null-terminaed string
  * representation stored at 's'. 
  *)
-const SDS_LLSTR_SIZE = 21
-#define SDS_LLSTR_SIZE 21
+
+type HUSH_GCC = enum
+    SDS_LLSTR_SIZE = 21
+end
+
+// #define SDS_LLSTR_SIZE 21
 
 function sdsll2str(s: ^char, value: llong): int
 begin
@@ -964,13 +964,13 @@ begin
 
     p := s
     repeat
-        inc(p)
         p^ := '0' + (v mod 10)
+        inc(p)
         v /= 10
     until v == 0
     if value < 0 then
-        inc(p)
         p^ := '-'
+        inc(p)
     end
 
     // Compute length and add null term
@@ -1006,8 +1006,8 @@ begin
     // a reversed string.
     p := s
     repeat
-        inc(p)
         p^ := '0' + (v mod 10)
+        inc(p)
         v /= 10
     until v == 0
 
@@ -1038,7 +1038,7 @@ end sdsull2str
  *)
 export function sdsfromlonglong(value: llong): sds
 begin
-    var buf: array[SDS_LLSTR_SIZE + 0] of char
+    var buf: array[SDS_LLSTR_SIZE] of char
     var length: int = sdsll2str(buf, value)
 
     return sdsnewlen(buf, length)
@@ -1177,74 +1177,72 @@ begin
         end
 
         switch f^ of
-            case '%':
-                next := (f+1)^
-                if next == '\0' then
-                    break
-                end
+        case '%':
+            next := (f+1)^
+            if next <> '\0' then
                 inc(f)
                 switch next of
-                    case 's', 'S':
-                        str := va_arg(ap, pchar)
-                        l := (next == 's') ? strlen(str) : sdslen(str)
+                case 's', 'S':
+                    str := va_arg(ap, pchar)
+                    l := (next == 's') ? strlen(str) : sdslen(str)
+                    if sdsavail(new_s) < l then
+                        new_s := sdsMakeRoomFor(new_s, l)
+                    end
+                    memcpy(new_s+i, str, l)
+                    sdsinclen(new_s, l)
+                    i += l
+
+                case 'i', 'I':
+                    if next == 'i' then
+                        num := va_arg(ap, int)
+                    else
+                        num := va_arg(ap, llong)
+                    end
+
+                    begin
+                        var buf: array[SDS_LLSTR_SIZE] of char
+
+                        l := sdsll2str(buf, num)
                         if sdsavail(new_s) < l then
                             new_s := sdsMakeRoomFor(new_s, l)
                         end
-                        memcpy(new_s+i, str, l)
+                        memcpy(new_s+i, buf, l)
                         sdsinclen(new_s, l)
                         i += l
-                        break
-                    case 'i', 'I':
-                        if next == 'i' then
-                            num := va_arg(ap, int)
-                        else
-                            num := va_arg(ap, llong)
-                        end
+                    end
 
-                        begin
-                            var buf: array[SDS_LLSTR_SIZE] of char
+                case 'u', 'U':
+                    if next == 'u' then
+                        unum := va_arg(ap, uint)
+                    else
+                        unum := va_arg(ap, ullong)
+                    end
 
-                            l := sdsll2str(buf, num)
-                            if sdsavail(new_s) < l then
-                                new_s := sdsMakeRoomFor(new_s, l)
-                            end
-                            memcpy(new_s+i, buf, l)
-                            sdsinclen(new_s, l)
-                            i += l
-                        end
-                        break
-                    case 'u', 'U':
-                        if next == 'u' then
-                            unum := va_arg(ap, uint)
-                        else
-                            unum := va_arg(ap, ullong)
-                        end
+                    begin
+                        var buf: array[SDS_LLSTR_SIZE] of char
 
-                        begin
-                            var buf: array[SDS_LLSTR_SIZE] of char
-
-                            l := sdsull2str(buf, unum)
-                            if sdsavail(new_s) < l then
-                                new_s := sdsMakeRoomFor(new_s, l)
-                            end
-                            memcpy(new_s+i, buf, l)
-                            sdsinclen(new_s, l)
-                            i += l
+                        l := sdsull2str(buf, unum)
+                        if sdsavail(new_s) < l then
+                            new_s := sdsMakeRoomFor(new_s, l)
                         end
-                        break
-                    else:
-                        // Handle %% and generally %<unknown>.
-                        new_s[i] := next
-                        inc(i)
-                        sdsinclen(new_s, 1)
-                        break
+                        memcpy(new_s+i, buf, l)
+                        sdsinclen(new_s, l)
+                        i += l
+                    end
+
+                else:
+                    // Handle %% and generally %<unknown>.
+                    new_s[i] := next
+                    inc(i)
+                    sdsinclen(new_s, 1)
+
                 end
-                break
-            else:
-                new_s[i] := f^
-                inc(i)
-                sdsinclen(new_s, 1)
-                break
+            end
+
+        else:
+            new_s[i] := f^
+            inc(i)
+            sdsinclen(new_s, 1)
         end
         inc(f)
     end
@@ -1314,7 +1312,708 @@ end sdstrim
  *)
 export procedure sdsrange(s: sds, start: ssize_t, end_: ssize_t)
 begin
+    var newlen: size_t
+    var length: size_t = sdslen(s)
+    var new_start: ssize_t = start
+    var new_end: size_t = end_
+
+    if length == 0 then
+        return
+    end
+    if new_start < 0 then
+        new_start := length + new_start
+        if new_start < 0 then
+            new_start := 0
+        end
+    end
+    if new_end < 0 then
+        new_end := length + new_end
+        if new_end < 0 then
+            new_end := 0
+        end
+    end
+    newlen := (new_start > new_end) ? 0 : (new_end - new_start) + 1
+    if newlen <> 0 then
+        if new_start >= length as ssize_t then
+            newlen := 0
+        elsif new_end >= length as ssize_t then
+            new_end := length - 1
+            newlen := (new_end - new_start) + 1
+        end
+    end
+    if new_start and newlen then
+        memmove(s, s + new_start, newlen)
+    end
+    s[newlen] := 0
+    sdssetlen(s, newlen)
 end sdsrange
+
+
+(**
+ * Apply tolower() to every character of the sds string 's'.
+ *)
+export procedure sdstolower(s: sds)
+begin
+    var length: size_t = sdslen(s)
+    var j: size_t
+
+    for j := 0 to length-1 do
+        s[j] := tolower(s[j])
+    end
+end sdstolower
+
+
+(**
+ * Apply toupper() to every character of the sds string 's'.
+ *)
+export procedure sdstoupper(s: sds)
+begin
+    var length: size_t = sdslen(s)
+    var j: size_t
+
+    for j := 0 to length-1 do
+        s[j] := toupper(s[j])
+    end
+end sdstoupper
+
+
+(**
+ * Compare to sds strings s1 and s2 with memcmp().
+ *
+ * Return value:
+ *
+ *      positive if s1 > s2.
+ *      negative if s1 < s2.
+ *      0 if s1 and s2 are exactly the same binary string.
+ *
+ * If two strings share exactly the same prefix, but one of the two has
+ * additional characters, the longer string is considered to be greater than 
+ * the smaller one.
+ *)
+export function sdscmp(const s1: sds, const s2: sds): int
+begin
+    var l1, l2, minlen: size_t
+    var cmp: int
+
+    l1 := sdslen(s1)
+    l2 := sdslen(s2)
+    minlen := (l1 < l2) ? l1 : l2
+    cmp := memcmp(s1, s2, minlen)
+    if cmp == 0 then
+        return l1 > l2 ? 1 : (l1 < l2 ? -1 : 0)
+    end
+    return cmp
+end sdscmp
+
+
+(**
+ * Split 's' with separator in 'sep'. An array
+ * of sds strings is returned. *count will be set
+ * by reference to the number of tokens returned.
+ *
+ * On out of memory, zero length string, zero length
+ * separator, NIL is returned.
+ *
+ * Note that 'sep' is able to split a string using
+ * a multi-character separator. For example
+ * sdssplit("foo_-_bar", "_-_") will return two 
+ * elements "foo" and "bar".
+ *
+ * This version of the function is binary-safe but
+ * requires length arguments. sdssplit() is just the
+ * same function but for zero-terminated strings.
+ *)
+export function sdssplitlen(s: const ^char, length: ssize_t, sep: const ^char, seplen: int, count: ^int): ^sds
+begin
+    var elements: int = 0
+    var slots: int = 5
+    var start: long = 0
+    var j: long = 0
+    var tokens: ^sds
+    var cleanup: bool = false
+
+    if seplen < 1 or length <= 0 then
+        count^ := 0
+        return nil
+    end
+
+    tokens := s_malloc(sizeof(sds) * slots)
+    if tokens == nil then
+        return nil
+    end
+
+    // This replaces the "goto cleanup" in the original sds.c source.
+    defer if cleanup then
+        sdsfreesplitres(tokens, elements)
+        count^ := 0
+    end
+
+    j := 0
+    while j < (length - (seplen-1)) do
+        // Make sure there is room for the next element and the final one.
+        if slots < elements + 2 then
+            var newtokens: ^sds
+
+            slots *= 2
+            newtokens := s_realloc(tokens, sizeof(sds) * slots)
+            if newtokens == nil then
+                cleanup := true
+                return nil
+            end
+            tokens := newtokens
+        end
+
+        // search the separator
+        if ((seplen == 1 and (s+j)^ == sep[0]) or (memcmp(s+j, sep, seplen) == 0)) then
+            tokens[elements] := sdsnewlen(s + start, j - start)
+            if tokens[elements] == nil then
+                cleanup := true
+                return nil
+            end
+            inc(elements)
+            start := j + seplen
+            j := j + seplen - 1         // skip the separator
+        end
+        inc(j)
+    end
+
+    // Add the final element. We are sure there is room in the tokens array.
+    tokens[elements] := sdsnewlen(s + start, length - start)
+    if tokens[elements] == nil then
+        cleanup := true
+        return nil
+    end
+    inc(elements)
+    count^ := elements
+
+    return tokens
+end sdssplitlen
+
+
+(**
+ * Free the result returned by sdssplitlen(), or do nothing if 'tokens' is NIL. 
+ *)
+export procedure sdsfreesplitres(tokens: ^sds, count: int)
+begin
+    var n: int = count
+    if tokens then
+        while n > 0 do
+            sdsfree(tokens[n])
+            dec(n)
+        end
+        s_free(tokens)
+    end
+end sdsfreesplitres
+
+
+(**
+ * Append to the sds strings "s" an escaped string representation where
+ * all the non-printable characters (tested with isprint()) are turned into
+ * escapes in the for "\n\r\a...." or "\x<hex-number>".
+ *
+ * After the call, the modified sds string is no longer valid and all the
+ * references must be substituted with the new pointer returned by the call.
+ *)
+export function sdscatrepr(s: sds, p: const ^char, length: size_t): sds
+begin
+    var t: sds = sdscatlen(s, "\"", 1)
+    var l: size_t = length
+    var q: const ^char = p
+
+    while l > 0 do
+        dec(l)
+        switch q^ of
+            case '\\', '"':
+                t := sdscatprintf(t, "\\%c", q^)
+
+            case '\n': t := sdscatlen(t, "\\n", 2)
+            case '\r': t := sdscatlen(t, "\\r", 2)
+            case '\t': t := sdscatlen(t, "\\t", 2)
+            case '\a': t := sdscatlen(t, "\\a", 2)
+            case '\b': t := sdscatlen(t, "\\b", 2)
+            else:
+                if isprint(q^) then
+                    t := sdscatprintf(t, "%c", q^)
+                else
+                    t := sdscatprintf(t, "\\x%02x", q^ as uchar)
+                end
+        end
+        inc(q)
+    end
+    return sdscatlen(t, "\"", 1)
+end sdscatrepr
+
+
+(*
+ * Helper function for sdssplitargs() that reutrns non zero if 'c'
+ * is a valid hex digit.
+ *)
+function is_hex_digit(c: char): int
+begin
+    return (c >= '0' and c <= '9') or (c >= 'a' and c <= 'f') or
+            (c >= 'A' and c <= 'F')
+end is_hex_digit
+
+
+(*
+ * Helper function for sdssplitargs() that converts a hex digit into an
+ * integer from 0 to 15
+ *)
+function hex_digit_to_int(c: char): int
+begin
+    switch c of
+        case '0': return 0
+        case '1': return 1
+        case '2': return 2
+        case '3': return 3
+        case '4': return 4
+        case '5': return 5
+        case '6': return 6
+        case '7': return 7
+        case '8': return 8
+        case '9': return 9
+        case 'a', 'A': return 10
+        case 'b', 'B': return 11
+        case 'c', 'C': return 12
+        case 'd', 'D': return 13
+        case 'e', 'E': return 14
+        case 'f', 'F': return 15
+        else: return 0
+    end
+end hex_digit_to_int
+
+
+(**
+ * Split a line into arguments, where every argument can be in the
+ * following programming-language REPL-alike form:
+ *
+ * foo bar "newline are supported\h" and "\xff\x00otherstuff"
+ *
+ * The number of arguments is stored into *argc, and an array 
+ * of sds is returned.
+ *
+ * The caller should free the resulting array of sds strings with
+ * sdsfreesplitres().
+ *
+ * Note that sdscatrepr() is able to convert back a string into
+ * a quoted string in the same format sdssplitargs() is able to parse.
+ *
+ * The function returns the allocated tokens on success, even when the
+ * input string is empty, or NIL if the input contains unbalanced
+ * quotes or closed quotes followed by non space characters
+ * as in: "foo"bar or "foo'
+ *)
+export function sdssplitargs(line: const ^char, argc: ^int): ^sds
+begin
+    var p: const ^char = line
+    var current: ^char = nil
+    var vector: ^pchar = nil
+    var err: bool = false
+
+    // Cleanup if there was an error
+    defer if err then
+        while argc^ >= 0 do
+            sdsfree(vector[argc^])
+            dec(argc^)
+        end
+        s_free(vector)
+        if current then
+            sdsfree(current)
+        end
+        argc^ := 0
+    end
+
+    argc^ := 0
+    loop
+        // skip blanks
+        while p^ and isspace(p^) do
+            inc(p)
+        end
+        if p^ then
+            // get a token
+            var inq: bool = false       // set to true if we are in "quotes"
+            var insq: bool = false      // set to true if we are in single quotes
+            var done: bool = false
+
+            if current == nil then
+                current := sdsempty()
+            end
+            while not done do
+                if inq then
+                    if p^ == '\\' and (p+1)^ == 'x' and
+                            is_hex_digit((p+2)^) and
+                            is_hex_digit((p+3)^) then
+                        var b: uchar
+
+                        b := (hex_digit_to_int((p+2)^) * 16) +
+                            hex_digit_to_int((p+3)^)
+                        current := sdscatlen(current, (@b) as ^char, 1)
+                        p += 3
+                    elsif p^ == '\\' and (p+1)^ then
+                        var c: char
+
+                        inc(p)
+                        switch p^ of
+                            case 'n': c := '\n'
+                            case 'r': c := '\r'
+                            case 't': c := '\t'
+                            case 'b': c := '\b'
+                            case 'a': c := '\a'
+                            else: c := p^
+                        end
+                        current := sdscatlen(current, @c, 1)
+                    elsif p^ == '"' then
+                        // closing quote must be followed by a space or
+                        // nothing at all
+                        if (p+1)^ and not isspace((p+1)^) then
+                            err := true
+                            return nil
+                        end
+                        done := true
+                    elsif not p^ then
+                        // unterminated quotes
+                        err := true
+                        return nil
+                    else
+                        current := sdscatlen(current, p, 1)
+                    end
+                elsif insq then
+                    if p^ == '\\' and (p+1)^ == '\'' then
+                        inc(p)
+                        current := sdscatlen(current, "'", 1)
+                    elsif p^ == '\'' then
+                        // Closing quote must be followed by a space or
+                        // nothing at all.
+                        if (p+1)^ and not isspace((p+1)^) then
+                            err := true
+                            return nil
+                        end
+                        done := true
+                    elsif not p^ then
+                        // unterminated quotes
+                        err := true
+                        return nil
+                    else
+                        current := sdscatlen(current, p, 1)
+                    end
+                else
+                    switch p^ of
+                        case ' ', '\n', '\r', '\t', '\0': done := true
+                        case '"': inq := true
+                        case '\'': insq := true
+                        else: 
+                            current := sdscatlen(current, p, 1)
+                    end
+                end
+                if p^ then
+                    inc(p)
+                end
+            end
+            // Add the token to the vector
+            vector := s_realloc(vector, ((argc^) + 1) * sizeof(pchar))
+            vector[argc^] := current
+            inc(argc^)
+            current := nil
+        else
+            /// Even on empty input string return something not nil.
+            if vector == nil then
+                vector := s_malloc(sizeof(^VOID))
+            end
+            return vector
+        end
+    end
+end sdssplitargs
+
+
+(**
+ * Modify the string substituting all the occurrences of the set of
+ * characters specified in the 'from' string to the corresponding character
+ * in the 'to' array.
+ *
+ * For instance: sdsmapchars(mystring, "ho", "01", 2)
+ * will have the effect of turning the string "hello" into "0ell1".
+ *
+ * The function returnrs the sds string pointer, that is always the same
+ * as the input pointer since no resize is needed.
+ *)
+export function sdsmapchars(s: sds, from_: const ^char, to_: const ^char, setlen: size_t): sds
+begin
+    var j, i, l: size_t
+
+    l := sdslen(s)
+    for j := 0 to l-1 do
+        for i := 0 to setlen-1 do
+            if s[j] == from_[i] then
+                s[j] := to_[i]
+                break
+            end
+        end
+    end
+    return s
+end sdsmapchars
+
+
+(**
+ * Join an array of C strings using the specified separator (also a C string).
+ * Returns the result as an sds string. 
+ *)
+export function sdsjoin(argv: ^char[], argc: int, sep: ^char): sds
+begin
+    var join: sds = sdsempty()
+    var j: int
+
+    for j := 0 to argc-1 do
+        join := sdscat(join, argv[j])
+        if j <> argc-1 then
+            join := sdscat(join, sep)
+        end
+    end
+    return join
+end sdsjoin
+
+
+(**
+ * Like sdsjoin, but joins an array of SDS strings.
+ *)
+export function sdsjoinsds(argv: ^sds, argc: int, sep: const ^char, seplen: size_t): sds
+begin
+    var join: sds = sdsempty()
+    var j: int
+
+    for j := 0 to argc-1 do
+        join := sdscatsds(join, argv[j])
+        if j <> argc-1 then
+            join := sdscatlen(join, sep, seplen)
+        end
+    end
+
+    return join
+end sdsjoinsds
+
+
+(**
+ * Wrappers to the allocators used by SDS. Note that SDS will actually
+ * just use the macros defined into sdsalloc.h in order to avoid to pay
+ * the overhead of function calls. Here we define these wrappers only for
+ * the programs SDS is linked to, if they want to touch the SDS internals
+ * even if they use a different allocator.
+ *)
+export function sds_malloc(size: size_t): ^VOID
+begin
+    return s_malloc(size)
+end sds_malloc
+
+
+export function sds_realloc(ptr: ^VOID, size: size_t): ^VOID
+begin
+    return s_realloc(ptr, size)
+end sds_realloc
+
+
+export procedure sds_free(ptr: ^VOID)
+begin
+    s_free(ptr)
+end sds_free
+
+
+#if defined(SDS_TEST_MAIN)
+import test_cond, test_report, from "testhelp.h"
+
+define UNUSED(x) (void)(x)
+
+function sdsTest(): int
+begin
+    begin
+        var x, y: sds
+        x := sdsnew("foo")
+
+        test_cond("Create a string and obtain the length",
+            sdslen(x) == 3 and memcmp(x, "foo\0", 4) == 0)
+
+        sdsfree(x)
+        x := sdsnewlen("foo", 2)
+        test_cond("Create a string with specified length",
+            sdslen(x) == 2 and memcmp(x, "fo\0", 3) == 0)
+
+        x := sdscat(x, "bar")
+        test_cond("Strings concatenation", 
+            sdslen(x) == 5 and memcmp(x, "fobar\0", 6) == 0)
+
+        x := sdscpy(x, "a")
+        test_cond("sdscpy() against an originally longer string",
+            sdslen(x) == 1 and memcmp(x, "a\0", 2) == 0)
+
+        x := sdscpy(x, "xyzxxxxxxxxxxyyyyyyyyyykkkkkkkkkk")
+        test_cond("sdscpy() against an originally shorter string",
+            sdslen(x) == 33 and
+            memcmp(x, "xyzxxxxxxxxxxyyyyyyyyyykkkkkkkkkk\0", 33) == 0)
+
+        sdsfree(x)
+        x := sdscatprintf(sdsempty(), "%d", 123)
+        test_cond("sdscatprintf() seems working in the base case",
+            sdslen(x) == 3 and memcmp(x, "123\0", 4) == 0)
+
+        sdsfree(x)
+        x := sdscatprintf(sdsempty(), "a%cb", 0)
+        test_cond("sdscatprintf() seems working with \\0 inside of result",
+            sdslen(x) == 3 and memcmp(x, "a\0b\0", 4) == 0)
+
+        begin
+            var etalon: array[1024 * 1024] of char
+            var i: size_t
+
+            sdsfree(x)
+            for i := 0 to sizeof(etalon)-1 do
+                etalon[i] := '0'
+            end
+            x := sdscatprintf(sdsempty(), "%0*d", sizeof(etalon), 0)
+
+            test_cond("sdscatprintf() can print 1MB",
+                sdslen(x) == sizeof(etalon) and memcmp(x, etalon, sizeof(etalon)) == 0)
+        end
+
+        sdsfree(x)
+        x := sdsnew("--")
+        x := sdscatfmt(x, "Hello %s World %I,%I--", "Hi!", LLONG_MIN, LLONG_MAX)
+        test_cond("sdscatfmt() seems working in the base case",
+            sdslen(x) == 60 and
+            memcmp(x, "--Hello Hi! World -9223372036854775808,9223372036854775807--", 60) == 0)
+        printf("[%s]\n", x)
+
+        sdsfree(x)
+        x := sdsnew("--")
+        x := sdscatfmt(x, "%u,%U--", UINT_MAX, ULLONG_MAX);
+        test_cond("sdscatfmt() seems working with unsigned numbers",
+            sdslen(x) == 35 and
+            memcmp(x, "--4294967295,18446744073709551615--", 35) == 0)
+
+        sdsfree(x)
+        x := sdsnew(" x ")
+        x := sdstrim(x, " x")
+        test_cond("sdstrim() works when all chars match", 
+            sdslen(x) == 0)
+
+        sdsfree(x)
+        x := sdsnew(" x ")
+        x := sdstrim(x, " ")
+        test_cond("sdstrim() works when a single char remains",
+            sdslen(x) == 1 and x[0] == 'x')
+
+        sdsfree(x)
+        x := sdsnew("xxciaoyyy")
+        x := sdstrim(x, "xy")
+        test_cond("sdstrim() correctly trims characters",
+            sdslen(x) == 4 and memcmp(x, "ciao\0", 5) == 0)
+
+        y := sdsdup(x)
+        sdsrange(y, 1, 1)
+        test_cond("sdsrange(..., 1, 1)",
+            sdslen(y) == 1 and memcmp(y, "i\0", 2) == 0)
+
+        sdsfree(y)
+        y := sdsdup(x)
+        sdsrange(y, 1, -1)
+        test_cond("sdsrange(..., 1, -1",
+            sdslen(y) == 3 and memcmp(y, "iao\0", 4) == 0)
+
+        sdsfree(y)
+        y := sdsdup(x)
+        sdsrange(y, -2, -1)
+        test_cond("sdsrange(..., -2, -1)",
+            sdslen(y) == 2 and memcmp(y, "ao\0", 3) == 0)
+
+        sdsfree(y)
+        y := sdsdup(x)
+        sdsrange(y, 2, 1)
+        test_cond("sdsrange(..., 2, 1)",
+            sdslen(y) == 0 and memcmp(y, "\0", 1) == 0)
+
+        sdsfree(y)
+        y := sdsdup(x)
+        sdsrange(y, 1, 100)
+        test_cond("sdsrange(..., 1, 100)",
+            sdslen(y) == 3 and memcmp(y, "iao\0", 4) == 0)
+
+        sdsfree(y)
+        y := sdsdup(x)
+        sdsrange(y, 100, 100)
+        test_cond("sdsrange(..., 100, 100)",
+            sdslen(y) == 0 and memcmp(y, "\0", 1) == 0)
+
+        sdsfree(y)
+        sdsfree(x)
+        x := sdsnew("foo")
+        y := sdsnew("foa")
+        test_cond("sdscmp(foo, foa)",
+                sdscmp(x, y) > 0)
+
+        sdsfree(y)
+        sdsfree(x)
+        x := sdsnew("bar")
+        y := sdsnew("bar")
+        test_cond("sdscmp(bar, bar)", sdscmp(x, y) == 0)
+
+        sdsfree(y)
+        sdsfree(x)
+        x := sdsnew("aar")
+        y := sdsnew("bar")
+        test_cond("sdscmp(aar, bar)", sdscmp(x, y) < 0)
+
+        sdsfree(y)
+        sdsfree(x)
+        x := sdsnewlen("\a\n\0foo\r", 7)
+        y := sdscatrepr(sdsempty(), x, sdslen(x))
+        test_cond("sdscatrepr(...data...)",
+            memcmp(y, "\"\\a\\n\\x00foo\\r\"", 15) == 0)
+
+        begin
+            var p: ^char
+            var step: int = 10
+            var j, i: int
+
+            sdsfree(x)
+            sdsfree(y)
+            x := sdsnew("0")
+            test_cond("sdsnew() free/len buffers", sdslen(x) == 1 and sdsavail(x) == 0)
+
+            // Run the test a few times in order to hit the first two
+            // SDS header types.
+            for i := 0 to 10-1 do
+                var oldlen: int = sdslen(x)
+
+                x := sdsMakeRoomFor(x, step)
+                let type_: int = x[-1] & SDS_TYPE_MASK
+
+                test_cond("sdsMakeRoomFor() len", sdslen(x) == oldlen)
+                if type_ <> SDS_TYPE_5 then
+                    test_cond("sdsMakeRoomFor() free", sdsavail(x) >= step)
+                end
+                p := x + oldlen
+                for j := 0 to step-1 do
+                    p[j] := 'A' + j
+                end
+                sdsIncrLen(x, step)
+            end
+            test_cond("sdsMakeRoomFor() content",
+                memcmp("0ABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJ", x, 101) == 0)
+            test_cond("sdsMakeRoomFor() final length", sdslen(x) == 101)
+
+            sdsfree(x)
+        end
+    end
+    test_report()
+
+    return 0
+end sdsTest
+#endif
+
+
+#ifdef SDS_TEST_MAIN
+export function main(): int
+begin
+    return sdsTest()
+end main
+#endif
 
 
 begin
