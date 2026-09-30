@@ -2,6 +2,13 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.26.8.195
+- Finish porting sds.c to Tsds.mc
+- **TMod-c 0.26.8.195**: Change ERROR of 'unreachable code after BREAK/CONTINUE/RETURN' to a WARNING
+- Update ABuffer in kilo.mc so it uses a preallocated buffer.
+- Update header comment of Tsds.mc
+- Add another example port of SDSLib 2.0 from https://github.com/antirez/sds
+
 ## Version 0.26.8.194
 - **`.mh` alias RHS** — optional type-spec after `complete`/`opaque` on alias TYPE: `export type integer complete integer 64`, `export type string complete const ^char`. Writer `mh_append_type_spec`; reader `mh_parse_alias_rhs`; import `symbol_type`. Old lines without a tail stay valid. Regenerated committed `.mh` files — **0.26.8** stem.
 - **In-tree packs** — `tests/fixtures/lp64` (64/64/64) and `ilp32` (32/32/32). Lean `.h`; `-M` only. Stand-in for `tmodc.lp64` / `tmodc.ilp32` until item **15**.
