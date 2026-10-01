@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 22 September 2026
+**Last updated:** 30 September 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -287,9 +287,11 @@ designator = qualident { selector } ;
 
 selector = "." identifier       (* field access; call => instance method sugar *)
     | "[" expression "]"        (* array element; pointer-to-array peel (0.26.5.178);
-                                 * also C-index of ^T when T is not an array (0.26.7.191) *)
+                                 * also C-index of ^T when T is not an array (0.26.7.191);
+                                 * written ^Named first: ^sds[i] is sds (0.26.8.196) *)
     | "^" ;                     (* Pascal-style dereference *)
     (* C-index p[i] on ^T has type T (same strip as p^); C is p[i], not (*p)[i].
+     * Written ^ is stripped before alias chase (^sds[i] is sds, not char).
      * Pointer-to-array p[i] peels: C (*(p))[i]. argv: ^char[] is not a peel. *)
 
 (*** INC / DEC - both statement and expression forms ***)

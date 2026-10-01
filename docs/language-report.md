@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 18 September 2026  
+**Last updated:** 30 September 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -731,7 +731,7 @@ if i == 0 then … end
 `designator = qualident { selector }` with selectors `.`, `[]`, `^`.  
 Address-of is a **prefix expression** (`@`), not part of a designator — so **`@n := …` is not an assignment target**. `@` of a `LET` or declaration `CONST` is a semantic error (*0.26.5.183*; §4.2). `@` of a `VAR` (including `@n` then `let pc: ^T = @n`) is legal.
 
-If `A` is an array, `A[E]` is the element at index `E` (`E` is `integer`). If `r` is a struct, `r.f` is field `f`. If `p` is a pointer, `p^` is the pointee; `p^.f` and auto-deref `p.f` are a field of the pointee, including **EXTENDS** parent fields (**`p^.f` Done 0.26.5.175; `p.f` Done 0.26.5.176**). Auto-deref `p[i]` when `p` is a pointer-to-array — **Done (0.26.5.178)** (§5.3); not `^char[]` `argv[i]`. If `p` is `^T` and `T` is not an array, `p[i]` is the `i`-th `T` (C `p[i]`); type is `T` (same strip as `p^`) — **Done (0.26.7.191)**. Instance `p[i].method` then follows ordinary `T` receiver rules. Instance `p.method` when `p` is `^T` — **Done (0.26.5.178)** (§8.3). Parent-chain `c.method` when the method is on an `EXTENDS` ancestor — **Done (0.26.5.180)** (§8.3). Postfix `^` may chain (`p^^`) — legal, not preferred; see §5.3 / Power of Ten rule 9.
+If `A` is an array, `A[E]` is the element at index `E` (`E` is `integer`). If `r` is a struct, `r.f` is field `f`. If `p` is a pointer, `p^` is the pointee; `p^.f` and auto-deref `p.f` are a field of the pointee, including **EXTENDS** parent fields (**`p^.f` Done 0.26.5.175; `p.f` Done 0.26.5.176**). Auto-deref `p[i]` when `p` is a pointer-to-array — **Done (0.26.5.178)** (§5.3); not `^char[]` `argv[i]`. If `p` is `^T` and `T` is not an array, `p[i]` is the `i`-th `T` (C `p[i]`); type is `T` (same strip as `p^`) — **Done (0.26.7.191)**. **Written `^` first (0.26.8.196):** `tokens: ^sds` with `type sds = ^char` yields `tokens[0]: sds` (keep the name; do not chase the alias before stripping). `x: sds` with no extra `^` still indexes the buffer (`char`). Instance `p[i].method` then follows ordinary named-owner rules (`tokens[0].length()`). Instance `p.method` when `p` is `^T` — **Done (0.26.5.178)** (§8.3). Parent-chain `c.method` when the method is on an `EXTENDS` ancestor — **Done (0.26.5.180)** (§8.3). Postfix `^` may chain (`p^^`) — legal, not preferred; see §5.3 / Power of Ten rule 9.
 
 **Examples** (see types in §5):
 
@@ -863,6 +863,8 @@ end
 ```
 
 Today `FOR` assigns a predeclared `var i` (`for i := …`). Loop-local `FOR` (`for i = …`) is a later **breaking** change (JPL rule 6); see `CURRENT.md`. Bounds and `BY` are evaluated once at entry. The control variable must not be assigned in the body.
+
+Statements after `RETURN`, `BREAK`, or `CONTINUE` in the same sequence are **unreachable**. Since **0.26.8.196** this is a **warning** (it was a fatal parse error from 0.24.3). Those statements are still omitted from the AST. A C preprocessor line may follow `return` (for example `#endif` after `sdsTest`). An early exit inside a nested `if` does not mark the rest of the enclosing sequence unreachable.
 
 ### 7.2 Calls and discarded results *Implemented (Policy A — 0.24.15)*
 
@@ -1098,15 +1100,15 @@ end
 
 Expression actuals (`a + b`, `g()`) are **illegal** for `VAR`/`REF` on non-pointer `T` (no address). `REF p: ^T` does not auto-`&`.
 
-### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191)*
+### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191; named-type owner 0.26.8.196)*
 
 Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**.
 
-Classification uses the **type of the first formal** only. The formal’s name is free (need not be `self`).
+Classification uses the **written type of the first formal** only. The formal’s name is free (need not be `self`). The **owner is the name**, not the layout after aliases: `type sds = ^char` then `s: sds` is instance; `s: ^sds` is not (**0.26.8.196**). Do not treat a named pointer alias as “not a type.” First formal `^Owner` as instance remains deferred.
 
 | Kind | First formal | Call |
 |------|----------------|------|
-| **Instance** | Type is the owner `Type` (not `^Type`) | `Type::m(obj, …)` and `obj.m(…)`; `p.m(…)` when `p` is `^Type` (**0.26.5.178**); `Type::m(p)` when `p` is `^Type` (**0.26.5.179**); `c.m()` / `pc.m()` when `m` is on an `EXTENDS` ancestor (**0.26.5.180**); `p[i].m()` when `p` is `^Type` (**0.26.7.191**) |
+| **Instance** | Written name is the owner `Type` (not `^Type`) | `Type::m(obj, …)` and `obj.m(…)`; `p.m(…)` when `p` is `^Type` (**0.26.5.178**); `Type::m(p)` when `p` is `^Type` (**0.26.5.179**); `c.m()` / `pc.m()` when `m` is on an `EXTENDS` ancestor (**0.26.5.180**); `p[i].m()` when `p` is `^Type` (**0.26.7.191**); `tokens[0].m()` when `tokens` is `^sds` (**0.26.8.196**) |
 | **Static / factory** | No formals, or first type ≠ `Type` | **`Type::m(…)` only** |
 
 Method-typed **fields** are Oberon procedure variables: `obj.field(args)` → `(obj.field)(args)` — **no** auto-receiver. If the same identifier is both an instance method and a method-typed field, `obj.name(...)` is a **compile-time error**; use `Type::name(obj, …)`.

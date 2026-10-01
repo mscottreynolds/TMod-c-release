@@ -83,10 +83,14 @@ Status
 ------
 This is an early-stage personal project (started around February 2026). The language is under active design and partial implementation. Expect frequent changes to syntax and semantics as the grammar and compiler evolve.
 
+**Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
+
 Current focus:
+- **0.26.8.196** (30 September 2026): named type is the method owner (`sds::free(s: sds)` / `x.free()` even if `sds = ^char`); C-index of written `^Named` (`tokens[0].length()`); unreachable after `RETURN`/`BREAK`/`CONTINUE` is a warning. **TSDSLib 2.0** (`examples/sds/`). Kilo `ABuffer` grow-by-doubling. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
 - **0.26.8.194** (22 September 2026): `.mh` alias RHS (`export type integer complete integer 64`); in-tree `lp64`/`ilp32` packs; `LEN(n)` → `sizeof(n)/sizeof((n)[0])`. **#11** build-time defaults deferred. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
 - **0.26.7.192** (21 September 2026): several `.mc` inputs — `tmodc -C -d dir *.mc`; one unit per arena; bare `-C`/`-H`/`-M` or `-d`; not a dep walker. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **Kilo example (19 September 2026):** full snaptoken [Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/index.html) port in `examples/kilo/kilo.mc` — `EditorConfig::` / `ERow::` / `ABuffer::`; `DEFINE`, `...`, `DEFER`, C-index `p[i]`. Not a version bump
+- **Kilo example (19 September 2026; ABuffer 0.26.8.196):** full snaptoken [Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/index.html) port in `examples/kilo/kilo.mc` — `EditorConfig::` / `ERow::` / `ABuffer::`; `DEFINE`, `...`, `DEFER`, C-index `p[i]`. `ABuffer` prealloc / doubling (**196**)
+- **TSDSLib 2.0 (0.26.8.196):** TMod-c port of [antirez SDS](https://github.com/antirez/sds) 2.0 in `examples/sds/Tsds.mc` — type-bound wrappers, `var` grow, extra `sdsTest` cases. Not an official SDS/Redis release
 - **0.26.7.191** (18 September 2026): C-index `p[i]` on `^T` — type `T`, C `p[i]` (not a pointer-to-array peel). `p[i].method()` / `E.row[at].updateRow()`. Kilo `ERow::` and `EditorConfig::`. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
 - **0.26.7.190** (17 September 2026): `...` last-formal pass-through — emit C `, ...`; extras via `stdarg.h` FFI (`vprintf` / `vsnprintf`). PROGRAM/MODULE reject `...`. Kilo `define CTRL_KEY` + `editorSetStatusMessage(fmt: string, ...)`. C `unsigned char *` is `^unsigned char` / `^uchar`
 - **0.26.5.188** (14 September 2026): `[EXPORT] DEFINE identifier RestOfLine` — bind like untyped `IMPORT`; emit `#define`; `#define` pass-through stays unbound

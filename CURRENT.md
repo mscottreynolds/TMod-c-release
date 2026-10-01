@@ -2,10 +2,11 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). **Mod-c** is the legacy name during transition — repo directory, `modc` binary, and `modc-mh/1` format id are unchanged until migration completes. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.26.8 (build 194)  
-**Last updated:** 2026-09-22  
+**Version:** 0.26.8 (build 196)  
+**Last updated:** 2026-09-30  
 **Active branch:** `mod-c_0.26`  
-**Tag:** `MOD-C_0.23.7` (items 5–6); **0.23.8** postfix `FORWARD`; **0.23.9** type-qualified methods; **0.24.0** `.mh` writer + reader; **0.24.2** test-tier Makefiles; **0.24.3** builtin `integer`/`cardinal` lowering; **0.24.4** `codegen_header.mc` self-host step; **0.24.5** qualident `IMPORT … FROM`; **0.24.6** ENUM Phase A/B; **0.24.7** ENUM Phase C + `.mh` negative import tests; **0.24.8** named `CONST` array bounds + const-eval; **0.24.9** `symkind` / `mh_exportkind` as `.mc`; **0.24.10** `statement.mc`; **0.24.11** `expression.mc` + **`OPAQUE` (13a)**; **0.24.12** **`UNION` (13c)**; **0.24.13** **linked-chunk arena** + **`STRUCT EXTENDS` option A (13d)**; **0.24.14** **`Lexer.mc` self-host** + **`type_of_expr` / init inference (21a)**; **0.24.15** **discard enforcement (13b Policy A)**; **0.24.16** **`declaration.mc` self-host** + **EXTENDS by-value auto-upcast**; **0.24.17** **instance methods (21)** + static/instance by first formal; **0.24.17.135** **`type Name FORWARD`**; **0.24.18** **#11 Phase A** portable unit rebind; **0.25.0** **item 20** VAR/REF/CONST formals (**breaking**); **0.25.1** **callable field call-through**; **0.25.2** **cross-module method Phase A**; **0.25.3** **`.mh` formal signatures + 7a**; **0.25.4** **`RECURSIVE` enforce + signed `SIZEOF` + lean C prelude**; **0.26.0** **free-call soft-miss closed**; **0.26.1** **unknown types closed + no automatic `stddef.h`**; **0.26.2** **`Parser` → `TParser`**; **0.26.3** **`parser.c` → `parser_common.mc` + `parser_main.mc`**; **0.26.3.170** **`.mh` field lists**; **0.26.4** **method-type `.mh` RHS / cross-module field call-through**; **0.26.5** **width forms + `.h` prelude**; **0.26.5.174** **#11 import-bind + `.mh` widths**; **0.26.5.175** **EXTENDS polish** (`p^.x`, `as` → `.base`, pointer/`REF` upcast); **0.26.5.176** **Oberon `p.x` auto-deref**; **0.26.5.177** **Shapes example + light refactor**; **0.26.5.178** **`p[i]` peel + instance method on `^T`**; **0.26.5.179** **`Type::m(p)` peel**; **0.26.5.180** **parent-chain methods**; **0.26.5.181** **`LET` write-forbid**; **0.26.5.183** **drop C `const` on LET + `@` of LET/CONST**; **0.26.5.186** **`extern type = struct`, `'\x1b'`, `&` vs `@`, trailing `{ , }`**; **0.26.5.187** **`DEFER` only if executed**; **0.26.5.188** **`DEFINE`**; **0.26.7.190** **`...` pass-through**; **0.26.7.191** **C-index `p[i]` on `^T`**; **0.26.7.192** **several `.mc` inputs**; **0.26.8.194** **`.mh` alias RHS + packs + `LEN`**.
+**Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.  
+**Tag:** `MOD-C_0.23.7` (items 5–6); **0.23.8** postfix `FORWARD`; **0.23.9** type-qualified methods; **0.24.0** `.mh` writer + reader; **0.24.2** test-tier Makefiles; **0.24.3** builtin `integer`/`cardinal` lowering; **0.24.4** `codegen_header.mc` self-host step; **0.24.5** qualident `IMPORT … FROM`; **0.24.6** ENUM Phase A/B; **0.24.7** ENUM Phase C + `.mh` negative import tests; **0.24.8** named `CONST` array bounds + const-eval; **0.24.9** `symkind` / `mh_exportkind` as `.mc`; **0.24.10** `statement.mc`; **0.24.11** `expression.mc` + **`OPAQUE` (13a)**; **0.24.12** **`UNION` (13c)**; **0.24.13** **linked-chunk arena** + **`STRUCT EXTENDS` option A (13d)**; **0.24.14** **`Lexer.mc` self-host** + **`type_of_expr` / init inference (21a)**; **0.24.15** **discard enforcement (13b Policy A)**; **0.24.16** **`declaration.mc` self-host** + **EXTENDS by-value auto-upcast**; **0.24.17** **instance methods (21)** + static/instance by first formal; **0.24.17.135** **`type Name FORWARD`**; **0.24.18** **#11 Phase A** portable unit rebind; **0.25.0** **item 20** VAR/REF/CONST formals (**breaking**); **0.25.1** **callable field call-through**; **0.25.2** **cross-module method Phase A**; **0.25.3** **`.mh` formal signatures + 7a**; **0.25.4** **`RECURSIVE` enforce + signed `SIZEOF` + lean C prelude**; **0.26.0** **free-call soft-miss closed**; **0.26.1** **unknown types closed + no automatic `stddef.h`**; **0.26.2** **`Parser` → `TParser`**; **0.26.3** **`parser.c` → `parser_common.mc` + `parser_main.mc`**; **0.26.3.170** **`.mh` field lists**; **0.26.4** **method-type `.mh` RHS / cross-module field call-through**; **0.26.5** **width forms + `.h` prelude**; **0.26.5.174** **#11 import-bind + `.mh` widths**; **0.26.5.175** **EXTENDS polish** (`p^.x`, `as` → `.base`, pointer/`REF` upcast); **0.26.5.176** **Oberon `p.x` auto-deref**; **0.26.5.177** **Shapes example + light refactor**; **0.26.5.178** **`p[i]` peel + instance method on `^T`**; **0.26.5.179** **`Type::m(p)` peel**; **0.26.5.180** **parent-chain methods**; **0.26.5.181** **`LET` write-forbid**; **0.26.5.183** **drop C `const` on LET + `@` of LET/CONST**; **0.26.5.186** **`extern type = struct`, `'\x1b'`, `&` vs `@`, trailing `{ , }`**; **0.26.5.187** **`DEFER` only if executed**; **0.26.5.188** **`DEFINE`**; **0.26.7.190** **`...` pass-through**; **0.26.7.191** **C-index `p[i]` on `^T`**; **0.26.7.192** **several `.mc` inputs**; **0.26.8.194** **`.mh` alias RHS + packs + `LEN`**; **0.26.8.196** **named-type method owner + C-index of `^Named` + unreachable warning**.
 
 ## Current Focus
 
@@ -26,8 +27,8 @@
 1. ~~**Close name soft-miss (breaking)**~~ — **Done.** Calls **0.26.0**; unknown types + drop automatic `<stddef.h>` **0.26.1**. Prelude builtins and multi-word C spellings (`long long`, `unsigned int`) stay. `size_t` / `FILE` / `void` must be imported.
 2. ~~**`.mh` type completeness**~~ — **Done (0.26.3.170 field lists; 0.26.4 method-type RHS).** Cross-module `obj.field` and `obj.field(...)` call-through. Import the method type **and** the struct (`TFn` + `TBox`). Identifiers ≤ 255; whole-file `.mh` load; writer `DynBuf`.
 3. ~~**#11 width forms**~~ — **Done (0.26.5).** Exact `integer N` / `cardinal N` / `real N` (8/16/32/64; `real` 32/64). Generated `.h` owns the C prelude; `-C` writes a companion `.h`. ~~**Import as the one unit bind**~~ **Done (0.26.5.174).** ~~**`.mh` width spelling**~~ **Done (0.26.5.174).** ~~**`.mh` alias RHS**~~ — **Done (0.26.8.194).** ~~**In-tree packs**~~ — **Done (0.26.8.194)** (`tests/fixtures/lp64`, `ilp32`; stand-in for `tmodc.lp64` until item **15**). **Deferred (same item):** build-time defaults (`TMODC_ARCH`). See [Recent Accomplishments (0.26.8.194)](#recent-accomplishments-22-september-2026--0268194--mh-alias-rhs-packs-len).
-4. Optional **EXTENDS polish** — ~~aggregate `as` → `.base`~~ **Done (0.26.5.175)**; ~~pointer/`REF` upcast~~ **Done (0.26.5.175)**; ~~`^T` parent fields (`p^.x`)~~ **Done (0.26.5.175)**; ~~Oberon `p.x` auto-deref~~ **Done (0.26.5.176)**; ~~`p[i]` peel~~ **Done (0.26.5.178)**; ~~instance method on `^T`~~ **Done (0.26.5.178)**; ~~`Type::m(p)` peel~~ **Done (0.26.5.179)**; ~~parent-chain methods~~ **Done (0.26.5.180)**; ~~C-index `p[i]` on `^T`~~ **Done (0.26.7.191)**. See [Recent Accomplishments (0.26.7.191)](#recent-accomplishments-18-september-2026--0267191--c-index-pi-on-t).
-5. ~~**`LET` write-forbid**~~ — **Done (0.26.5.181)**. ~~**Drop C `const` on LET (27b) + `@` of `LET`/`CONST`**~~ — **Done (0.26.5.183)**. ~~**C struct-tag `extern type` + char `\x` + parse `&`/`{ , }`**~~ — **Done (0.26.5.186)**. ~~**`DEFER` only if executed**~~ — **Done (0.26.5.187)**. ~~**`DEFINE`**~~ — **Done (0.26.5.188)**. ~~**`...` pass-through**~~ — **Done (0.26.7.190)**. ~~**C-index `p[i]` on `^T`**~~ — **Done (0.26.7.191)**. ~~**Kilo snaptoken tutorial**~~ — **Done (19 September 2026)**. ~~**Several `.mc` inputs**~~ — **Done (0.26.7.192)**. ~~**`.mh` alias RHS + packs + `LEN`**~~ — **Done (0.26.8.194)**. See [Recent Accomplishments (0.26.8.194)](#recent-accomplishments-22-september-2026--0268194--mh-alias-rhs-packs-len). **Next:** **#11** build-time defaults **deferred**; soft **21a-ternary**.
+4. Optional **EXTENDS polish** — ~~aggregate `as` → `.base`~~ **Done (0.26.5.175)**; ~~pointer/`REF` upcast~~ **Done (0.26.5.175)**; ~~`^T` parent fields (`p^.x`)~~ **Done (0.26.5.175)**; ~~Oberon `p.x` auto-deref~~ **Done (0.26.5.176)**; ~~`p[i]` peel~~ **Done (0.26.5.178)**; ~~instance method on `^T`~~ **Done (0.26.5.178)**; ~~`Type::m(p)` peel~~ **Done (0.26.5.179)**; ~~parent-chain methods~~ **Done (0.26.5.180)**; ~~C-index `p[i]` on `^T`~~ **Done (0.26.7.191)**; ~~named-type method owner + C-index of `^Named`~~ **Done (0.26.8.196)**. See [Recent Accomplishments (0.26.8.196)](#recent-accomplishments-30-september-2026--0268196--named-type-owner-c-index-of-named).
+5. ~~**`LET` write-forbid**~~ — **Done (0.26.5.181)**. ~~**Drop C `const` on LET (27b) + `@` of `LET`/`CONST`**~~ — **Done (0.26.5.183)**. ~~**C struct-tag `extern type` + char `\x` + parse `&`/`{ , }`**~~ — **Done (0.26.5.186)**. ~~**`DEFER` only if executed**~~ — **Done (0.26.5.187)**. ~~**`DEFINE`**~~ — **Done (0.26.5.188)**. ~~**`...` pass-through**~~ — **Done (0.26.7.190)**. ~~**C-index `p[i]` on `^T`**~~ — **Done (0.26.7.191)**. ~~**Kilo snaptoken tutorial**~~ — **Done (19 September 2026)**; **ABuffer** grow-by-doubling **(0.26.8.196)**. ~~**Several `.mc` inputs**~~ — **Done (0.26.7.192)**. ~~**`.mh` alias RHS + packs + `LEN`**~~ — **Done (0.26.8.194)**. ~~**Named-type owner / `^sds[i]` / unreachable warning / TSDSLib**~~ — **Done (0.26.8.196)**. See [Recent Accomplishments (0.26.8.196)](#recent-accomplishments-30-september-2026--0268196--named-type-owner-c-index-of-named). **Next:** **#11** build-time defaults **deferred**; soft **21a-ternary**.
 6. Soft **item 20** — named open-array alias formals. **Bare formals stay by-value** — see `docs/parameter-passing.md`.
 7. Soft: **21a-ternary**; discard `_` (**24**). **`CONST` stays `static const`** — C `#define` constants are **`DEFINE`**, not item 19 lowering. Self-host remains background. ~~**7b** startup auto-init~~ — **Cancelled** (31 August 2026). Call module entries explicitly (7a). No generated `main` walk of imports.
 8. Later: **loop-local `FOR`** (**breaking**, JPL Power of Ten rule 6) — counted `FOR` always **declares** a read-only index; not a use of an enclosing `VAR`. See [Future plan: loop-local FOR](#future-plan-loop-local-for-jpl-rule-6) below. Not started; do not slip into 0.26.x calm-path work.
@@ -38,7 +39,7 @@
 13. Later: **`SET OF` enum** (Wirth bitset, not a hash set) — `IN`, `{ … }` literals, named `CONST` sets, `+` `*` `-` `==` `!=`. See [Future plan: SET OF enum](#future-plan-set-of-enum-wirth-bitset). Not 0.26.x.
 14. Later: **shebang scripts** — `#!/usr/bin/env -S tmodc -run` then `PROGRAM`/`MODULE`; wrapper already has `-run`; cache the binary so a later run can skip `modc`/`cc`. Parser: leading `#` before the unit keyword (`#!` drop, other directives emit early). See [Future plan: shebang / `-run` scripts](#future-plan-shebang--run-scripts). Not 0.26.x calm-path (#11 first).
 
-**0.26.8.194** closes `.mh` alias RHS (`export type integer complete integer 64`), in-tree `lp64`/`ilp32` packs, and interim **`LEN`**. **#11** build-time defaults deferred. **0.26.7.192** closes several `.mc` inputs (`tmodc -C -d dir *.mc`; one unit per arena; not a dep walker). **0.26.7.191** closes C-index `p[i]` on `^T` (`E.row[at].updateRow()`; not a pointer-to-array peel). **0.26.7.190** closes `...` last-formal pass-through (emit `, ...`; consume extras via `stdarg.h` FFI). **0.26.5.188** closes `[EXPORT] DEFINE identifier RestOfLine` (bind like untyped `IMPORT`; `#define` pass-through unbound). **0.26.5.187** closes `DEFER` only if control passed that statement (`stmt_index` cutoff). **0.26.5.186** closes C struct-tag `extern type`, `'\x1b'`, `&` vs `@` parse error, and array trailing comma. **0.26.5.183** closes drop C `const` on LET and `@` of `LET`/`CONST`. **0.26.5.181** closes `LET` write-forbid (bare name only). **0.26.5.180** closes parent-chain methods (`Child` → `Parent::m`). **0.26.5.179** closed `Type::m(p)` peel (`@x` not peeled). **0.26.5.178** closed `p[i]` peel and instance method on `^T`. **0.26.5.177** is a light refactor plus `examples/Shapes.mc`. **0.26.5.176** closed Oberon `p.x` auto-deref. **0.26.5.175** closed EXTENDS polish (`p^.x` / `as` / pointer·`REF`). **0.26.5.174** closes import-as-bind and `.mh` width tails. **0.26.5.173** closed width forms and moved the C prelude into generated `.h`. **0.26.4.172** closed `.mh` type completeness. **0.26.3.168** closed `parser.c` self-host. **0.26.1.158** closed unknown type names and dropped automatic `<stddef.h>`. **0.26.0.156** closed free-call soft-miss. No hidden RTTI / type tags / vtables on structs (Modula-2 + C stance).
+**0.26.8.196** closes named-type method owner (`s: sds` instance; `s: ^sds` not), C-index of written `^Named` (`tokens[0].length()`), and unreachable-after-exit as a **warning**. **TSDSLib 2.0** (`examples/sds/`). Kilo `ABuffer` prealloc. **0.26.8.194** closed `.mh` alias RHS, in-tree packs, and interim **`LEN`**. **#11** build-time defaults deferred. **0.26.7.192** closes several `.mc` inputs (`tmodc -C -d dir *.mc`; one unit per arena; not a dep walker). **0.26.7.191** closes C-index `p[i]` on `^T` (`E.row[at].updateRow()`; not a pointer-to-array peel). **0.26.7.190** closes `...` last-formal pass-through (emit `, ...`; consume extras via `stdarg.h` FFI). **0.26.5.188** closes `[EXPORT] DEFINE identifier RestOfLine` (bind like untyped `IMPORT`; `#define` pass-through unbound). **0.26.5.187** closes `DEFER` only if control passed that statement (`stmt_index` cutoff). **0.26.5.186** closes C struct-tag `extern type`, `'\x1b'`, `&` vs `@` parse error, and array trailing comma. **0.26.5.183** closes drop C `const` on LET and `@` of `LET`/`CONST`. **0.26.5.181** closes `LET` write-forbid (bare name only). **0.26.5.180** closes parent-chain methods (`Child` → `Parent::m`). **0.26.5.179** closed `Type::m(p)` peel (`@x` not peeled). **0.26.5.178** closed `p[i]` peel and instance method on `^T`. **0.26.5.177** is a light refactor plus `examples/Shapes.mc`. **0.26.5.176** closed Oberon `p.x` auto-deref. **0.26.5.175** closed EXTENDS polish (`p^.x` / `as` / pointer·`REF`). **0.26.5.174** closes import-as-bind and `.mh` width tails. **0.26.5.173** closed width forms and moved the C prelude into generated `.h`. **0.26.4.172** closed `.mh` type completeness. **0.26.3.168** closed `parser.c` self-host. **0.26.1.158** closed unknown type names and dropped automatic `<stddef.h>`. **0.26.0.156** closed free-call soft-miss. No hidden RTTI / type tags / vtables on structs (Modula-2 + C stance).
 
 EOS layout rules (0.24.3) remain in force. Arena growth is **pointer-stable** (linked chunks; no whole-slab `realloc`).
 
@@ -74,11 +75,35 @@ export define PUBLIC_FLAG 1
 
 **Not this slice:** stdarg builtins; printf format checking; dedicated method/`...` tests.
 
-## C-style `p[i]` on `^T` (0.26.7.191)
+## C-style `p[i]` on `^T` (0.26.7.191; named pointer alias **0.26.8.196**)
 
-**Status:** **Done (0.26.7.191).** If `p` is `^T` and `T` is not an array, `p[i]` has type `T` (C `*(p + i)`). Not `array_index.auto_deref` — that flag is pointer-to-array (`(*(p))[i]`, **0.26.5.178**). Copy-shell and clear `is_pointer` in `semantic_type_of_designator` (same strip as `p^`). Instance `p[i].method()` then follows ordinary `T` receiver rules; `REF` still auto-`&` → `Type__m(&p[i])`. Named alias (`pERow = ^ERow`) and bare `^T` both work. Unknown fields on `p[i]` are now checked (no longer foreign C). Tests: `tests/test_ptr_index.mc`, `tests/test3_ptr_index.mc`. Kilo: `E.row[at].updateRow()`; `ERow::` / `EditorConfig::` methods; tutorial **Done (19 September 2026)**. Language Report §5.3 / §6.2 / §8.3.
+**Status:** **Done (0.26.7.191; 0.26.8.196).** If `p` is `^T` and `T` is not an array, `p[i]` has type `T` (C `*(p + i)`). Not `array_index.auto_deref` — that flag is pointer-to-array (`(*(p))[i]`, **0.26.5.178**).
+
+**Written `^` first (0.26.8.196):** do **not** chase `resolved_type` before stripping a use-site pointer. `tokens: ^sds` with `type sds = ^char` → `tokens[0]` is **`sds`** (keep the name). `x: sds` (no extra `^`) still indexes the buffer (`char`). Copy-shell and clear `is_pointer`. Instance `p[i].method()` then follows ordinary `T` / named-owner rules; `REF` still auto-`&` → `Type__m(&p[i])`. Named alias (`pERow = ^ERow`) and bare `^T` both work. Unknown fields on `p[i]` are checked. Tests: `tests/test_ptr_index.mc`, `tests/test3_ptr_index.mc`, `tests/test_method_named_ptr.mc` (`p[0].get()`). Kilo: `E.row[at].updateRow()`. TSDSLib: `tokens[0].length()`. Language Report §5.3 / §6.2 / §8.3.
 
 **Not this slice:** first formal `^Owner` as instance; changing `realloc` buffers into real `array[N]` types.
+
+## Named type as method owner (0.26.8.196)
+
+**Status:** **Done (0.26.8.196).** Instance iff the first formal’s **written** type name is the owner and that spelling is not `^Owner`. Layout after alias expansion does not count.
+
+| First formal | Kind |
+|--------------|------|
+| `s: sds` (`type sds = ^char`) | Instance — `x.free()`, `sds::free(x)` |
+| `s: ^sds` | Not instance (v1) — `sds::free(p)` only |
+| `self: Point` / `self: ^Point` | Unchanged |
+
+`x.free()` looks up `sds`, not `char`. `auto_deref` is use-site `^.is_pointer` only (`p: ^sds` peels; `x: sds` does not). `.mh` `instance`/`static` uses the same written-name test (`mh_first_formal_type_name`). Tests: `test_method_named_ptr`, `test3_method_named_ptr`. Language Report §8.3.
+
+**Still deferred:** first formal `^Owner` as instance.
+
+## Unreachable after `RETURN` / `BREAK` / `CONTINUE` (0.26.8.196)
+
+**Status:** **Warning** (was fatal since 0.24.3). Parser still drops those statements from the AST. Needed so a C preprocessor line can follow `return` (`#endif` after `sdsTest` in TSDSLib). Language Report §7.1.
+
+## TSDSLib 2.0 (`examples/sds/`)
+
+**Status:** **Done (0.26.8.196).** TMod-c port of [antirez SDS 2.0](https://github.com/antirez/sds) by M. Scott Reynolds. Type-bound wrappers (`sds::new`, `x.cat`, `var s` on grow, `x.free()` nils). `sdscatvfmt` + `sds::catFmt`. Extra `sdsTest` cases (`splitLen` / `splitArgs` / `mapChars` / `join`). BSD notices retained; not affiliated with or endorsed by SDS or Redis. See `examples/sds/README.md`, `LICENSE`, `Changelog`.
 
 ## Several `.mc` inputs (0.26.7.192)
 
@@ -320,6 +345,33 @@ Hosted growing `StringBuffer` may remain for the compiler and Linux tests. Fligh
 
 Still not a nil-check of a `REF T`: `n` is the object. Nil-check `^T` formals and pointer **fields**; check `p <> nil` **before** `foo(p^)`. Remaining polish (not planned): side-effect-free contract lint; optional `--pot` “two assertions per routine” warn.
 
+## Recent Accomplishments (30 September 2026 — 0.26.8.196 / named-type owner, C-index of `^Named`)
+
+### Named type as method owner **Done**
+
+- Instance: first formal’s **written** name is the owner, and not use-site `^` / array. `type sds = ^char` then `sds::free(s: sds)` is instance. `s: ^sds` is static (v1).
+- Do not follow `resolved_type` in `semantic_method_is_instance`, `mh_first_formal_type_name`, `semantic_find_instance_on_chain`, or `obj.m()` owner lookup. `auto_deref` is `recv_ty^.is_pointer` (written `^` only).
+- `Type::m(p)` peels only if the actual is use-site `^Owner` (or EXTENDS ancestor). `sds::free(x)` with `x: sds` is `sds__free(x)`, not `(*x)`.
+- Tests: `tests/test_method_named_ptr.mc`; `tests/test3_method_named_ptr.mc`.
+
+### C-index of written `^Named` **Done**
+
+- `semantic_type_of_designator` `NODE_ARRAY_INDEX`: if the array side is use-site `is_pointer`, copy-shell and clear `is_pointer` **before** chasing the alias. `^sds[i]` is `sds`; `sds[i]` still chases to `char`.
+- `tokens[0].length()`; `p[0].get()` on `^Handle`.
+
+### Unreachable after exit **Warning**
+
+- `TParser::parse_block` / `parse_statement_sequence`: `error_at(..., false)`. TSDSLib `#endif` after `return 0` in `sdsTest`.
+
+### Examples
+
+- **TSDSLib 2.0** — `examples/sds/Tsds.mc` (port of SDS 2.0; type-bound API; extra tests).
+- **Kilo `ABuffer`** — `capacity`; first alloc 1024; double on grow.
+
+**Verification:** user typed in; **make test-all** / **selfhost** / **bootstrap** / **promote** green on **gcc**, **clang**, and **tcc**. Build **196**. Promoted **0.26.8.196**. See `docs/grok_report-20260930.md`.
+
+**Next:** **#11** defaults deferred; soft **21a-ternary**. Parked: `INLINE`; `export var` header/`extern`; item **19** `CONST` codegen; first formal `^Owner` as instance.
+
 ## Recent Accomplishments (22 September 2026 — 0.26.8.194 / `.mh` alias RHS, packs, `LEN`)
 
 ### `.mh` alias RHS **Done**
@@ -359,7 +411,7 @@ Still not a nil-check of a `REF T`: `n` is the object. Nil-check `^T` formals an
 
 - Author: M. Scott Reynolds. Started 7 September 2026; finished 19 September 2026.
 - Follows [Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/index.html) in TMod-c. Not a compiler language change and not a version bump.
-- Editor state lives on `EditorConfig`, `ERow`, and `ABuffer` with TYPE-bound procedures. `E.row[at].updateRow()` uses C-index `p[i]` on `^ERow` (**0.26.7.191**).
+- Editor state lives on `EditorConfig`, `ERow`, and `ABuffer` with TYPE-bound procedures. `E.row[at].updateRow()` uses C-index `p[i]` on `^ERow` (**0.26.7.191**). **0.26.8.196:** `ABuffer` grows by doubling from a 1024-byte first allocation (`capacity`).
 - Surface used: `DEFINE` (`CTRL_KEY`, `HLDB_ENTRIES`); `...` + `stdarg.h` FFI (`EditorConfig::setStatusMessage`); `DEFER` (`save`); `RECURSIVE` (`ERow::updateSyntax`); `extern type Termios = struct termios`. Extra HLDB entry covers TMod-c (`.mc` / `.mh`, `(* *)`).
 - `g_orig_termios` is global because `atexit(disableRawMode)` has no receiver. Find uses `fnCallback` plus `EditorConfig::findCallback` (procedure types do not prepend a receiver; no first-class `Type::method` values).
 - Nested `(* *)` comments do not nest (noted in the source). Keywords are case-insensitive.

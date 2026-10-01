@@ -2,12 +2,15 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
-## Version 0.26.8.195
-- Finish porting sds.c to Tsds.mc
-- **TMod-c 0.26.8.195**: Change ERROR of 'unreachable code after BREAK/CONTINUE/RETURN' to a WARNING
-- Update ABuffer in kilo.mc so it uses a preallocated buffer.
-- Update header comment of Tsds.mc
-- Add another example port of SDSLib 2.0 from https://github.com/antirez/sds
+## Version 0.26.8.196
+- **Named type is the method owner** — instance iff the first formal’s **written** type name is the owner and that spelling is not `^Owner`. `type sds = ^char` then `sds::free(s: sds)` is instance (`x.free()`); `s: ^sds` is not (v1). Do not chase `resolved_type` / `is_pointer` after alias expansion. Tests: `test_method_named_ptr`, `test3_method_named_ptr`.
+- **C-index of written `^T`** — `tokens: ^sds` then `tokens[0]` has type `sds` (keep the name; do not chase `sds → ^char` first). `x: sds` then `x[0]` is still `char` (index the buffer). `p[0].get()` in `test_method_named_ptr`. SDS: `tokens[0].length()`.
+- **Unreachable after `RETURN` / `BREAK` / `CONTINUE`** is a **warning** (was a fatal parse error since 0.24.3). Dead statements are still dropped from the AST. Lets a C preprocessor line follow `return` (TSDSLib `#endif` after `return 0` in `sdsTest`).
+- **TSDSLib 2.0** — TMod-c port of [antirez/sds](https://github.com/antirez/sds) 2.0 in `examples/sds/Tsds.mc`. Type-bound wrappers; `var s: sds` on grow; `sds::free` nils the handle. BSD notices kept; not an official SDS/Redis release.
+- **Kilo `ABuffer`** — grow-by-doubling from a 1024-byte first allocation (`capacity`); fewer `realloc`s on refresh.
+- **Public source drop** — [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (not the development history).
+- Tests green. **make test-all** / **selfhost** / **bootstrap** / **promote** green on **gcc**, **clang**, and **tcc**. Build **196**. Branch **`mod-c_0.26`**. Promoted **0.26.8.196**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §6.2 / §7.1 / §8.3, `docs/syntax-ebnf.md`, `docs/grok_report-20260930.md`.
 
 ## Version 0.26.8.194
 - **`.mh` alias RHS** — optional type-spec after `complete`/`opaque` on alias TYPE: `export type integer complete integer 64`, `export type string complete const ^char`. Writer `mh_append_type_spec`; reader `mh_parse_alias_rhs`; import `symbol_type`. Old lines without a tail stay valid. Regenerated committed `.mh` files — **0.26.8** stem.
@@ -29,7 +32,7 @@
 ## Examples — Kilo tutorial (19 September 2026)
 
 - **Done** — full [snaptoken Kilo](https://viewsourcecode.org/snaptoken/kilo/index.html) port in `examples/kilo/kilo.mc` (started 7 September 2026; author M. Scott Reynolds). Not a compiler version bump.
-- TYPE-bound `EditorConfig::`, `ERow::`, and `ABuffer::`. `E.row[at].updateRow()` (C-index `p[i]` on `^ERow`, **0.26.7.191**).
+- TYPE-bound `EditorConfig::`, `ERow::`, and `ABuffer::`. `E.row[at].updateRow()` (C-index `p[i]` on `^ERow`, **0.26.7.191**). **0.26.8.196:** `ABuffer` grow-by-doubling from 1024 (`capacity`).
 - Uses `DEFINE`, `...` + `stdarg.h` FFI, `DEFER`, `RECURSIVE`, `extern type Termios = struct termios`. Extra HLDB entry for TMod-c (`.mc` / `.mh`).
 - Build: `examples/kilo/` — `make kilo` (`TMODC=../../bin/tmodc`).
 - Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, `docs/grok_report-20260919.md`.
