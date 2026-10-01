@@ -57,7 +57,10 @@ end mh_type_opaque
 // type string = const ^char
 type pcchar = const ^char
 
-(* First formal type name if plain named type; else nmae_len 0. *)
+(*
+ * First formal type name if written named type (not ^ / array).
+ * Do not chase resolved_type: `sds = ^char` still counts as name sds.
+ *)
 function mh_first_formal_type_name(n: const ^Node, out_name: ^pcchar, out_len: ^size_t): bool
 begin
 	var pl: const ^Node = nil
@@ -81,9 +84,9 @@ begin
 	if pt == nil then
 		return false
 	end
-	if pt^.resolved_type <> nil then
-		pt := pt^.resolved_type
-	end
+	// if pt^.resolved_type <> nil then
+	// 	pt := pt^.resolved_type
+	// end
 	if pt^.is_pointer or pt^.is_array then
 		return false
 	end

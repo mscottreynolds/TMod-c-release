@@ -1,10 +1,10 @@
 module Tsds()
-(* SDSLib 2.0 -- A C dynamic strings library
- * (https://github.com/antirez/sds)
+(* TSDSLib 2.0 -- A C dynamic strings library
  *
  * Copyright (c) 2006-2015, Salvatore Sanfilippo <antirez at gmail dot com>
  * Copyright (c) 2015, Oran Agra
  * Copyright (c) 2015, Redis Labs, Inc
+ * Copyright (c) 2026, M. Scott Reynolds
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,17 @@ module Tsds()
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
+ *)
+
+(**
+ * TSDSLib 2.0 (port of SDS 2.0 https://github.com/antirez/sds)
  * 22 Sept 2026: 
  * Port to TMod-c by M. Scott Reynolds
+ * 30 Sept 2026:
+ * Added type bound methods.
+ * Added a few more tests to sdsTest() so all API methods are tested.
+ * Included as an example in TMod-c release distribution at 
+ * https://github.com/mscottreynolds/TMod-c-release
  *)
 
 
@@ -195,6 +203,16 @@ end sdslen
 
 
 (**
+ * Type bound for sdslen. Note that len is spelled out to length as
+ * `len` is a reserved keyword.
+ *)
+export function sds::length(ref s: sds): size_t
+begin
+    return sdslen(s)
+end sds::length
+
+
+(**
  * Return available space
  *)
 export function sdsavail(s: sds): size_t
@@ -219,6 +237,15 @@ begin
             return 0
     end
 end sdsavail
+
+
+(**
+ * Type bound wrapper for sdsavail.
+ *)
+export function sds::avail(ref s: sds): size_t
+begin
+    return sdsavail(s)
+end sds::avail
 
 
 (**
@@ -251,9 +278,18 @@ end sdssetlen
 
 
 (**
- * Increase length by inc
+ * Type bound wrapper for sdssetlen
  *)
-export procedure sdsinclen(s: sds, inc_: size_t)
+export procedure sds::setLen(ref s: sds, newlen: size_t)
+begin
+    sdssetlen(s, newlen)
+end sds::setLen
+
+
+(**
+ * Increase length by inc. Used by sdscatfmt.
+ *)
+procedure sdsinclen(s: sds, inc_: size_t)
 begin
     var flags: uchar = s[-1]
     switch (flags & SDS_TYPE_MASK) of
@@ -281,7 +317,7 @@ end sdsinclen
 
 
 (**
- * sdsalloc() = sdsavail() + sdslen()
+ * return sdsalloc() = sdsavail() + sdslen()
  *)
 export function sdsalloc(const s:sds): size_t
 begin
@@ -301,6 +337,15 @@ begin
             return 0
     end
 end sdsalloc
+
+
+(**
+ * Type bound wrapper for sdsalloc
+ *)
+export function sds::alloc(ref s:sds): size_t
+begin
+    return sdsalloc(s)
+end sds::alloc
 
 
 (**
@@ -332,6 +377,15 @@ begin
         end
     end
 end sdssetalloc
+
+
+(**
+ * Type bound wrapper for sdssetalloc.
+ *)
+export procedure sds::setAlloc(ref s: sds, newlen: size_t)
+begin
+    sdssetalloc(s, newlen)
+end sds::setAlloc
 
 
 (* ==== Forwards ==== *)
@@ -523,6 +577,15 @@ end sdsnewlen
 
 
 (**
+ * Type bound method for sdsnewlen()
+ *)
+export function sds::newLen(init_to: const ^VOID, initlen: size_t): sds
+begin
+    return sdsnewlen(init_to, initlen)
+end sds::newLen
+
+
+(**
  * Create an empty (zero length) sds string. Even in this case the string
  * always has an implicit nil term.
  *)
@@ -530,6 +593,15 @@ export function sdsempty(): sds
 begin
     return sdsnewlen("", 0)
 end sdsempty
+
+
+(**
+ * Type bound wrapper for sdsempty.
+ *)
+export function sds::empty(): sds
+begin
+    return sdsempty()
+end sds::empty
 
 
 (**
@@ -543,6 +615,15 @@ end sdsnew
 
 
 (**
+ * Type bound wrapper for sdsnew()
+ *)
+export function sds::new(init: const ^char): sds
+begin
+    return sdsnew(init)
+end sds::new
+
+
+(**
  * Duplicate an sds string. 
  *)
 export function sdsdup(s: const sds): sds
@@ -552,14 +633,34 @@ end sdsdup
 
 
 (**
+ * Type bound wrapper for sdsdup.
+ *)
+export function sds::dup(ref s: const sds): sds
+begin
+    return sdsdup(s)
+end sds::dup
+
+
+(**
  * Free an sds string. No operation is performed if 's' is NIL.
  *)
 export procedure sdsfree(s: sds)
 begin
-    if s != nil then
+    if s <> nil then
         s_free((s-sdsHdrSize(s[-1])) as ^char)
     end
 end sdsfree
+
+
+(**
+ * Type bound wrapper for sdsfree()
+ * Note this sets s := nil.
+ *)
+export procedure sds::free(var s: sds)
+begin
+    sdsfree(s)
+    s := nil
+end sds::free
 
 
 (**
@@ -586,6 +687,15 @@ end
 
 
 (**
+ * Type bound wrapper for sdsupdatelen.
+ *)
+export procedure sds::updateLen(ref s: sds)
+begin
+    sdsupdatelen(s)
+end sds::updateLen
+
+
+(**
  * Modify an ses string in-place to make it empty (zero length).
  * However all the existing buffer is not discarded but set as free space
  * so that next append operations will not require allocations up to the
@@ -596,6 +706,15 @@ begin
     sdssetlen(s, 0)
     s[0] := '\0'
 end
+
+
+(**
+ * Type bound wrapper for sdsclear.
+ *)
+export procedure sds::clear(ref s: sds)
+begin
+    sdsclear(s)
+end sds::clear
 
 
 (**
@@ -667,6 +786,16 @@ end sdsMakeRoomFor
 
 
 (**
+ * Type bound wrapper for sdsMakeRoomFor. Note that this will update s
+ * in place if memory location changes and doesn't have a return value.
+ *)
+export procedure sds::makeRoomFor(var s: sds, addlen: size_t)
+begin
+    s := sdsMakeRoomFor(s, addlen)
+end sds::makeRoomFor
+
+
+(**
  * Reallocate the sds string so that it has no free space at the end. The
  * contained string remains not altered, but next concatenation operations
  * will require a reallocation.
@@ -725,6 +854,16 @@ end sdsRemoveFreeSpace
 
 
 (**
+ * Type bound wrapper for sdsRemoveFreeSpace.
+ * Note that s is updated in place.
+ *)
+export procedure sds::removeFreeSpace(var s: sds)
+begin
+    s := sdsRemoveFreeSpace(s)
+end sds::removeFreeSpace
+
+
+(**
  * Return the total size of the allocation of the specified sds string,
  * including:
  *  1) The sds header before the pointer.
@@ -740,6 +879,15 @@ end sdsAllocSize
 
 
 (**
+ * Type bound wrapper for sdsAllocSize.
+ *)
+export function sds::allocSize(ref s: sds): size_t
+begin
+    return sdsAllocSize(s)
+end sds::allocSize
+
+
+(**
  * Return the pointer of the actual SDS allocation (normally SDS strings
  * are referenced by the start of the string buffer).
  *)
@@ -747,6 +895,15 @@ export function sdsAllocPtr(s: sds): ^VOID
 begin
     return (s-sdsHdrSize(s[-1])) as ^VOID
 end sdsAllocPtr
+
+
+(**
+ * Type bound wrapper for sdsAllocPtr.
+ *)
+export function sds::allocPtr(ref s: sds): ^VOID
+begin
+    return sdsAllocPtr(s)
+end sds::allocPtr
 
 
 (**
@@ -824,6 +981,15 @@ end sdsIncrLen
 
 
 (**
+ * Type bound wrapper for sdsIncrLen.
+ *)
+export procedure sds::incrLen(ref s: sds, incr: ssize_t)
+begin
+    sdsIncrLen(s, incr)
+end sds::incrLen
+
+
+(**
  * Grow the sds to have the specified length. Bytes that were not part of 
  * the original length of the sds will be set to zero.
  *
@@ -845,6 +1011,16 @@ begin
     end
     return new_s
 end sdsgrowzero
+
+
+(**
+ * Type bound wrapper for sdsgrowzero.
+ * Note that this updates s in place.
+ *)
+export procedure sds::growZero(var s: sds, length: size_t)
+begin
+    s := sdsgrowzero(s, length)
+end sds::growZero
 
 
 (**
@@ -871,6 +1047,16 @@ end sdscatlen
 
 
 (**
+ * Type bound wrapper for sdscatlen.
+ * Note that this updates s in place.
+ *)
+export procedure sds::catLen(var s: sds, t: const ^VOID, length: size_t)
+begin
+    s := sdscatlen(s, t, length)
+end sds::catLen
+
+
+(**
  * Append the specified null terminated C string to the sds string 's'.
  *
  * After the call, the passed sds string is no longer valid and all the
@@ -883,6 +1069,16 @@ end sdscat
 
 
 (**
+ * Type bound wrapper for sdscat.
+ * Note this will update s in place and doesn't have a return value.
+ *)
+export procedure sds::cat(var s: sds, t: const ^char)
+begin
+    s := sdscat(s, t)
+end sds::cat
+
+
+(**
  * Append the specified sds 't' to the existing sds 's'.
  *
  * After the call, the modified sds string is no longer valid and all the
@@ -892,6 +1088,16 @@ export function sdscatsds(s: sds, t: const sds): sds
 begin
     return sdscatlen(s, t, sdslen(t))
 end sdscatsds
+
+
+(**
+ * Type bound wrapper for sdscatsds.
+ * Note that this updates s in place.
+ *)
+export procedure sds::catsds(var s: sds, t: const sds)
+begin
+    s := sdscatsds(s, t)
+end sds::catsds
 
 
 (**
@@ -917,13 +1123,33 @@ end sdscpylen
 
 
 (**
- * Like sdscpylen() but 't' must be a null erminaed string so that the length
+ * Type bound wrapper for sdscpylen.
+ * Note that this updates s in place.
+ *)
+export procedure sds::cpyLen(var s: sds, t: const ^char, length: size_t)
+begin
+    s := sdscpylen(s, t, length)
+end sds::cpyLen
+
+
+(**
+ * Like sdscpylen() but 't' must be a null terminaed string so that the length
  * of the string is obtained with strlen().
  *)
 export function sdscpy(s: sds, t: const ^char): sds
 begin
     return sdscpylen(s, t, strlen(t))
-end
+end sdscpy
+
+
+(**
+ * Type bound wrapper for sdscpy.
+ * Note this will update the value of s.
+ *)
+export procedure sds::cpy(var s: sds, t: const ^char)
+begin
+    s := sdscpy(s, t)
+end sds::cpy
 
 
 (**
@@ -1046,6 +1272,15 @@ end sdsfromlonglong
 
 
 (**
+ * Wrapper for sdsfromlonglong.
+ *)
+export function sds::fromLongLong(value: llong): sds
+begin
+    return sdsfromlonglong(value)
+end sds::fromLongLong
+
+
+(**
  * Like sdscatprintf() but gets va_list instead of being variadic.
  *)
 export function sdscatvprintf(s: sds, fmt: const ^char, ap: va_list): sds
@@ -1104,6 +1339,16 @@ end sdscatvprintf
 
 
 (**
+ * Type bound wrapper for sdscatvprintf.
+ * Note this updates s in place.
+ *)
+export procedure sds::catvPrintf(var s: sds, fmt: const ^char, ap: va_list)
+begin
+    s := sdscatvprintf(s, fmt, ap)
+end sds::catvPrintf
+
+
+(**
  * Append to the sds string 's' a string obtained using printf-alike format
  * specifier.
  *
@@ -1133,6 +1378,22 @@ end sdscatprintf
 
 
 (**
+ * Type bound version of sdscatprintf.
+ * Note this updates s in place.
+ *)
+export procedure sds::catPrintf(var s: sds, fmt: const ^char, ...)
+begin
+    var ap: va_list
+    var t: ^char
+
+    va_start(ap, fmt)
+    t := sdscatvprintf(s, fmt, ap)
+    va_end(ap)
+    s := t as sds
+end sds::catPrintf
+
+
+(**
  * This function is similar to sdscatprintf, but much faster as it does
  * not rely on sprintf() family functions implemented by the libc that
  * are often very slow. Moreover directly handling the sds string as
@@ -1149,19 +1410,17 @@ end sdscatprintf
  * %U - 64 bit unsigned integer (unsigned long long, uint64_t)
  * %% - Verbatim "%" character.
  *)
-export function sdscatfmt(s: sds, fmt: const ^char, ...): sds
+export function sdscatvfmt(s: sds, fmt: const ^char, ap: va_list): sds
 begin
     var initlen: size_t = sdslen(s)
     var f: const ^char = fmt
     var i: long
-    var ap: va_list
     var new_s: sds = s
 
     // To avoid continuous reallocations, let's start with a buffer that
     // can hold at least two times the format string itself. It's not the 
     // best heuristic but seems to work in practice.
     new_s := sdsMakeRoomFor(new_s, initlen + strlen(fmt) * 2)
-    va_start(ap, fmt)
     f := fmt        // Next format specifier byte to process
     i := initlen    // Position of the next byte to write to dest str
     while f^ do
@@ -1246,20 +1505,59 @@ begin
         end
         inc(f)
     end
-    va_end(ap)
 
     // Add null-term
     new_s[i] := '\0'
+    return new_s
+end sdscatvfmt
+
+
+(**
+ * This function is similar to sdscatprintf, but much faster as it does
+ * not rely on sprintf() family functions implemented by the libc that
+ * are often very slow. Moreover directly handling the sds string as
+ * new data is concatenated provides a performanc improvement.
+ *
+ * However this function only handles an incompatible subset of printf-alike
+ * format specifiers:
+ *
+ * %s - C String
+ * %S - SDS string
+ * %i - signed int
+ * %I - 64 bit signed integer (long long, int64_t)
+ * %u - unsigned int
+ * %U - 64 bit unsigned integer (unsigned long long, uint64_t)
+ * %% - Verbatim "%" character.
+ *)
+export function sdscatfmt(s: sds, fmt: const ^char, ...): sds
+begin
+    var ap: va_list
+    var new_s: sds = s
+
+    va_start(ap, fmt)
+    new_s := sdscatvfmt(s, fmt, ap)
+    va_end(ap)
     return new_s
 end sdscatfmt
 
 
 (**
+ * Type bound version of sdscatfmt.
+ * Note this updates s in place.
+ *)
+export procedure sds::catFmt(var s: sds, fmt: const ^char, ...)
+begin
+    var ap: va_list
+
+    va_start(ap, fmt)
+    s := sdscatvfmt(s, fmt, ap)
+    va_end(ap)
+end sds::catFmt
+
+
+(**
  * Remove the part of the string from left and from right composed just of
  * contiguous characters found in 'cset', that are a null terminated C string.
- *
- * After the call, the modified sds string is no longer valid and all the 
- * references must be substituted with the new pointer returned by the call.
  *
  * Example:
  *
@@ -1291,6 +1589,15 @@ begin
     sdssetlen(s, length)
     return s
 end sdstrim
+
+
+(**
+ * Type bound wrapper for sdstrim.
+ *)
+export procedure sds::trim(ref s: sds, cset: const ^char)
+begin
+    (sdstrim(s, cset))
+end sds::trim
 
 
 (**
@@ -1350,6 +1657,15 @@ end sdsrange
 
 
 (**
+ * Type bound wrapper for sdsrange.
+ *)
+export procedure sds::range(ref s: sds, start: ssize_t, end_: ssize_t)
+begin
+    sdsrange(s, start, end_)
+end sds::range
+
+
+(**
  * Apply tolower() to every character of the sds string 's'.
  *)
 export procedure sdstolower(s: sds)
@@ -1364,6 +1680,15 @@ end sdstolower
 
 
 (**
+ * Type bound wrapper for sdstolower.
+ *)
+export procedure sds::toLower(ref s: sds)
+begin
+    sdstolower(s)
+end sds::toLower
+
+
+(**
  * Apply toupper() to every character of the sds string 's'.
  *)
 export procedure sdstoupper(s: sds)
@@ -1375,6 +1700,15 @@ begin
         s[j] := toupper(s[j])
     end
 end sdstoupper
+
+
+(**
+ * Type bound wrapper for sdstoupper.
+ *)
+export procedure sds::toUpper(ref s: sds)
+begin
+    sdstoupper(s)
+end sds::toUpper
 
 
 (**
@@ -1404,6 +1738,15 @@ begin
     end
     return cmp
 end sdscmp
+
+
+(**
+ * Type bound wrapper for sdscmp.
+ *)
+export function sds::cmp(ref s1: sds, ref s2: sds): int
+begin
+    return sdscmp(s1, s2)
+end sds::cmp
 
 
 (**
@@ -1491,6 +1834,15 @@ end sdssplitlen
 
 
 (**
+ * Wrapper for sdssplitlen.
+ *)
+export function sds::splitLen(s: const ^char, length: ssize_t, sep: const ^char, seplen: int, count: ^int): ^sds
+begin
+    return sdssplitlen(s, length, sep, seplen, count)
+end sds::splitLen
+
+
+(**
  * Free the result returned by sdssplitlen(), or do nothing if 'tokens' is NIL. 
  *)
 export procedure sdsfreesplitres(tokens: ^sds, count: int)
@@ -1498,12 +1850,21 @@ begin
     var n: int = count
     if tokens then
         while n > 0 do
-            sdsfree(tokens[n])
             dec(n)
+            sdsfree(tokens[n])
         end
         s_free(tokens)
     end
 end sdsfreesplitres
+
+
+(**
+ * Wrapper for sdsfreesplitres.
+ *)
+export procedure sds::freeSplitRes(tokens: sds[], count: int)
+begin
+    sdsfreesplitres(tokens, count)
+end sds::freeSplitRes
 
 
 (**
@@ -1542,6 +1903,16 @@ begin
     end
     return sdscatlen(t, "\"", 1)
 end sdscatrepr
+
+
+(**
+ * Type bound wrapper for sdscatrepr.
+ * Note this will update the value of s.
+ *)
+export procedure sds::catRepr(var s: sds, p: const ^char, length: size_t)
+begin
+    s := sdscatrepr(s, p, length)
+end sds::catRepr
 
 
 (*
@@ -1726,6 +2097,15 @@ end sdssplitargs
 
 
 (**
+ * Wrapper for sdssplitargs.
+ *)
+export function sds::splitArgs(line: const ^char, argc: ^int): ^sds
+begin
+    return sdssplitargs(line, argc)
+end sds::splitArgs
+
+
+(**
  * Modify the string substituting all the occurrences of the set of
  * characters specified in the 'from' string to the corresponding character
  * in the 'to' array.
@@ -1754,6 +2134,15 @@ end sdsmapchars
 
 
 (**
+ * Type bound wrapper for sdsmapchars.
+ *)
+export procedure sds::mapChars(ref s: sds, from_: const ^char, to_: const ^char, setlen: size_t)
+begin
+    (sdsmapchars(s, from_, to_, setlen))
+end sds::mapChars
+
+
+(**
  * Join an array of C strings using the specified separator (also a C string).
  * Returns the result as an sds string. 
  *)
@@ -1773,6 +2162,15 @@ end sdsjoin
 
 
 (**
+ * Wrapper for sdsjoin
+ *)
+export function sds::join(argv: ^char[], argc: int, sep: ^char): sds
+begin
+    return sdsjoin(argv, argc, sep)
+end sds::join
+
+
+(**
  * Like sdsjoin, but joins an array of SDS strings.
  *)
 export function sdsjoinsds(argv: ^sds, argc: int, sep: const ^char, seplen: size_t): sds
@@ -1789,6 +2187,15 @@ begin
 
     return join
 end sdsjoinsds
+
+
+(**
+ * Wrapper for sdsjoinsds
+ *)
+export function sds::joinsds(argv: sds[], argc: int, sep: const ^char, seplen: size_t): sds
+begin
+    return sdsjoinsds(argv, argc, sep, seplen)
+end sds::joinsds
 
 
 (**
@@ -1825,145 +2232,149 @@ function sdsTest(): int
 begin
     begin
         var x, y: sds
-        x := sdsnew("foo")
+        x := sds::new("foo")
 
         test_cond("Create a string and obtain the length",
-            sdslen(x) == 3 and memcmp(x, "foo\0", 4) == 0)
+            x.length() == 3 and memcmp(x, "foo\0", 4) == 0)
 
-        sdsfree(x)
-        x := sdsnewlen("foo", 2)
+        x.free()
+        x := sds::newLen("foo", 2)
         test_cond("Create a string with specified length",
-            sdslen(x) == 2 and memcmp(x, "fo\0", 3) == 0)
+            x.length() == 2 and memcmp(x, "fo\0", 3) == 0)
 
-        x := sdscat(x, "bar")
+        x.cat("bar")
         test_cond("Strings concatenation", 
-            sdslen(x) == 5 and memcmp(x, "fobar\0", 6) == 0)
+            x.length() == 5 and memcmp(x, "fobar\0", 6) == 0)
 
-        x := sdscpy(x, "a")
-        test_cond("sdscpy() against an originally longer string",
-            sdslen(x) == 1 and memcmp(x, "a\0", 2) == 0)
+        x.cpy("a")
+        test_cond("sds::cpy() against an originally longer string",
+            x.length() == 1 and memcmp(x, "a\0", 2) == 0)
 
-        x := sdscpy(x, "xyzxxxxxxxxxxyyyyyyyyyykkkkkkkkkk")
-        test_cond("sdscpy() against an originally shorter string",
-            sdslen(x) == 33 and
+        x.cpy("xyzxxxxxxxxxxyyyyyyyyyykkkkkkkkkk")
+        test_cond("sds::cpy() against an originally shorter string",
+            x.length() == 33 and
             memcmp(x, "xyzxxxxxxxxxxyyyyyyyyyykkkkkkkkkk\0", 33) == 0)
 
-        sdsfree(x)
-        x := sdscatprintf(sdsempty(), "%d", 123)
-        test_cond("sdscatprintf() seems working in the base case",
-            sdslen(x) == 3 and memcmp(x, "123\0", 4) == 0)
+        x.free()
+        x := sds::empty()
+        x.catPrintf("%d", 123)
+        test_cond("sds::catPrintf() seems working in the base case",
+            x.length() == 3 and memcmp(x, "123\0", 4) == 0)
 
-        sdsfree(x)
-        x := sdscatprintf(sdsempty(), "a%cb", 0)
-        test_cond("sdscatprintf() seems working with \\0 inside of result",
-            sdslen(x) == 3 and memcmp(x, "a\0b\0", 4) == 0)
+        x.free()
+        x := sds::empty()
+        x.catPrintf("a%cb", 0)
+        test_cond("sds::catPrintf() seems working with \\0 inside of result",
+            x.length() == 3 and memcmp(x, "a\0b\0", 4) == 0)
 
         begin
             var etalon: array[1024 * 1024] of char
             var i: size_t
 
-            sdsfree(x)
+            x.free()
             for i := 0 to sizeof(etalon)-1 do
                 etalon[i] := '0'
             end
-            x := sdscatprintf(sdsempty(), "%0*d", sizeof(etalon), 0)
+            x := sds::empty()
+            x.catPrintf("%0*d", sizeof(etalon), 0)
 
-            test_cond("sdscatprintf() can print 1MB",
-                sdslen(x) == sizeof(etalon) and memcmp(x, etalon, sizeof(etalon)) == 0)
+            test_cond("sds::catPrintf() can print 1MB",
+                x.length() == sizeof(etalon) and memcmp(x, etalon, sizeof(etalon)) == 0)
         end
 
-        sdsfree(x)
-        x := sdsnew("--")
-        x := sdscatfmt(x, "Hello %s World %I,%I--", "Hi!", LLONG_MIN, LLONG_MAX)
-        test_cond("sdscatfmt() seems working in the base case",
-            sdslen(x) == 60 and
+        x.free()
+        x := sds::new("--")
+        x.catFmt("Hello %s World %I,%I--", "Hi!", LLONG_MIN, LLONG_MAX)
+        test_cond("sds::catFmt() seems working in the base case",
+            x.length() == 60 and
             memcmp(x, "--Hello Hi! World -9223372036854775808,9223372036854775807--", 60) == 0)
         printf("[%s]\n", x)
 
-        sdsfree(x)
-        x := sdsnew("--")
-        x := sdscatfmt(x, "%u,%U--", UINT_MAX, ULLONG_MAX);
-        test_cond("sdscatfmt() seems working with unsigned numbers",
-            sdslen(x) == 35 and
+        x.free()
+        x := sds::new("--")
+        x.catFmt("%u,%U--", UINT_MAX, ULLONG_MAX);
+        test_cond("sds::catFmt() seems working with unsigned numbers",
+            x.length() == 35 and
             memcmp(x, "--4294967295,18446744073709551615--", 35) == 0)
 
-        sdsfree(x)
-        x := sdsnew(" x ")
-        x := sdstrim(x, " x")
-        test_cond("sdstrim() works when all chars match", 
-            sdslen(x) == 0)
+        x.free()
+        x := sds::new(" x ")
+        x.trim(" x")
+        test_cond("sds::strim() works when all chars match", 
+            x.length() == 0)
 
-        sdsfree(x)
-        x := sdsnew(" x ")
-        x := sdstrim(x, " ")
-        test_cond("sdstrim() works when a single char remains",
-            sdslen(x) == 1 and x[0] == 'x')
+        x.free()
+        x := sds::new(" x ")
+        x.trim(" ")
+        test_cond("sds::trim() works when a single char remains",
+            x.length() == 1 and x[0] == 'x')
 
-        sdsfree(x)
-        x := sdsnew("xxciaoyyy")
-        x := sdstrim(x, "xy")
-        test_cond("sdstrim() correctly trims characters",
-            sdslen(x) == 4 and memcmp(x, "ciao\0", 5) == 0)
+        x.free()
+        x := sds::new("xxciaoyyy")
+        x.trim("xy")
+        test_cond("sds::trim() correctly trims characters",
+            x.length() == 4 and memcmp(x, "ciao\0", 5) == 0)
 
-        y := sdsdup(x)
-        sdsrange(y, 1, 1)
-        test_cond("sdsrange(..., 1, 1)",
-            sdslen(y) == 1 and memcmp(y, "i\0", 2) == 0)
+        y := x.dup()
+        y.range(1, 1)
+        test_cond("sds::range(..., 1, 1)",
+            y.length() == 1 and memcmp(y, "i\0", 2) == 0)
 
-        sdsfree(y)
-        y := sdsdup(x)
-        sdsrange(y, 1, -1)
-        test_cond("sdsrange(..., 1, -1",
-            sdslen(y) == 3 and memcmp(y, "iao\0", 4) == 0)
+        y.free()
+        y := x.dup()
+        y.range(1, -1)
+        test_cond("sds::range(..., 1, -1",
+            y.length() == 3 and memcmp(y, "iao\0", 4) == 0)
 
-        sdsfree(y)
-        y := sdsdup(x)
-        sdsrange(y, -2, -1)
-        test_cond("sdsrange(..., -2, -1)",
-            sdslen(y) == 2 and memcmp(y, "ao\0", 3) == 0)
+        y.free()
+        y := x.dup()
+        y.range(-2, -1)
+        test_cond("sds::range(..., -2, -1)",
+            y.length() == 2 and memcmp(y, "ao\0", 3) == 0)
 
-        sdsfree(y)
-        y := sdsdup(x)
-        sdsrange(y, 2, 1)
-        test_cond("sdsrange(..., 2, 1)",
-            sdslen(y) == 0 and memcmp(y, "\0", 1) == 0)
+        y.free()
+        y := x.dup()
+        y.range(2, 1)
+        test_cond("sds::range(..., 2, 1)",
+            y.length() == 0 and memcmp(y, "\0", 1) == 0)
 
-        sdsfree(y)
-        y := sdsdup(x)
-        sdsrange(y, 1, 100)
-        test_cond("sdsrange(..., 1, 100)",
-            sdslen(y) == 3 and memcmp(y, "iao\0", 4) == 0)
+        y.free()
+        y := x.dup()
+        y.range(1, 100)
+        test_cond("sds::range(..., 1, 100)",
+            y.length() == 3 and memcmp(y, "iao\0", 4) == 0)
 
-        sdsfree(y)
-        y := sdsdup(x)
-        sdsrange(y, 100, 100)
-        test_cond("sdsrange(..., 100, 100)",
-            sdslen(y) == 0 and memcmp(y, "\0", 1) == 0)
+        y.free()
+        y := x.dup()
+        y.range(100, 100)
+        test_cond("sds::range(..., 100, 100)",
+            y.length() == 0 and memcmp(y, "\0", 1) == 0)
 
-        sdsfree(y)
-        sdsfree(x)
-        x := sdsnew("foo")
-        y := sdsnew("foa")
-        test_cond("sdscmp(foo, foa)",
-                sdscmp(x, y) > 0)
+        y.free()
+        x.free()
+        x := sds::new("foo")
+        y := sds::new("foa")
+        test_cond("sds::cmp(foo, foa)",
+                x.cmp(y) > 0)
 
-        sdsfree(y)
-        sdsfree(x)
-        x := sdsnew("bar")
-        y := sdsnew("bar")
-        test_cond("sdscmp(bar, bar)", sdscmp(x, y) == 0)
+        y.free()
+        x.free()
+        x := sds::new("bar")
+        y := sds::new("bar")
+        test_cond("sds::cmp(bar, bar)", x.cmp(y) == 0)
 
-        sdsfree(y)
-        sdsfree(x)
-        x := sdsnew("aar")
-        y := sdsnew("bar")
-        test_cond("sdscmp(aar, bar)", sdscmp(x, y) < 0)
+        y.free()
+        x.free()
+        x := sds::new("aar")
+        y := sds::new("bar")
+        test_cond("sds::cmp(aar, bar)", x.cmp(y) < 0)
 
-        sdsfree(y)
-        sdsfree(x)
-        x := sdsnewlen("\a\n\0foo\r", 7)
-        y := sdscatrepr(sdsempty(), x, sdslen(x))
-        test_cond("sdscatrepr(...data...)",
+        y.free()
+        x.free()
+        x := sds::newLen("\a\n\0foo\r", 7)
+        y := sds::empty()
+        y.catRepr(x, x.length())
+        test_cond("sds::catRepr(...data...)",
             memcmp(y, "\"\\a\\n\\x00foo\\r\"", 15) == 0)
 
         begin
@@ -1971,34 +2382,69 @@ begin
             var step: int = 10
             var j, i: int
 
-            sdsfree(x)
-            sdsfree(y)
-            x := sdsnew("0")
-            test_cond("sdsnew() free/len buffers", sdslen(x) == 1 and sdsavail(x) == 0)
+            x.free()
+            y.free()
+            x := sds::new("0")
+            test_cond("sds::new() free/len buffers", x.length() == 1 and x.avail() == 0)
 
             // Run the test a few times in order to hit the first two
             // SDS header types.
             for i := 0 to 10-1 do
-                var oldlen: int = sdslen(x)
+                var oldlen: int = x.length()
 
-                x := sdsMakeRoomFor(x, step)
+                x.makeRoomFor(step)
                 let type_: int = x[-1] & SDS_TYPE_MASK
 
-                test_cond("sdsMakeRoomFor() len", sdslen(x) == oldlen)
+                test_cond("sds::makeRoomFor() len", x.length() == oldlen)
                 if type_ <> SDS_TYPE_5 then
-                    test_cond("sdsMakeRoomFor() free", sdsavail(x) >= step)
+                    test_cond("sds::makeRoomFor() free", x.avail() >= step)
                 end
                 p := x + oldlen
                 for j := 0 to step-1 do
                     p[j] := 'A' + j
                 end
-                sdsIncrLen(x, step)
+                x.incrLen(step)
             end
-            test_cond("sdsMakeRoomFor() content",
+            test_cond("sds::makeRoomFor() content",
                 memcmp("0ABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJ", x, 101) == 0)
-            test_cond("sdsMakeRoomFor() final length", sdslen(x) == 101)
+            test_cond("sds::makeRoomFor() final length", x.length() == 101)
 
-            sdsfree(x)
+            x.free()
+        end
+
+        begin
+            var tokens: ^sds
+            var n: int = 0
+            var argv: array[2] of ^char
+
+            tokens := sds::splitLen("foo_-_bar", 9, "_-_", 3, @n)
+            test_cond("sds::splitLen()",
+                n == 2 and tokens <> nil and
+                tokens[0].length() == 3 and memcmp(tokens[0], "foo\0", 4) == 0 and
+                tokens[1].length() == 3 and memcmp(tokens[1], "bar\0", 4) == 0)
+            sds::freeSplitRes(tokens, n)
+
+            n := 0
+            tokens := sds::splitArgs("one \"two words\" three", @n)
+            test_cond("sds::splitArgs()",
+                n == 3 and tokens <> nil and
+                tokens[0].length() == 3 and memcmp(tokens[0], "one\0", 4) == 0 and
+                tokens[1].length() == 9 and memcmp(tokens[1], "two words\0", 10) == 0 and
+                tokens[2].length() == 5 and memcmp(tokens[2], "three\0", 6) == 0)
+            sds::freeSplitRes(tokens, n)
+
+            x := sds::new("hello")
+            x.mapChars("ho", "01", 2)
+            test_cond("sds::mapChars()", 
+                x.length() == 5 and memcmp(x, "0ell1\0", 6) == 0)
+            x.free()
+
+            argv[0] := "foo"
+            argv[1] := "bar"
+            x := sds::join(argv, 2, "-")
+            test_cond("sds::join()",
+                x.length() == 7 and memcmp(x, "foo-bar\0", 8) == 0)
+            x.free()
         end
     end
     test_report()

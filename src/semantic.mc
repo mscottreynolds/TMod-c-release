@@ -563,14 +563,22 @@ begin
 			if ety == nil then
 				return nil
 			end
+
+			// Written ^T: T[i] is T. Keep the name (^sds => sds). Do not
+			// chase resolved_type first (sds = ^char would become char).
+			if ety^.is_pointer then
+				ety := type_copy_shell(ctx^.arena, ety)
+				ety^.is_pointer := false
+				return ety
+			end
 			if ety^.resolved_type <> nil then
 				ety := ety^.resolved_type
 			end
 			if ety^.is_array and ety^.element_type <> nil then
 				return ety^.element_type
 			end
-			// C-style [i] on ^T (kilo E.row[at]). Pointer-to-array
-			// is handled above (is_array after resolve). Same strip as p^.
+			// Named pointer alias with no extra ^ (sds = ^char): index
+			// the buffer. Pointer-to-array is is_array after resolve.
 			if ety^.is_pointer then
 				ety := type_copy_shell(ctx^.arena, ety)
 				ety^.is_pointer := false
@@ -2359,7 +2367,9 @@ end semantic_proc_sym_name
  * True if decl is a Type:: method whose first formal type is the owner type
  * (instance method). Formal name is free (Oberon-style; need not be "self").
  * False => static / factory: no formals, or first formal type <> owner, or
- * not a type-qualified method. Poitner first formals are not instance in v1.
+ * not a type-qualified method.
+ * Owner is the written name: `s: sds` is instance even if `sds = ^char`.
+ * Use-site `^Owner` (`s: ^sds`) is not instance (v1). Do not chase resolved_type.
  *)
  function semantic_method_is_instance(ctx: pTSemanticContext, decl: pNode): bool
  begin
@@ -2400,11 +2410,13 @@ end semantic_proc_sym_name
 	end
 
 	semantic_resolve_type(ctx, pt, self_param)
-	if pt^.resolved_type <> nil then
-		pt := pt^.resolved_type
-	end
+	// if pt^.resolved_type <> nil then
+	// 	pt := pt^.resolved_type
+	// end
 
-	// v1 instance receivers are by-value named owner type, not ^Owner
+	// // v1 instance receivers are by-value named owner type, not ^Owner
+	// Written name vs owner. Do not follow resolved_type (alias-to-pointer
+	// would become ^char and fail is_pointer). Use-site ^ / array only.
 	if pt^.is_pointer or pt^.is_array then
 		return false
 	end
@@ -2550,6 +2562,7 @@ end semantic_chain_depth_to_name
 (**
  * Instance Type__name on recv_ty, then each EXTENDS parent.
  * is_static: a Type_name exists at that level but is not instance (stop).
+ * Owner is recv_ty's written name. Do not chase alias-to-pointer.
  *)
 function semantic_find_instance_on_chain(ctx: pTSemanticContext, recv_ty: pTType,
 	method: const ^char, method_len: size_t): TMethodChainHit
@@ -2572,9 +2585,9 @@ begin
 	if ctx == nil or ty == nil or method == nil or method_len == 0 then
 		return result
 	end
-	if ty^.resolved_type <> nil then
-		ty := ty^.resolved_type
-	end
+
+	// Keep `type sds = ^char`: lookup sds__free, not char__free.
+	// EXTENDS still walks via semantic_struct_body_of_type below.
 
 	while ty <> nil do
 		owner := ty^.name
@@ -2655,10 +2668,10 @@ begin
 		if recv_ty == nil then
 			semantic_error_at(n, "semantic_resolve_call: cannot determine type of method receiver")
 		end
-		n^.call.auto_deref := semantic_type_is_pointer(recv_ty)
-		if recv_ty^.resolved_type <> nil then
-			recv_ty := recv_ty^.resolved_type
-		end
+
+		// Use-site ^ only (`p: ^sds`). `x: sds` is the owner, even if
+		// sds aliases a pointer -- do not chase resolved_type.
+		n^.call.auto_deref := recv_ty^.is_pointer
 		if recv_ty^.name == nil or recv_ty^.name_len == 0 then
 			semantic_error_at(n, "semantic_resolve_call: method receiver has no named type")
 		end
@@ -2670,7 +2683,7 @@ begin
 			n^.call.name, n^.call.name_len)
 		if hit.is_static then
 			semantic_error_at(n,
-				"semantic_resolve_call: static method cannot be caled with instance syntax: use Type::name(...)")
+				"semantic_resolve_call: static method cannot be called with instance syntax: use Type::name(...)")
 		end
 		sym := hit.sym
 		is_instance := (sym <> nil)
@@ -2780,8 +2793,16 @@ begin
 				; // already &x for a REF formal; do not wrap (*&)
 			else
 				arg_ty := semantic_type_of_expr(ctx, n^.call.args[0])
-				if semantic_type_is_pointer(arg_ty) then
-					if semantic_chain_depth_to_name(ctx, arg_ty, n^.call.method_owner,
+				// Use-site is_pointer only. semantic_type_is_pointer chases
+				// aliases and would peel `x: sds`. Named ^Owner peels; EXTENDS
+				// still uses chain_depth
+				if arg_ty <> nil and arg_ty^.is_pointer then
+					if arg_ty^.name <> nil and semantic_names_equal(arg_ty^.name,
+								arg_ty^.name_len, n^.call.method_owner,
+								n^.call.method_owner_len) then
+						n^.call.auto_deref := true
+						n^.call.base_depth := 0
+					elsif semantic_chain_depth_to_name(ctx, arg_ty, n^.call.method_owner,
 							n^.call.method_owner_len, @chain_d) then
 						n^.call.auto_deref := true
 						n^.call.base_depth := chain_d

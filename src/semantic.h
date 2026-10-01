@@ -290,7 +290,9 @@ void semantic_error_at(pNode n, const char* msg);
  * True if decl is a Type:: method whose first formal type is the owner type
  * (instance method). Formal name is free (Oberon-style; need not be "self").
  * False => static / factory: no formals, or first formal type <> owner, or
- * not a type-qualified method. Poitner first formals are not instance in v1.
+ * not a type-qualified method.
+ * Owner is the written name: `s: sds` is instance even if `sds = ^char`.
+ * Use-site `^Owner` (`s: ^sds`) is not instance (v1). Do not chase resolved_type.
  */
 
 /**
@@ -319,6 +321,7 @@ void semantic_error_at(pNode n, const char* msg);
 /**
  * Instance Type__name on recv_ty, then each EXTENDS parent.
  * is_static: a Type_name exists at that level but is not instance (stop).
+ * Owner is recv_ty's written name. Do not chase alias-to-pointer.
  */
 
 /**

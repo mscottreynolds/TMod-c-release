@@ -1,4 +1,11 @@
-Version 2.0
+TSDSLib Version 2.0
+===
+ * TMod-c port of SDS 2.0.
+ * Added type bound methods.
+ * Added a few more tests to sdsTest() so all API methods are tested.
+ * TSDSLib is not affiliated with or endorsed by SDS or Redis.
+
+SDS Version 2.0
 ===
 
 * Better memory usage. A bit slower in certain workloads.
@@ -6,7 +13,7 @@ Version 2.0
 * Ability to easily switch allocator just changing sdsalloc.h
 * No longer binary compatible with SDS v1.0.
 
-Version 1.0
+SDS Version 1.0
 ===
 
 * Initial SDS stand alone verison.

@@ -1,3 +1,12 @@
+TMod-c TSDSLib 2.0
+===
+This version has been ported to TMod-c, by M. Scott Reynolds. Type bound 
+methods were added. A few more tests added to sdsTest() so all API methods
+are tested. Included as an example with TMod-c release distribution at
+https://github.com/mscottreynolds/TMod-c-release.
+
+Original retrieved from https://github.com/antirez/sds on 22 Sept 2026.
+
 Simple Dynamic Strings
 ===
 
@@ -911,7 +920,13 @@ The API to access the allocator used by SDS is composed of three functions: `sds
 Credits and license
 ===
 
-SDS was created by Salvatore Sanfilippo and is released under the BDS two clause license. See the LICENSE file in this source distribution for more information.
+SDS was created by Salvatore Sanfilippo and is released under a BSD license 
+(two-clause in LICENSE; three-clause in the source headers). See LICENSE.
 
 Oran Agra improved SDS version 2 by adding dynamic sized headers in order to
 save memory for small strings and allow strings greater than 4GB.
+
+TSDSLib 2.0 is a TMod-c port of SDS 2.0 by M. Scott Reynolds. It is not
+an official SDS or Redis release.
+
+TSDSLib is not affiliated with or endorsed by SDS or Redis.
