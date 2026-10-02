@@ -791,11 +791,18 @@ void node_print(const Node *n, int indent)
 			printf("\n");
 			break;
 
-		case NODE_LEN:
-			kind_name = "LEN";
+		case NODE_COUNTOF:
+			kind_name = "COUNTOF";
 			print_kind_line_column(n, kind_name);
-			printf("(designator)\n");
-			node_print(n->sizeof_expr.target.designator, indent + 1);
+			if (n->sizeof_expr.folded) {
+				printf(" count=%d", n->sizeof_expr.count);
+			}
+			if (n->sizeof_expr.is_type) {
+				printf(" (type)\n");
+			} else {
+				printf(" (designator)\n");
+				node_print(n->sizeof_expr.target.designator, indent + 1);
+			}
 			break;
 
 		case NODE_IMPORT:

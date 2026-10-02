@@ -878,7 +878,7 @@ static void codegen_c_stmt(const Node *n, CodegenContext ctx)
 		case NODE_ELSIF:
 		case NODE_ELSE:
 		case NODE_SIZEOF:
-		case NODE_LEN:
+		case NODE_COUNTOF:
 		case NODE_BINARY:
 		case NODE_UNARY:
 		case NODE_TERNARY:

@@ -1327,8 +1327,8 @@ void codegen_common_expr(const Node *n, CodegenContext ctx)
             codegen_common_sizeof_expr(n, ctx);
             break;
 
-        case NODE_LEN:
-            codegen_common_len_expr(n, ctx);
+        case NODE_COUNTOF:
+            codegen_common_countof_expr(n, ctx);
             break;
 
         case NODE_INC:
@@ -1558,24 +1558,37 @@ void codegen_common_field_access(const Node *n, CodegenContext ctx)
 
 
 /**
- * Emit LEN(designator) as C array-length idiom (itermin).
- * ((integer)(sizeof(n) / sizeof((n)[0])))
+ * Emit COUNTOF. Semantic stores the outermost bound in count.
+ * ((intger)N)
  */
-void codegen_common_len_expr(const Node *n, CodegenContext ctx)
+void codegen_common_countof_expr(const Node *n, CodegenContext ctx)
 {
-    const Node *d;
+    char buf[64];
 
-    if (n == NULL or n->kind != NODE_LEN or n->sizeof_expr.is_type or
-            n->sizeof_expr.target.designator == NULL) {
+    if (n == NULL or n->kind != NODE_COUNTOF) {
         dynbuf_append(ctx.out, "((integer)0)");
         return;
     }
-    d = n->sizeof_expr.target.designator;
-    dynbuf_append(ctx.out, "((integer)(sizeof(");
-    codegen_common_expr(d, ctx);
-    dynbuf_append(ctx.out, ") / sizeof((");
-    codegen_common_expr(d, ctx);
-    dynbuf_append(ctx.out, ")[0])))");
+    if (n->sizeof_expr.folded) {
+        snprintf(buf, sizeof(buf), "((integer)%d)", n->sizeof_expr.count);
+        dynbuf_append(ctx.out, buf);
+        return;
+    }
+    if (n->sizeof_expr.is_type or n->sizeof_expr.target.designator == NULL) {
+        dynbuf_append(ctx.out, "((integer)0)");
+        return;
+    }
+    // Unfolded designator: C11 has no _Countof.
+    {
+        const Node *d;
+
+        d = n->sizeof_expr.target.designator;
+        dynbuf_append(ctx.out, "((integer)(sizeof(");
+        codegen_common_expr(d, ctx);
+        dynbuf_append(ctx.out, ") / sizeof((");
+        codegen_common_expr(d, ctx);
+        dynbuf_append(ctx.out, ")[0])))");
+    }
 }
 
 /**

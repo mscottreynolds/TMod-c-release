@@ -54,7 +54,8 @@ import
 	NODE_CONST_ITEM, NODE_LET_ITEM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
 	NODE_METHOD_TYPE, NODE_ARRAY_TYPE, NODE_ELSIF, NODE_ELSE, SwitchCase,
 	NODE_ENUM_TYPE, NODE_ENUM_ITEM, node_create, node_print, NodeKind, NODE_DEFINE,
-	NODE_LEN, from "node.h"
+	NODE_COUNTOF, 
+	from "node.h"
 
 
 const SEMANTIC_MH_PATH_MAX: cardinal = 4096u
@@ -693,7 +694,7 @@ begin
 		case NODE_CAST:
 			return n^.cast_expr.target_type
 
-		case NODE_SIZEOF, NODE_LEN:
+		case NODE_SIZEOF, NODE_COUNTOF:
 			return type_create_named(ctx^.arena, "integer", 7)
 
 		case NODE_CALL:
@@ -1028,6 +1029,69 @@ end semantic_eval_const_expr
 
 
 (**
+ * Element count of a COUNTOF operand. Outermost complete fixed array.
+ * array_size 0 is an open array (array[0] shares that spelling) and is rejected.
+ * Sets sizeof_expr.folded and sizeof_expr.count on success.
+ *)
+function semantic_countof_value(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool
+begin
+	var ty: pTType = nil
+	var d: pNode = nil
+
+	if n == nil or n^.kind <> NODE_COUNTOF or out_val == nil then
+		if msg <> nil then
+			msg^ := "semantic_countof_value: missing expression"
+		end
+		return false
+	end
+
+	if n^.sizeof_expr.folded then
+		out_val^ := n^.sizeof_expr.count
+		return true
+	end
+
+	if n^.sizeof_expr.is_type then
+		ty := n^.sizeof_expr.target.sizeof_type
+		if ty == nil then
+			if msg <> nil then
+				msg^ := "semantic_countof_value: type operand missing"
+			end
+			return false
+		end
+		semantic_resolve_type(ctx, ty, n)
+	else
+		d := n^.sizeof_expr.target.designator
+		if d == nil then
+			if msg <> nil then
+				msg^ := "semantic_countof_value: designator missing"
+			end
+			return false
+		end
+		semantic_resolve_expr(ctx, d)
+		ty := semantic_type_of_designator(ctx, d)
+		if ty == nil then
+			ty := semantic_type_of_expr(ctx, d)
+		end
+	end
+
+	if ty <> nil and ty^.resolved_type <> nil then
+		ty := ty^.resolved_type
+	end
+	if ty == nil or ty^.is_pointer or not ty^.is_array or ty^.array_size == 0 then
+		if msg <> nil then
+			msg^ := "semantic_countof_value: operand must be a complete array"
+		end
+		return false
+	end
+
+	out_val^ := ty^.array_size as integer
+	n^.sizeof_expr.folded := true
+	n^.sizeof_expr.count := out_val^
+	return true
+end semantic_countof_value
+
+
+(**
  * Try integer const-fold. true + out_val^ on success.
  * Non-integer CONST (strings, pointers, ...) return false -- not an error.
  *)
@@ -1119,6 +1183,9 @@ begin
 			end
 			return true
 
+		case NODE_COUNTOF:
+			return semantic_countof_value(ctx, n, out_val, msg)
+
 		else:
 			if msg <> nil then
 				msg^ := "semantic_eval_const_expr: not a constant expression"
@@ -1127,8 +1194,6 @@ begin
 	end
 	return false
 end semantic_try_eval_const_expr
-
-
 
 
 (**
@@ -2863,7 +2928,6 @@ end semantic_resolve_call
 
 (**
  * Resolve SIZEOF operand: validate type names; designators must not be types.
- * LEN uses the same designator path (no type operand).
  *)
 procedure semantic_resolve_sizeof(ctx: pTSemanticContext, n: pNode)
 begin
@@ -2873,11 +2937,8 @@ begin
 	var name_len: size_t = 0
 	var d: pNode = nil
 
-	if n == nil or (n^.kind <> NODE_SIZEOF and n^.kind <> NODE_LEN) then
+	if n == nil or n^.kind <> NODE_SIZEOF then
 		return
-	end
-	if n^.kind == NODE_LEN and n^.sizeof_expr.is_type then
-		semantic_error_at(n, "semantic_resolve_sizeof: LEN takes a designator, not a type")
 	end
 
 	if n^.sizeof_expr.is_type then
@@ -2897,28 +2958,41 @@ begin
 	else
 		d := n^.sizeof_expr.target.designator
 		if d == nil then
-			if n^.kind == NODE_LEN then
-				semantic_error_at(n, "semantic_resolve_sizeof: LEN designator missing")
-			else
-				semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF designator missing")
-			end
+			semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF designator missing")
 		end
 		if d^.kind == NODE_IDENT then
 			name := d^.token.start
 			name_len := d^.token.length
 			if name <> nil and name_len > 0 then
 				if type_is_builtin_name(name, name_len) then
-					semantic_error_at(n, "semantic_resolve_sizeof: LEN/SIZEOF: type name is not a designator")
+					semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF: type name is not a designator")
 				end
 				sym := symtab_lookup(ctx^.scope, name, name_len)
 				if sym <> nil and sym^.kind == SYM_KIND_TYPE then
-					semantic_error_at(n, "semantic_resolve_sizeof: LEN/SIZEOF: type name is not a designator")
+					semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF: type name is not a designator")
 				end
 			end
 		end
 		semantic_resolve_expr(ctx, d)
 	end
 end semantic_resolve_sizeof
+
+
+(**
+ * COUNTOF (type | designaor): complete fixed array, outermost bound.
+ *)
+procedure semantic_resolve_countof(ctx: pTSemanticContext, n: pNode)
+begin
+	var val: integer = 0
+	var msg: pcchar = nil
+
+	if not semantic_countof_value(ctx, n, @val, @msg) then
+		if msg == nil then
+			msg := "semantic_resolve_countof: operand must be a complete array"
+		end
+		semantic_error_at(n, msg)
+	end
+end semantic_resolve_countof
 
 
 (**
@@ -3020,8 +3094,11 @@ begin
 				// else: foreign / untyped left side - leave depth 0
 			end
 
-		case NODE_SIZEOF, NODE_LEN:
+		case NODE_SIZEOF:
 			semantic_resolve_sizeof(ctx, n)
+
+		case NODE_COUNTOF:
+			semantic_resolve_countof(ctx, n)
 
 		case NODE_LITERAL, NODE_ARRAY_LITERAL:
 			// no identifiers
@@ -3653,7 +3730,7 @@ begin
 			NODE_IMPORT_ITEM, NODE_STRUCT_DECL, NODE_FIELD_DECL, NODE_METHOD_TYPE, NODE_ARRAY_TYPE,
 			NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, NODE_FIELD_ACCESS, NODE_BLOCK, NODE_IF, NODE_ELSIF,
 			NODE_ELSE, NODE_FOR, NODE_WHILE, NODE_REPEAT_UNTIL, NODE_LOOP, NODE_BREAK, NODE_CONTINUE,
-			NODE_RETURN, NODE_EXPR_STMT, NODE_ASSIGN, NODE_ASSERT, NODE_SIZEOF, NODE_LEN, NODE_INC, 
+			NODE_RETURN, NODE_EXPR_STMT, NODE_ASSIGN, NODE_ASSERT, NODE_SIZEOF, NODE_COUNTOF, NODE_INC, 
 			NODE_DEC, NODE_DEFER, NODE_DEBUG, NODE_SWITCH, NODE_PAREN, NODE_BINARY, NODE_UNARY, NODE_CAST,
 			NODE_LITERAL, NODE_IDENT, NODE_CALL, NODE_TERNARY:
 

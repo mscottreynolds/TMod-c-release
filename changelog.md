@@ -2,6 +2,16 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.26.9.198
+- **`COUNTOF` replaces interim `LEN`** — keyword `COUNTOF` (case-insensitive). `len` is an identifier again. `TOK_KEYWORD_LEN` and `NODE_LEN` renamed in place (`TOK_KEYWORD_COUNTOF`, `NODE_COUNTOF`).
+- **Operand** — type or designator. Outermost bound of a complete fixed array (`is_array`, not a pointer, `array_size > 0`). One `resolved_type` chase, so `type Buf = array[4] of integer` works. Nested arrays report the outer bound (`countof` of `array[7] of array[3] of integer` is 7).
+- **Result** — type `integer`. Known bounds fold (`sizeof_expr.folded` / `count`), so `array[countof(a)]` is a constant bound. C emit `((integer)N)`. An unfolded designator falls back to `((integer)(sizeof(n) / sizeof((n)[0])))`.
+- **Rejected** — pointers, scalars, `string`, and open arrays. `array_size == 0` is both an open array and `array[0]`. Error: `semantic_countof_value: operand must be a complete array`. Not string length. No VLAs.
+- **Tests:** `tests/test_countof.mc`, `tests/test3_countof.mc` (`countof(integer)`), `tests/test3_countof_ptr.mc`. Removed `tests/test_len.mc` and `tests/test3_len.mc`.
+- **Kilo** — highlighter keyword `countof|`. Locals that call `ERow::` methods are written `^ERow`. `type pERow = ^ERow` remains a different method owner (Language Report §8.3, recorded 2 October 2026 for the 0.26.8.196 rule).
+- Compiler tests pass. Build **198**. Branch **`mod-c_0.26`**. Version **0.26.9**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §9.1 / §10.2, `docs/syntax-ebnf.md` (already updated), `docs/grok_report-20261002.md`.
+
 ## Version 0.26.8.196
 - **Named type is the method owner** — instance iff the first formal’s **written** type name is the owner and that spelling is not `^Owner`. `type sds = ^char` then `sds::free(s: sds)` is instance (`x.free()`); `s: ^sds` is not (v1). Do not chase `resolved_type` / `is_pointer` after alias expansion. Tests: `test_method_named_ptr`, `test3_method_named_ptr`.
 - **C-index of written `^T`** — `tokens: ^sds` then `tokens[0]` has type `sds` (keep the name; do not chase `sds → ^char` first). `x: sds` then `x[0]` is still `char` (index the buffer). `p[0].get()` in `test_method_named_ptr`. SDS: `tokens[0].length()`.

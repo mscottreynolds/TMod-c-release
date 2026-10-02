@@ -47,15 +47,24 @@ module Tsds()
 (* ==== Imports ==== *)
 
 
-import printf from "stdio.h"
-import from "stdlib.h"
-import memset, memcpy, strlen, strchr, memmove, memcmp, from "string.h"
-import tolower, toupper, isprint, isspace, from "ctype.h"
-import LLONG_MIN, LLONG_MAX, UINT_MAX, ULLONG_MAX, from "limits.h"
-import void, size_t from "stddef.h"
-import ssize_t from "sys/types.h"
-import va_list, va_copy, vsnprintf, va_end, va_start, va_arg from "stdarg.h"
-import uint8_t, uint16_t, uint32_t, uint64_t from "stdint.h"
+import printf 
+    from "stdio.h"
+import 
+    from "stdlib.h"
+import memset, memcpy, strlen, strchr, memmove, memcmp, 
+    from "string.h"
+import tolower, toupper, isprint, isspace, 
+    from "ctype.h"
+import LLONG_MIN, LLONG_MAX, UINT_MAX, ULLONG_MAX, 
+    from "limits.h"
+import void, size_t 
+    from "stddef.h"
+import ssize_t 
+    from "sys/types.h"
+import va_list, va_copy, vsnprintf, va_end, va_start, va_arg 
+    from "stdarg.h"
+import uint8_t, uint16_t, uint32_t, uint64_t 
+    from "stdint.h"
 
 
 (* ==== Definitions ==== *)
@@ -203,8 +212,7 @@ end sdslen
 
 
 (**
- * Type bound for sdslen. Note that len is spelled out to length as
- * `len` is a reserved keyword.
+ * Type bound for sdslen.
  *)
 export function sds::length(ref s: sds): size_t
 begin
@@ -280,10 +288,10 @@ end sdssetlen
 (**
  * Type bound wrapper for sdssetlen
  *)
-export procedure sds::setLen(ref s: sds, newlen: size_t)
+export procedure sds::setLength(ref s: sds, newlen: size_t)
 begin
     sdssetlen(s, newlen)
-end sds::setLen
+end sds::setLength
 
 
 (**

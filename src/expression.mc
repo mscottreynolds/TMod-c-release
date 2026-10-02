@@ -25,7 +25,7 @@ import type_is_builtin_name, TType
 	from ttype
 import NODE_TERNARY, NODE_BINARY, NODE_SIZEOF, NODE_INC, NODE_DEC, NODE_UNARY,
 	NODE_CAST, NODE_FIELD_ACCESS, NODE_CALL, NODE_IDENT, NODE_LITERAL, NODE_PAREN,
-	NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, node_create, Node, NODE_LEN,
+	NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, node_create, Node, NODE_COUNTOF,
 	from "node.h"
 import TOK_QUESTION, TOK_COLON, TOK_KEYWORD_OR, TOK_KEYWORD_AND, TOK_EQ_EQ, TOK_NOT_EQ, 
 	TOK_LESS, TOK_LESS_EQ, TOK_GREATER, TOK_GREATER_EQ, TOK_BITWISE_LSHIFT, TOK_BITWISE_RSHIFT,
@@ -35,7 +35,7 @@ import TOK_QUESTION, TOK_COLON, TOK_KEYWORD_OR, TOK_KEYWORD_AND, TOK_EQ_EQ, TOK_
 	TOK_LPAREN, TOK_RPAREN, TOK_KEYWORD_INC, TOK_KEYWORD_DEC, TOK_COMMA, TOK_NOT,
 	TOK_KEYWORD_NOT, TOK_BITWISE_NOT, TOK_AT, TOK_KEYWORD_CAST, TOK_KEYWORD_AS,
 	TOK_EOF, TOK_LBRACKET, TOK_RBRACKET, TOK_DOT, TOK_COLON_COLON, TOK_STRING,
-	TOK_NUMBER, TOK_CHAR, TOK_LBRACE, TOK_RBRACE, TToken, TokenKind, TOK_KEYWORD_LEN,
+	TOK_NUMBER, TOK_CHAR, TOK_LBRACE, TOK_RBRACE, TToken, TokenKind, TOK_KEYWORD_COUNTOF,
 	from Lexer
 
 
@@ -390,7 +390,7 @@ end parse_power
 
 
 (**
- * True when SIZEOF '(' should parse a type-specifier, not a designator.
+ * True when SIZEOF '(' or COUNTOF '(' should parse a type-specifier, not a designator.
  *)
 function parser_sizeof_operand_is_type(p: pParser): bool
 begin
@@ -444,30 +444,34 @@ end parse_sizeof
 
 
 (**
- * Parse LEN
+ * Parse COUNTOF.
+ * Grammar: "COUNTOF" "(" ( type-specifier | designator ) ")"
  *)
-export function parse_len(p: pParser): pNode
+export function parse_countof(p: pParser): pNode
 begin
 	require p <> nil
 
 	var tok: TToken = p^.current
 	var n: ^Node = nil
-	var designator: ^Node = nil
 
-	consume(p, TOK_KEYWORD_LEN, "parse_len: expected LEN")
-	consume(p, TOK_LPAREN, "parse_len: expected '(' after LEN")
+	consume(p, TOK_KEYWORD_COUNTOF, "parse_countof: expected COUNTOF")
+	consume(p, TOK_LPAREN, "parse_countof: expected '(' after COUNTOF")
 
-	n := node_create(p^.arena, NODE_LEN, tok)
-	n^.sizeof_expr.is_type := false
-	designator := TParser::parse_designator(p^)
-	if designator == nil then
-		error_at(p, "parse_len: expected designator inside LEN", true)
+	n := node_create(p^.arena, NODE_COUNTOF, tok)
+	if parser_sizeof_operand_is_type(p) then
+		n^.sizeof_expr.is_type := true
+		n^.sizeof_expr.target.sizeof_type := TParser::parse_return_type(p^)
+	else
+		var designator: ^Node = TParser::parse_designator(p^)
+		if designator == nil then
+			error_at(p, "parse_countof: expected type or designator inside COUNTOF", true)
+		end
+		n^.sizeof_expr.is_type := false
+		n^.sizeof_expr.target.designator := designator
 	end
-	n^.sizeof_expr.target.designator := designator
-
-	consume(p, TOK_RPAREN, "parse_len: expected ')' after LEN")
+	consume(p, TOK_RPAREN, "parse_countof: expected ')' after COUNTOF")
 	return n
-end parse_len
+end parse_countof
 
 
 (**
@@ -535,8 +539,8 @@ begin
 	if op == TOK_KEYWORD_SIZEOF then
 		return parse_sizeof(p)
 	end
-	if op == TOK_KEYWORD_LEN then
-		return parse_len(p)
+	if op == TOK_KEYWORD_COUNTOF then
+		return parse_countof(p)
 	end
 
 	// INC / DEC as expression
@@ -747,8 +751,8 @@ begin
 	if check(p, TOK_KEYWORD_SIZEOF) then
 		return parse_sizeof(p)
 	end
-	if check(p, TOK_KEYWORD_LEN) then
-		return parse_len(p)
+	if check(p, TOK_KEYWORD_COUNTOF) then
+		return parse_countof(p)
 	end
 
 	if p^.current.kind == TOK_IDENT then

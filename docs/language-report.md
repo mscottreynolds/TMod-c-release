@@ -769,6 +769,8 @@ row[at].size := n
 row[at].updateRow()     (* C: ERow__updateRow(&row[at]) *)
 ```
 
+`row[at].updateRow()` works because the index of `pERow` has type `ERow`. The alias name is a different owner: `row.updateRow()` looks up `pERow::updateRow`. A receiver written `var q: ^ERow` calls `ERow::updateRow`, as does `row^.updateRow()`. See §8.3.
+
 ### 6.3 Operators
 
 Precedence is C-like: conditional `? :`, then `or`, `and`, equality (`==`, `!=` / `<>`), relational, shifts, additive, multiplicative (`*`, `/`, `DIV`, `MOD`, `%`), power `**` (right-associative), unary (`not`, `~`, `+`, `-`, `^`, `@`).
@@ -1106,9 +1108,11 @@ Methods are ordinary `procedure` / `function` declarations whose name is **`Type
 
 Classification uses the **written type of the first formal** only. The formal’s name is free (need not be `self`). The **owner is the name**, not the layout after aliases: `type sds = ^char` then `s: sds` is instance; `s: ^sds` is not (**0.26.8.196**). Do not treat a named pointer alias as “not a type.” First formal `^Owner` as instance remains deferred.
 
+**A pointer alias is not a written `^`.** `type pERow = ^ERow` makes `pERow` its own name. For a type-bound call, `var row: pERow` looks up `pERow::updateRow`. `var q: ^ERow` looks up `ERow::updateRow`, because the `^` is written at the use site and the name under it is `ERow`. `row^.updateRow()` and `row[i].updateRow()` also call `ERow::`: the caret and the index both yield `ERow`. Field auto-deref still follows the alias, so `row.size` stays legal. Declare `pERow::updateRow(row: pERow)` when the alias itself should own the method, the same way `sds` and `Handle` do.
+
 | Kind | First formal | Call |
 |------|----------------|------|
-| **Instance** | Written name is the owner `Type` (not `^Type`) | `Type::m(obj, …)` and `obj.m(…)`; `p.m(…)` when `p` is `^Type` (**0.26.5.178**); `Type::m(p)` when `p` is `^Type` (**0.26.5.179**); `c.m()` / `pc.m()` when `m` is on an `EXTENDS` ancestor (**0.26.5.180**); `p[i].m()` when `p` is `^Type` (**0.26.7.191**); `tokens[0].m()` when `tokens` is `^sds` (**0.26.8.196**) |
+| **Instance** | Written name is the owner `Type` (not `^Type`) | `Type::m(obj, …)` and `obj.m(…)`; `p.m(…)` when `p` is written `^Type` (**0.26.5.178**); a TYPE alias of that pointer is a different owner (`type pERow = ^ERow`, then `row: pERow` looks up `pERow::`, not `ERow::`) (**0.26.8.196**); `Type::m(p)` when `p` is `^Type` (**0.26.5.179**); `c.m()` / `pc.m()` when `m` is on an `EXTENDS` ancestor (**0.26.5.180**); `p[i].m()` when `p` is `^Type` (**0.26.7.191**); `tokens[0].m()` when `tokens` is `^sds` (**0.26.8.196**) |
 | **Static / factory** | No formals, or first type ≠ `Type` | **`Type::m(…)` only** |
 
 Method-typed **fields** are Oberon procedure variables: `obj.field(args)` → `(obj.field)(args)` — **no** auto-receiver. If the same identifier is both an instance method and a method-typed field, `obj.name(...)` is a **compile-time error**; use `Type::name(obj, …)`.
@@ -1155,6 +1159,14 @@ var pts: ^Point
 pts[i].print()         (* C-index; type Point; C: Point__print(&pts[i]) *)
 Point::print(pts[i])
 (* kilo: E.row[at].updateRow() → ERow__updateRow(&E.row[at]) *)
+
+type pERow = ^ERow
+var row: pERow
+var q: ^ERow
+q.updateRow()           (* written ^ERow; ERow__updateRow *)
+row[at].updateRow()     (* index type is ERow *)
+row^.updateRow()        (* explicit pointee is ERow *)
+(* row.updateRow() — looks up pERow__updateRow *)
 (* TLexer::next(@p.lexer) — @ already an address; do not wrap (*&) *)
 (* Child extends Parent: c.show() → Parent__show(c.base); pc.show() → Parent__show((*pc).base) *)
 (* Child::show(c) looks up Child__show only — not a chain walk *)
@@ -1172,7 +1184,7 @@ No vtables. Cross-module: `import Type::name`; `.mh` carries `instance`/`static`
 
 ### 9.1 No mandatory garbage collector
 
-Safety comes from types, explicit pointers, structured `defer`, allocator discipline, and (planned) bounds/`LEN` — not a tracing collector.
+Safety comes from types, explicit pointers, structured `defer`, allocator discipline, and `countof` on complete arrays — not a tracing collector.
 
 ### 9.2 Ownership modes (API contracts)
 
@@ -1232,9 +1244,16 @@ var w: integer 32               (* int32_t *)
 assert sizeof(w) == 4
 ```
 
-### 10.2 `LEN` and `SIZEOF`
+### 10.2 `COUNTOF` and `SIZEOF`
 
-`LEN(designator)` — element count of an array (interim). Type **`integer`**. C `((integer)(sizeof(n) / sizeof((n)[0])))` (*0.26.8.194*). Not a type operand (`LEN(integer)` is illegal). Pointers and `string` are not string length until language-level `LEN`.  
+`countof(designator | type)` — outermost element count of a **complete fixed array**. Type **`integer`**. Keyword `COUNTOF` (case-insensitive); the identifier `len` is not reserved (*0.26.9.198*). A known bound folds, so `array[countof(a)]` is a constant bound and C emits `((integer)N)`. An unfolded designator falls back to `((integer)(sizeof(n) / sizeof((n)[0])))`.
+
+A type operand is legal (`countof(array[4] of integer)`). A type alias of a fixed array is legal (`type Buf = array[4] of integer`). Nested arrays report the outer bound only.
+
+Rejected: pointers, scalars, `string`, and open arrays. `array_size == 0` is an open array and is also how `array[0]` is spelled. This is not string length. No VLAs.
+
+Interim `LEN(designator)` (*0.26.8.194*) is removed. It accepted a designator only and always emitted the sizeof division.
+
 `SIZEOF(...)` — size in bytes; type **`integer`**; C `((integer)sizeof(...))` — not `size_t` (*0.25.4*).
 
 Lengths and indexes are **signed**. `cardinal` is for bits / wrap / C unsigned ABI. `size_t` is an imported C name.
@@ -1244,8 +1263,13 @@ Lengths and indexes are **signed**. `cardinal` is for bits / wrap / C unsigned A
 ```mod-c
 n := sizeof(integer)
 n := sizeof(p)
+var len: integer
 var a: array[4] of integer
-n := len(a)                 (* 4 — C sizeof(a)/sizeof(a[0]) *)
+var m: array[7] of array[3] of integer
+len := countof(a)                         (* 4; C ((integer)4) *)
+var b: array[countof(a)] of integer
+n := countof(array[4] of integer)
+n := countof(m)                           (* 7 — outer bound *)
 ```
 
 ### 10.3 Standard library
@@ -1359,6 +1383,8 @@ Do not maintain a second full EBNF elsewhere.
 | 17 September 2026 | **§8.2 `...` last formal (0.26.7):** emit C `, ...`; extras via `stdarg.h` FFI; not on PROGRAM/MODULE. |
 | 18 September 2026 | **§5.3 / §6.2 / §8.3 C-index `p[i]` on `^T` (0.26.7.191):** type `T` (same strip as `p^`); C `p[i]` not `(*p)[i]`; `p[i].method()`; kilo `E.row[at].updateRow()`. Pointer-to-array peel unchanged (**178**). |
 | 22 September 2026 | **§3.2 / §5.5 / §10.1 / §10.2 (0.26.8.194):** `.mh` alias RHS; in-tree `lp64`/`ilp32` packs; `LEN(designator)` interim C `sizeof/sizeof[0]`. Build-time defaults deferred. |
+| 2 October 2026 | **§6.2 / §8.3 alias name versus written `^` (0.26.8.196):** `type pERow = ^ERow` is its own method owner. `var q: ^ERow` calls `ERow::`; `var row: pERow` calls `pERow::`. `row^`, `row[i]`, and field auto-deref still see `ERow`. |
+| 2 October 2026 | **§9.1 / §10.2 `COUNTOF` (0.26.9.198):** replaces interim `LEN`. Outermost bound of a complete fixed array; type or designator; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. |
 
 ---
 

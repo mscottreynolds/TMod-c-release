@@ -1,0 +1,21 @@
+# cloc language definition for TMod-c (.mc).
+#
+# cloc already maps .mc to "Windows Message File", so do not list
+# `extension mc` here (merge would abort). Load this file and remap:
+#
+#   make cloc
+#   cloc --read-lang-def=tools/tmodc.cloc --force-lang='TMod-c,mc' \
+#       src examples tests hello.mc
+#
+# Comments (docs/syntax-ebnf.md): //  (* *)  /* */
+# Braces { } are aggregates, not Pascal comments.
+# .mh export tables are not counted as TMod-c source.
+
+TMod-c
+    filter rm_comments_in_strings " /* */
+    filter rm_comments_in_strings " // 
+    filter call_regexp_common C++
+    filter remove_between_general (* *)
+    filter remove_matches ^\s*//
+    3rd_gen_scale 0.88
+    end_of_line_continuation \\$

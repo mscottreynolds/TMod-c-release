@@ -191,7 +191,7 @@ const MC_HL_KEYWORDS: array of pchar = {
 	"by", "case", "cast", "const", "continue", "debug", "dec|", "default",
 	"define", "defer", "div|", "do", "downto", "else", "elsif", "end", "ensure",
 	"enum", "export", "extends", "extern", "false|", "for", "forward", "from",
-	"function", "header", "if", "import", "in", "inc|", "invariant", "len|",
+	"function", "header", "if", "import", "in", "inc|", "invariant", "countof|",
 	"let", "loop", "mod|", "module", "nil|", "not|", "of", "opaque", "or|",
 	"packed", "pointer", "procedure", "program", "record", "recursive", "ref",
 	"repeat", "require", "return", "set", "sizeof|", "static", "struct", "switch",
@@ -762,7 +762,7 @@ begin
 	if E.cx == 0 then
 		E.insertRow(E.cy, "", 0)
 	else
-		var row: pERow = @E.row[E.cy]
+		var row: ^ERow = @E.row[E.cy]
 
 		E.insertRow(E.cy + 1, @row.chars[E.cx], row.size - E.cx)
 		row := @E.row[E.cy]
@@ -784,7 +784,7 @@ begin
 		return
 	end
 
-	let row: pERow = @E.row[E.cy]
+	let row: ^ERow = @E.row[E.cy]
 	if E.cx > 0 then
 		row.delChar(E.cx - 1, E)
 		inc(E.dirty)
@@ -944,7 +944,7 @@ begin
 
 	for i := 0 to E.numrows-1 do
 		var match: pchar = nil
-		var row: pERow = nil
+		var row: ^ERow = nil
 
 		current += direction
 		if current == -1 then

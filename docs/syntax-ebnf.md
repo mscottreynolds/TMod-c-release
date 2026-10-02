@@ -362,7 +362,7 @@ primary-expression = identifier
     | array-literal         (* { expr {, expr} } *)
     | designator 
     | range-expression
-    | len-expression
+    | countof-expression
     | type-qualified-call ;
 
 range-expression = additive-expression ".." additive-expression ; (* inclusive *)
@@ -405,8 +405,8 @@ const-expression = expression ; (* Expressions that can be computed at compile t
 
 sizeof-expession = "SIZEOF" "(" ( type-specifier | designator ) ")" ;
 
-len-expression = "LEN" "(" designator ")" ;
-    (* Interim C: ((integer)(sizeof(n) / sizeof((n)[0]))). Not a type operand. *)
+countof-expression = "COUNTOF" "(" type-specifier | designator ")" ;
+    (* Outermost element count of a complete fixed array. Type integer. *)
 
 (******* Keywords *******************************************************************)
 
@@ -414,15 +414,15 @@ len-expression = "LEN" "(" designator ")" ;
 (* Identifiers are case-sensitive: "MyVar", "myvar", "MYVAR" are distinct. *)
 
 keyword = "ALIAS" | "AND" | "ARRAY" | "AS" | "ASSERT" | "BEGIN" | "BOUND" | "BREAK" |
-        "BY" | "CASE" | "CAST" | "CONST" | "CONTINUE" | "DEBUG" | "DEC" | "DEFAULT" |
-        "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" | "ELSIF" | "END" | "ENSURE" |
-        "ENUM" | "EXPORT" | "EXTENDS" | "EXTERN"| "FALSE" | "FOR" | "FORWARD" | "FROM" |
-        "FUNCTION" | "HEADER" | "IF" | "IMPORT" | "IN" | "INC" | "INVARIANT" | "LEN" |
-        "LET" | "LOOP" | "MOD" | "MODULE" | "NIL" | "NOT" | "OF" | "OPAQUE" | "OR" |
-        "PACKED" | "POINTER" | "PROCEDURE" | "PROGRAM" | "RECORD" | "RECURSIVE" | "REF" |
-        "REPEAT" | "REQUIRE" | "RETURN" | "SET" | "SIZEOF" | "STATIC" | "STRUCT" | "SWITCH" |
-        "THEN" | "TO" | "TRUE" | "TYPE" | "UNION" | "UNTIL" | "VAR" | "WHILE" | "XOR" |
-        "TEMPLATE" ;
+        "BY" | "CASE" | "CAST" | "CONST" | "CONTINUE" | "COUNTOF" | "DEBUG" | "DEC" | 
+        "DEFAULT" | "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" | "ELSIF" |
+        "END" | "ENSURE" | "ENUM" | "EXPORT" | "EXTENDS" | "EXTERN"| "FALSE" | "FOR" |
+        "FORWARD" | "FROM" | "FUNCTION" | "HEADER" | "IF" | "IMPORT" | "IN" | "INC" |
+        "INLINE" | INVARIANT" | "LET" | "LOOP" | "MOD" | "MODULE" | "NIL" | "NOT" |
+        "OF" | "OPAQUE" | "OR" | "PACKED" | "POINTER" | "PROCEDURE" | "PROGRAM" |
+        "RECORD" | "RECURSIVE" | "REF" | "REPEAT" | "REQUIRE" | "RETURN" | "SET" |
+        "SIZEOF" | "STATIC" | "STRUCT" | "SWITCH" | "THEN" | "TO" | "TRUE" | "TYPE" |
+        "UNION" | "UNTIL" | "VAR" | "WHILE" | "XOR" | "TEMPLATE" ;
 
 (**** End-of-Statement ****************************)
 

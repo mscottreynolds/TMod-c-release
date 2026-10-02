@@ -20,4 +20,4 @@ Tsds: Tsds.c
 
 Tsds-test: Tsds.c testhelp.h
 	$(CC) -o Tsds-test Tsds.c -Wall -std=c11 -pedantic -O2 -DSDS_TEST_MAIN
-	@echo ">>> Type ./Tsds-teseet to run the Tsds.c unit tests."
+	@echo ">>> Type ./Tsds-test to run the Tsds.c unit tests."

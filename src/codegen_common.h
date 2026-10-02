@@ -142,7 +142,7 @@ void codegen_common_field_access(const Node *n, CodegenContext ctx);
 
 void codegen_common_sizeof_expr(const Node *n, CodegenContext ctx);
 
-void codegen_common_len_expr(const Node *n, CodegenContext ctx);
+void codegen_common_countof_expr(const Node *n, CodegenContext ctx);
 
 void codegen_common_inc_dec(const Node *n, CodegenContext ctx, bool as_statement);
 

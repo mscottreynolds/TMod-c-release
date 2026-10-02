@@ -1,0 +1,257 @@
+%YAML 1.2
+---
+# Sublime Text 3 syntax for TMod-c (legacy name: Mod-c).
+# Docs: https://www.sublimetext.com/docs/3/syntax.html
+#
+# Install: copy this file to
+#   ~/.config/sublime-text-3/Packages/User/TMod-c.sublime-syntax
+# Remove or rename any older Mod-C.sublime-syntax in that folder so
+# .mc / .mh are not claimed twice.
+#
+# ST3 (Build 3211): no `version: 2`, no `embed`/`branch`/`extends`.
+# Keywords are case-insensitive; identifiers and builtin types are not.
+
+name: TMod-c
+file_extensions:
+  - mc
+  - mh
+scope: source.tmodc
+first_line_match: '(?i)^\s*(program|module)\b|^#\s*modc-mh/'
+
+variables:
+  ident: '[A-Za-z_][A-Za-z0-9_]*'
+  # Lexer keyword_table (src/Lexer.mc) plus EBNF-reserved and locked DEFINE.
+  kw_control: 'begin|end|if|then|else|elsif|while|for|do|downto|to|by|case|switch|default|break|continue|return|defer|loop|repeat|until'
+  kw_decl: 'type|var|let|const|enum|struct|union|array|pointer|packed|opaque|ref|extern|export|static|inline|recursive|forward|extends|alias|module|program|procedure|function|import|from|define|header|record|set|bound|template'
+  kw_op: 'and|or|not|xor|div|mod|in|is|as|of'
+  kw_support: 'sizeof|countof|inc|dec|assert|cast|debug|invariant|require|ensure'
+  kw_const: 'true|false|nil'
+  builtin_type: 'bool|byte|char|integer|cardinal|real|string'
+
+contexts:
+  prototype:
+    - include: preprocessor
+    - include: comments
+
+  main:
+    - include: mh-directives
+    - include: declarations
+    - include: keywords
+    - include: literals
+    - include: operators
+
+  # ---- comments (lexer: //  /* */  (* *)  /** */  (** *) ) ----
+  comments:
+    - match: '(^[ \t]+)?(//)'
+      captures:
+        1: punctuation.whitespace.comment.leading.tmodc
+        2: punctuation.definition.comment.tmodc
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.double-slash.tmodc
+        - match: \n
+          pop: true
+    - match: /\*\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-c-doc
+    - match: /\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-c
+    - match: \(\*\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-pascal-doc
+    - match: \(\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-pascal
+
+  comment-c:
+    - meta_include_prototype: false
+    - meta_scope: comment.block.c.tmodc
+    - match: \*/
+      scope: punctuation.definition.comment.end.tmodc
+      pop: true
+
+  comment-c-doc:
+    - meta_include_prototype: false
+    - meta_scope: comment.block.documentation.c.tmodc
+    - match: \*/
+      scope: punctuation.definition.comment.end.tmodc
+      pop: true
+
+  # Pascal-style comments nest, matching TLexer::next.
+  comment-pascal:
+    - meta_include_prototype: false
+    - meta_scope: comment.block.pascal.tmodc
+    - match: \(\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-pascal
+    - match: \*\)
+      scope: punctuation.definition.comment.end.tmodc
+      pop: true
+
+  comment-pascal-doc:
+    - meta_include_prototype: false
+    - meta_scope: comment.block.documentation.pascal.tmodc
+    - match: \(\*
+      scope: punctuation.definition.comment.begin.tmodc
+      push: comment-pascal
+    - match: \*\)
+      scope: punctuation.definition.comment.end.tmodc
+      pop: true
+
+  # ---- # at column 1 is TOK_PREPROCESSOR (pass-through, unbound) ----
+  preprocessor:
+    - match: '^(#)\s*(include)\b'
+      captures:
+        1: punctuation.definition.preprocessor.tmodc
+        2: keyword.control.import.preprocessor.tmodc
+      push: preprocessor-include
+    - match: '^(#)\s*(define|undef|if|ifdef|ifndef|else|elif|endif|pragma|error|warning|line)\b'
+      captures:
+        1: punctuation.definition.preprocessor.tmodc
+        2: keyword.control.preprocessor.tmodc
+      push: preprocessor-line
+    - match: '^(#)'
+      scope: punctuation.definition.preprocessor.tmodc
+      push: preprocessor-line
+
+  preprocessor-include:
+    - meta_include_prototype: false
+    - meta_scope: meta.preprocessor.include.tmodc
+    - include: preprocessor-continue
+    - match: '"'
+      scope: punctuation.definition.string.begin.tmodc
+      push: double-quoted-string
+    - match: '<'
+      scope: punctuation.definition.string.begin.tmodc
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.other.lt-gt.include.tmodc
+        - match: '>'
+          scope: punctuation.definition.string.end.tmodc
+          pop: true
+    - match: $
+      pop: true
+
+  preprocessor-line:
+    - meta_include_prototype: false
+    - meta_scope: meta.preprocessor.tmodc
+    - include: preprocessor-continue
+    - include: strings
+    - include: character
+    - match: $
+      pop: true
+
+  preprocessor-continue:
+    - match: '\\$'
+      scope: punctuation.separator.continuation.tmodc
+
+  # ---- .mh export table (modc-mh/1) ----
+  mh-directives:
+    - match: '^(@)(module|format)\b'
+      captures:
+        1: punctuation.definition.keyword.tmodc
+        2: keyword.other.directive.tmodc
+
+  # ---- names after unit / callable / type / DEFINE ----
+  declarations:
+    - match: '\b(?i:(program|module))\b\s+({{ident}})'
+      captures:
+        1: keyword.declaration.module.tmodc
+        2: entity.name.module.tmodc
+    - match: '\b(?i:(procedure|function))\b\s+(?:({{ident}})\s*(::)\s*)?({{ident}})'
+      captures:
+        1: storage.type.function.tmodc
+        2: entity.name.type.tmodc
+        3: punctuation.accessor.double-colon.tmodc
+        4: entity.name.function.tmodc
+    - match: '\b(?i:(type))\b\s+({{ident}})'
+      captures:
+        1: keyword.declaration.type.tmodc
+        2: entity.name.type.tmodc
+    - match: '\b(?i:(define))\b\s+({{ident}})'
+      captures:
+        1: keyword.declaration.define.tmodc
+        2: entity.name.constant.tmodc
+      push: preprocessor-line
+
+  keywords:
+    - match: '\b(?i:{{kw_control}})\b'
+      scope: keyword.control.tmodc
+    - match: '\b(?i:{{kw_decl}})\b'
+      scope: keyword.declaration.tmodc
+    - match: '\b(?i:{{kw_op}})\b'
+      scope: keyword.operator.word.tmodc
+    - match: '\b(?i:{{kw_support}})\b'
+      scope: support.function.tmodc
+    - match: '\b(?i:{{kw_const}})\b'
+      scope: constant.language.tmodc
+    - match: '\b({{builtin_type}})\b'
+      scope: storage.type.builtin.tmodc
+
+  literals:
+    - include: numbers
+    - include: strings
+    - include: character
+
+  numbers:
+    - match: '\b0[xX][0-9A-Fa-f_]+[uUlL]*\b'
+      scope: constant.numeric.integer.hexadecimal.tmodc
+    - match: '\b0[bB][01_]+[uUlL]*\b'
+      scope: constant.numeric.integer.binary.tmodc
+    - match: '\b0[oO][0-7_]+[uUlL]*\b'
+      scope: constant.numeric.integer.octal.tmodc
+    - match: '\b[0-9_]+\.[0-9_]+([eE][+-]?[0-9_]+)?[fFlL]?\b'
+      scope: constant.numeric.float.tmodc
+    - match: '\b[0-9_]+[eE][+-]?[0-9_]+[fFlL]?\b'
+      scope: constant.numeric.float.tmodc
+    - match: '\b[0-9_]+[uUlL]*\b'
+      scope: constant.numeric.integer.tmodc
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.tmodc
+      push: double-quoted-string
+
+  double-quoted-string:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.double.tmodc
+    - match: '"'
+      scope: punctuation.definition.string.end.tmodc
+      pop: true
+    - include: escapes
+    - match: \n
+      scope: invalid.illegal.unclosed-string.tmodc
+      pop: true
+
+  character:
+    - match: "'"
+      scope: punctuation.definition.string.begin.tmodc
+      push: character-body
+
+  character-body:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.single.tmodc
+    - include: escapes
+    - match: "'"
+      scope: punctuation.definition.string.end.tmodc
+      pop: true
+    - match: \n
+      scope: invalid.illegal.unclosed-character.tmodc
+      pop: true
+
+  escapes:
+    - match: '\\x[0-9A-Fa-f]{2}'
+      scope: constant.character.escape.hex.tmodc
+    - match: '\\[0-7]{1,3}'
+      scope: constant.character.escape.octal.tmodc
+    - match: '\\[abfnrtv\\''"?]'
+      scope: constant.character.escape.tmodc
+
+  operators:
+    - match: '<<=|>>=|\.\.\.|:=|::|<>|<<|>>|\*\*|==|!=|<=|>=|\+=|-=|\*=|/=|%=|&=|\|=|\.\.'
+      scope: keyword.operator.tmodc
+    - match: '[@^~?:]'
+      scope: keyword.operator.tmodc
+    - match: '[-+*/%=<>!&|]'
+      scope: keyword.operator.tmodc

@@ -106,7 +106,7 @@ export type TokenKind = enum
 	TOK_KEYWORD_EXPORT,
 	TOK_KEYWORD_VAR,
 	TOK_KEYWORD_LET,
-	TOK_KEYWORD_LEN,
+	TOK_KEYWORD_COUNTOF,
 	TOK_KEYWORD_CONST,
 	TOK_KEYWORD_WHILE,
 	TOK_KEYWORD_LOOP,
@@ -213,6 +213,7 @@ var keyword_table: array of TKeywordTable = {
 	{ "CAST",   	TOK_KEYWORD_CAST	   },
 	{ "CONST",      TOK_KEYWORD_CONST      },
 	{ "CONTINUE",   TOK_KEYWORD_CONTINUE   },
+	{ "COUNTOF", 	TOK_KEYWORD_COUNTOF	   },
 	{ "DEBUG", 		TOK_KEYWORD_DEBUG      },
 	{ "DEC",        TOK_KEYWORD_DEC        },
 	{ "DEFAULT",    TOK_KEYWORD_DEFAULT    },
@@ -241,7 +242,6 @@ var keyword_table: array of TKeywordTable = {
 	{ "INC",        TOK_KEYWORD_INC        },
 	{ "INVARIANT",  TOK_KEYWORD_INVARIANT  },
 	{ "IS", 		TOK_KEYWORD_IS 		   },
-	{ "LEN", 		TOK_KEYWORD_LEN		   },
 	{ "LET",        TOK_KEYWORD_LET        },
 	{ "LOOP",       TOK_KEYWORD_LOOP       },
 	{ "MOD",        TOK_KEYWORD_MOD        },
@@ -971,7 +971,7 @@ begin
 		case TOK_KEYWORD_FORWARD:	return "FORWARD"
 		case TOK_KEYWORD_EXPORT:    return "EXPORT"
 		case TOK_KEYWORD_VAR:       return "VAR"
-		case TOK_KEYWORD_LEN:		return "LEN"
+		case TOK_KEYWORD_COUNTOF:	return "COUNTOF"
 		case TOK_KEYWORD_LET:       return "LET"
 		case TOK_KEYWORD_CONST:     return "CONST"
 		case TOK_KEYWORD_WHILE:		return "WHILE"

@@ -68,7 +68,7 @@ typedef enum {
 	NODE_ASSIGN,			// :=
 	NODE_ASSERT,			// ASSERT (expression [, const-expression])
 	NODE_SIZEOF,			// SIZEOF (type-identifier | designator )
-	NODE_LEN,				// LEN (designagtor) -- interim sizeof(n) / sizeof(n[0])
+	NODE_COUNTOF,			// COUNTOF (type | designator) - element count
 	NODE_INC,				// INC(designator [, step])
 	NODE_DEC,				// DEC(designator [, step])
 	NODE_DEFER,
@@ -509,7 +509,9 @@ struct Node {
 		// } debug_stmt;
 
 		struct {
-			bool is_type;				// true if SIZEOF(type-identifier), false if designator
+			bool is_type;				// true if operand is a type, false if designator
+			bool folded;				// COUNTOF: count is the element count
+			int count;					// COUNTOF element count when folded
 			union {
 				TType *sizeof_type;		// when is_type == true
 				Node *designator;		// when is_type == false
