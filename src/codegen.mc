@@ -8,7 +8,7 @@ module codegen()
  * Initial Context definition.
  *
  * Initial context passed into codegen_generate to setup environment
- * and other options. Target is defined in codegen_common.h
+ * and other options. Target is defined in codegen_common
  *  .out = out                          // REQUIRED: Predefined output buffer. 
  *  .ast = ast                          // REQUIRED: Top of the Abstract Syntax Tree
  *  .debug_enabled = true               // REQUIRED: Set to true/false for debug statement generation.
@@ -17,21 +17,25 @@ module codegen()
  *)
 
 
-import DynBuf from dynbuf
-import codegen_mh from codegen_mh
-
-import size_t from "stddef.h"
-import stderr, fprintf from "stdio.h"
-import exit from "stdlib.h"
-
-import Node from "node.h"
-import 
-    CodegenTarget, CodegenContext, TARGET_C, TARGET_HEADER, 
+import DynBuf 
+    from dynbuf
+import codegen_mh 
+    from codegen_mh
+import size_t 
+    from "stddef.h"
+import stderr, fprintf 
+    from "stdio.h"
+import exit 
+    from "stdlib.h"
+import Node 
+    from "node.h"
+import CodegenTarget, CodegenContext, TARGET_C, TARGET_HEADER, 
     TARGET_MH, TARGET_VM, TARGET_WASM, TARGET_JSON,
-from "codegen_common.h"
-
-import codegen_c from "codegen_c.h"
-import codegen_header from "codegen_header.h"
+    from codegen_common
+import codegen_c 
+    from "codegen_c.h"
+import codegen_header 
+    from "codegen_header.h"
 
 
 // type CodegenTarget = enum TARGET_C, TARGET_HEADER, TARGET_VM, TARGET_WASM, TARGET_JSO end

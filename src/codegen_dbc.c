@@ -29,11 +29,11 @@ void codegen_dbc_emit_requires(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l36 = (long long)((((*n)).block).require_count);
-        for (i = 1; (long long)(i) <= __for_end_l36; i++)
+        const long long __for_end_l39 = (long long)((((*n)).block).require_count);
+        for (i = 1; (long long)(i) <= __for_end_l39; i++)
         {
             {
-                pNode e_l37_c8 = (((*n)).block).requires[i - 1];
+                pNode e_l40_c8 = (((*n)).block).requires[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -41,7 +41,7 @@ void codegen_dbc_emit_requires(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l37_c8, ctx);
+                codegen_common_expr(e_l40_c8, ctx);
                 dynbuf_append((ctx).out, "); /* precondition */\n");
             }
         }
@@ -59,11 +59,11 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l62 = (long long)((((*n)).block).ensure_count);
-        for (i = 1; (long long)(i) <= __for_end_l62; i++)
+        const long long __for_end_l65 = (long long)((((*n)).block).ensure_count);
+        for (i = 1; (long long)(i) <= __for_end_l65; i++)
         {
             {
-                pNode e_l63_c8 = (((*n)).block).ensures[i - 1];
+                pNode e_l66_c8 = (((*n)).block).ensures[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -71,7 +71,7 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l63_c8, ctx);
+                codegen_common_expr(e_l66_c8, ctx);
                 dynbuf_append((ctx).out, "); /* postcodition */\n");
             }
         }
@@ -84,7 +84,7 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
 void codegen_dbc_emit_ensures_to_func(CodegenContext ctx)
 {
     CodegenContext current = ctx;
-    const Node* target_func_l82_c17 = (ctx).enclosing_func;
+    const Node* target_func_l85_c17 = (ctx).enclosing_func;
     if ((ctx).dbc_off)
     {
                 return;
@@ -100,7 +100,7 @@ void codegen_dbc_emit_ensures_to_func(CodegenContext ctx)
                     codegen_dbc_emit_ensures((current).parent_node, current);
                 }
             }
-            if ((current).enclosing_func != nil && (current).parent_node == target_func_l82_c17)
+            if ((current).enclosing_func != nil && (current).parent_node == target_func_l85_c17)
             {
                                 /* INVARIANT (on loop exit) */
                 break;
@@ -148,11 +148,11 @@ void codegen_dbc_emit_invariants(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l137 = (long long)(count);
-        for (i = 1; (long long)(i) <= __for_end_l137; i++)
+        const long long __for_end_l140 = (long long)(count);
+        for (i = 1; (long long)(i) <= __for_end_l140; i++)
         {
             {
-                pNode e_l138_c8 = invs[i - 1];
+                pNode e_l141_c8 = invs[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -160,7 +160,7 @@ void codegen_dbc_emit_invariants(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l138_c8, ctx);
+                codegen_common_expr(e_l141_c8, ctx);
                 dynbuf_append((ctx).out, "); /* invariant */\n");
             }
         }

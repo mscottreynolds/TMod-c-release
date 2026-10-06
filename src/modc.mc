@@ -16,32 +16,42 @@ program modc(argc: int, argv: ^char[]): int  // TODO: actually output "array_of_
  *)
 
 
-import size_t from "stddef.h"
+import size_t 
+    from "stddef.h"
 import stderr, SEEK_END, SEEK_SET, fclose, fopen, fprintf, fputs, 
-    fread, fseek, ftell, perror, printf, FILE, from "stdio.h"
-import exit, free, malloc, from "stdlib.h"
-import memcmp, memcpy, strcmp, strlen, from "string.h"
-import TParser from parser_common
-import TParser::init, TParser::parse from parser_main
-import NODE_PROGRAM, node_print, Node, from "node.h"
+    fread, fseek, ftell, perror, printf, FILE, 
+    from "stdio.h"
+import exit, free, malloc, 
+    from "stdlib.h"
+import memcmp, memcpy, strcmp, strlen, 
+    from "string.h"
+import TParser 
+    from parser_common
+import TParser::init, TParser::parse 
+    from parser_main
+import NODE_PROGRAM, node_print, Node, 
+    from "node.h"
 import 
-    CodegenTarget, 
-    TARGET_C, 
-    TARGET_HEADER, 
-    TARGET_MH, 
-    TARGET_VM,
-    TARGET_WASM, 
-    TARGET_JSON 
-    from "codegen_common.h"
-import VERSION, VERSION_BASE, BUILD_NUMBER from "version.h"
-import InitialContext, codegen_generate, from codegen
+    CodegenTarget, TARGET_C, TARGET_HEADER, TARGET_MH, TARGET_VM, 
+    TARGET_WASM, TARGET_JSON
+    from codegen_common
+import VERSION, VERSION_BASE, BUILD_NUMBER 
+    from "version.h"
+import InitialContext, codegen_generate, 
+    from codegen
 import DynBuf, dynbuf_init, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
-    dynbuf_free, from dynbuf
-import Arena, arena_init, arena_free, from arena
-import TSymbolTable from symtab
-import semantic_analyze from semantic
-import utils_strndup from utils
-import codegen_mh_has_exports from codegen_mh
+    dynbuf_free, 
+    from dynbuf
+import Arena, arena_init, arena_free, 
+    from arena
+import TSymbolTable 
+    from symtab
+import semantic_analyze 
+    from semantic
+import utils_strndup 
+    from utils
+import codegen_mh_has_exports 
+    from codegen_mh
 
 
 type pchar = ^char

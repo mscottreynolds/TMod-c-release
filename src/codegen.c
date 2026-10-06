@@ -16,7 +16,7 @@ void codegen(void);
  * Initial Context definition.
  *
  * Initial context passed into codegen_generate to setup environment
- * and other options. Target is defined in codegen_common.h
+ * and other options. Target is defined in codegen_common
  *  .out = out                          // REQUIRED: Predefined output buffer. 
  *  .ast = ast                          // REQUIRED: Top of the Abstract Syntax Tree
  *  .debug_enabled = true               // REQUIRED: Set to true/false for debug statement generation.

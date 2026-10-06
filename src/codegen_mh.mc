@@ -4,21 +4,29 @@ module codegen_mh(ctx: CodegenContext)
  * codegen_mh.mc - Emit modc-mh/1 symbol export files for EXPORT declarations.
  *)
 
-import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char from dynbuf
-import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE from Lexer
-import TType from ttype
-
-import size_t from "stddef.h"
-import stderr, fprintf, snprintf, from "stdio.h"
-import exit from "stdlib.h"
-import memcmp from "string.h"
-import VERSION_BASE from "version.h"
+import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
+	from dynbuf
+import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE 
+	from Lexer
+import TType 
+	from ttype
+import size_t 
+	from "stddef.h"
+import stderr, fprintf, snprintf, 
+	from "stdio.h"
+import exit 
+	from "stdlib.h"
+import memcmp 
+	from "string.h"
+import VERSION_BASE 
+	from "version.h"
 import Node, NODE_PROGRAM, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL, 
 	NODE_ENUM_TYPE, NODE_ENUM_ITEM, NODE_VAR_DECL, NODE_CONST_DECL, 
 	NODE_LET_DECL, NODE_PARAM_LIST, NODE_PARAM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
 	NODE_METHOD_TYPE, NODE_DEFINE,
 	from "node.h"
-import CodegenContext from "codegen_common.h"
+import CodegenContext 
+	from codegen_common
 
 
 function mh_proc_complete(n: const ^Node): bool

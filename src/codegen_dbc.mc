@@ -9,11 +9,14 @@ module codegen_dbc()
  *)
 
 
-import size_t from "stddef.h"
-import DynBuf, dynbuf_append from dynbuf
-
-import Node, NODE_BLOCK, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP from "node.h"
-import CodegenTarget, CodegenContext, codegen_common_expr, emit_indent, from "codegen_common.h"
+import size_t 
+	from "stddef.h"
+import DynBuf, dynbuf_append 
+	from dynbuf
+import Node, NODE_BLOCK, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP 
+	from "node.h"
+import CodegenTarget, CodegenContext, codegen_common_expr, emit_indent, 
+	from codegen_common
 
 
 (* Pointer to a Node *)

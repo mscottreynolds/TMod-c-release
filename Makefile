@@ -15,6 +15,8 @@ DOC_DIR   	= docs
 TARGET    	= $(BIN_DIR)/modc.$(VERSION)
 INSTALL_DIR = /opt/tmodc
 EXAMPLES_DIR = examples
+EXAMPLES    = $(EXAMPLES_DIR)/sds $(EXAMPLES_DIR)/kilo
+TOOLS_DIR   = tools
 
 BUILD_FILE   := $(SRC_DIR)/build.number
 BUILD_NUMBER := $$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
@@ -85,8 +87,14 @@ SH_BUILD_DIR := $(BUILD_DIR)/selfhost
 # Bootstrap build directory.
 BS_BUILD_DIR := $(BUILD_DIR)/bootstrap
 
+# RELEASE_SOURCE_DIR and TAR_DIR should not be the same.
+RELEASE_SOURCE_NAME := "release-$(VERSION).$(BUILD_NUMBER)"
+RELEASE_SOURCE_DIR  := $(BUILD_DIR)/$(RELEASE_SOURCE_NAME)
 TAR_NAME	:= "tmod-c-$(VERSION).$(BUILD_NUMBER)"
 TAR_DIR 	:= $(BUILD_DIR)/$(TAR_NAME)
+
+# External Release directory used for separate .git repository.
+RELEASE_DEST_DIR = ../TMod-c-release
 
 # -----------------------------------------------------------
 # Small test library: String + StringBuffer (from tests/*.mc)
@@ -106,7 +114,18 @@ LIB_O_FILES 	= $(addprefix $(LIB_DIR)/,$(addsuffix .o,$(LIB_MODULES)))
 
 # -------------------------------------------------------
 
-all: $(TARGET)
+# Default build.
+# tmodc script.
+tmodc: $(TARGET)
+	@sed \
+	    -e 's|@VERSION@|$(VERSION)|g' \
+	    -e 's|@INSTALL_DIR@|$(INSTALL_DIR)|g' \
+	    tmodc.sh.in > $(BIN_DIR)/$@
+	@chmod +x $(BIN_DIR)/$@
+	@echo "Done."
+
+all: tmodc string-lib examples
+	@echo "All done."
 
 # Increment BUILD_NUMBER and update src/version.h
 version:
@@ -165,72 +184,98 @@ $(C_BUILD_DIR):
 	mkdir -p $(C_BUILD_DIR)
 
 
-# tmodc script
-tmodc: all
-	@sed \
-	    -e 's|@VERSION@|$(VERSION)|g' \
-	    -e 's|@INSTALL_DIR@|$(INSTALL_DIR)|g' \
-	    tmodc.sh.in > $(BIN_DIR)/$@
-	@chmod +x $(BIN_DIR)/$@
-	@echo "Ready: $(BIN_DIR)/$@"
-
 # Source archive
-tar:
+tar: 
+	@if [ ! -d $(RELEASE_SOURCE_DIR) ]; then					\
+		echo "Do 'make release' before using this target.";		\
+		exit 1;													\
+	fi;
 	@echo Creating $(TAR_NAME).tgz
 	@mkdir -p $(TAR_DIR)
-	@mkdir -p $(TAR_DIR)/docs
-	@mkdir -p $(TAR_DIR)/examples
-	@mkdir -p $(TAR_DIR)/src
-	@mkdir -p $(TAR_DIR)/tests
-	@cp -v changelog.md ${TAR_DIR}
-	@cp -v CURRENT.md ${TAR_DIR}
-	@cp -v hello.mc $(TAR_DIR)
-	@cp -v LICENSE.md ${TAR_DIR}
-	@cp -v Makefile $(TAR_DIR)
-	@cp -v README.md ${TAR_DIR}
-	@cp -v tmodc.sh.in $(TAR_DIR)
-	@cp -v $(DOC_DIR)/syntax-ebnf.md $(TAR_DIR)/docs
-	@cp -v $(DOC_DIR)/language-report.md $(TAR_DIR)/docs
-	@cp -v $(DOC_DIR)/parameter-passing.md $(TAR_DIR)/docs
-	@cp -Rv $(EXAMPLES_DIR) $(TAR_DIR)
-	@cp -Rv $(INCLUDE_DIR) $(TAR_DIR)
-	@cp -Rv $(LIB_DIR) $(TAR_DIR)
-	@cp -Rv $(SRC_DIR) $(TAR_DIR)
-	@cp -Rv $(TEST_DIR) $(TAR_DIR)
+	@rsync -avr --exclude=.git* --delete $(RELEASE_SOURCE_DIR)/ $(TAR_DIR)/
 	@tar czvf "$(BUILD_DIR)/$(TAR_NAME).tgz" -C $(BUILD_DIR) "$(TAR_NAME)"
 	@echo "Ready: $(BUILD_DIR)/$(TAR_NAME).tgz"
 
+
+# Update release source.
+# Note: Run clean-all before this to not include any binaries.
+release:
+	@echo Creating $(RELEASE_SOURCE_NAME)
+	@mkdir -p $(RELEASE_SOURCE_DIR)
+	@mkdir -p $(RELEASE_SOURCE_DIR)/docs
+	@mkdir -p $(RELEASE_SOURCE_DIR)/examples
+	@mkdir -p $(RELEASE_SOURCE_DIR)/src
+	@mkdir -p $(RELEASE_SOURCE_DIR)/tests
+	@mkdir -p $(RELEASE_SOURCE_DIR)/include
+	@mkdir -p $(RELEASE_SOURCE_DIR)/lib
+	@mkdir -p $(RELEASE_SOURCE_DIR)/bin
+	@cp -pv changelog.md $(RELEASE_SOURCE_DIR)
+	@cp -pv CURRENT.md $(RELEASE_SOURCE_DIR)
+	@cp -pv hello.mc $(RELEASE_SOURCE_DIR)
+	@cp -pv LICENSE.md $(RELEASE_SOURCE_DIR)
+	@cp -pv Makefile $(RELEASE_SOURCE_DIR)
+	@cp -pv README.md $(RELEASE_SOURCE_DIR)
+	@cp -pv tmodc.sh.in $(RELEASE_SOURCE_DIR)
+	@cp -pv $(DOC_DIR)/syntax-ebnf.md $(RELEASE_SOURCE_DIR)/docs
+	@cp -pv $(DOC_DIR)/language-report.md $(RELEASE_SOURCE_DIR)/docs
+	@cp -pv $(DOC_DIR)/parameter-passing.md $(RELEASE_SOURCE_DIR)/docs
+	@cp -pRv $(EXAMPLES_DIR) $(RELEASE_SOURCE_DIR)
+	@cp -pRv $(INCLUDE_DIR) $(RELEASE_SOURCE_DIR)
+	@cp -pRv $(LIB_DIR) $(RELEASE_SOURCE_DIR)
+	@cp -pRv $(SRC_DIR) $(RELEASE_SOURCE_DIR)
+	@cp -pRv $(TEST_DIR) $(RELEASE_SOURCE_DIR)
+	@cp -pRv $(TOOLS_DIR) $(RELEASE_SOURCE_DIR)
+	@echo "Done."
+
+# Update the external release git directory
+release-git:
+	@if [ ! -d $(RELEASE_SOURCE_DIR) ]; then					\
+		echo "Do 'make release' before using this target.";		\
+		exit 1;													\
+	fi;
+	@echo "Preparing $(RELEASE_DEST_DIR)"
+	@if [ ! -d "$(RELEASE_DEST_DIR)" ]; then 			\
+		echo "Destination $(RELEASE_DEST_DIR) doesn't exist.";	\
+		exit 1;								\
+	fi;
+	@rsync -avr --delete --exclude=.git* "$(RELEASE_SOURCE_DIR)/" "$(RELEASE_DEST_DIR)/"
+
+
+# Clean the dist directory.
+dist-clean:
+	rm -rf $(DIST_DIR)
+
 # Distribution directory. Run all tests first.
 dist: test-all tmodc
-	@mkdir -p ${DIST_DIR}
-	@cp -v ${TARGET} ${DIST_DIR}
-	@cp -v ${BIN_DIR}/tmodc ${DIST_DIR}/tmodc
-	@cp -v ${DOC_DIR}/syntax-ebnf.md ${DIST_DIR}/grammar.md
-	@cp -v ${DOC_DIR}/language-report.md ${DIST_DIR}
-	@cp -v README.md ${DIST_DIR}
-	@cp -v LICENSE.md ${DIST_DIR}
+	@mkdir -p $(DIST_DIR)
+	@cp -v $(TARGET) $(DIST_DIR)
+	@cp -v $(BIN_DIR)/tmodc $(DIST_DIR)/tmodc
+	@cp -v $(DOC_DIR)/syntax-ebnf.md $(DIST_DIR)/grammar.md
+	@cp -v $(DOC_DIR)/language-report.md $(DIST_DIR)
+	@cp -v README.md $(DIST_DIR)
+	@cp -v LICENSE.md $(DIST_DIR)
 	@echo "Dist complete"
 
 # Install into INSTALL_DIR
 install:
 	@mkdir -p $(INSTALL_DIR)
-	@cp -v ${DIST_DIR}/modc.${VERSION} ${INSTALL_DIR}/
-	@chmod +x ${INSTALL_DIR}/modc.${VERSION}
-	@cp -v ${DIST_DIR}/grammar.md ${INSTALL_DIR}
-	@cp -v ${DIST_DIR}/README.md ${INSTALL_DIR}
-	@cp -v ${DIST_DIR}/LICENSE.md ${INSTALL_DIR}
-	@cp -v ${DIST_DIR}/tmodc ${INSTALL_DIR}/tmodc
-	@chmod +x ${INSTALL_DIR}/tmodc
+	@cp -v $(DIST_DIR)/modc.$(VERSION) $(INSTALL_DIR)/
+	@chmod +x $(INSTALL_DIR)/modc.$(VERSION)
+	@cp -v $(DIST_DIR)/grammar.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/README.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/LICENSE.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/tmodc $(INSTALL_DIR)/tmodc
+	@chmod +x $(INSTALL_DIR)/tmodc
 	@echo "Install complete"
 
 # Uninstall from INSTALL_DIR
 uninstall:
-	@rm -v ${INSTALL_DIR}/modc
-	@rm -v ${INSTALL_DIR}/modc.${VERSION}
-	@rm -v ${INSTALL_DIR}/grammar.md
-	@rm -v ${INSTALL_DIR}/README.md
-	@rm -v ${INSTALL_DIR}/LICENSE.md
-	@rmdir ${INSTALL_DIR}
+	@rm -v $(INSTALL_DIR)/modc
+	@rm -v $(INSTALL_DIR)/modc.$(VERSION)
+	@rm -v $(INSTALL_DIR)/grammar.md
+	@rm -v $(INSTALL_DIR)/README.md
+	@rm -v $(INSTALL_DIR)/LICENSE.md
+	@rmdir $(INSTALL_DIR)
 	@echo "uninstall complete"
 
 # Debug target (overrids CFLAGS)
@@ -398,6 +443,17 @@ run-lib: lib $(TARGET)
 	$(BIN_DIR)/$$base
 
 
+# Make all of the examples
+examples: tmodc $(EXAMPLES)
+	@echo "Done."
+
+$(EXAMPLES):
+	$(MAKE) -C $@
+
+examples-clean:
+	for d in $(EXAMPLES); do $(MAKE) -C $$d clean || exit; done
+
+
 # Clean generated files
 clean:
 # 	rm -f $(TARGET) $(C_BUILD_DIR)/*.o *.out
@@ -405,14 +461,14 @@ clean:
 # 		rm -f "$$file" "$$file.c" "$$file.h" || true; 	\
 # 	done
 	rm -rf $(BUILD_DIR)
-	rm -rf ${BIN_DIR}
+	rm -rf $(BIN_DIR)
 	@echo "Clean complete."
 
-# Very clean — also removes backup files, etc.
-distclean: clean
-	rm -rf $(BIN_DIR)
-	rm -rf ${DIST_DIR}
+
+# Clean all targets, except dist.
+clean-all: examples-clean string-lib-clean clean
 # 	rm -f *~ *.bak
+	@echo "Done."
 
 help:
 	@echo "Available targets:"
@@ -434,7 +490,7 @@ help:
 	@echo "  string-lib         Build lib/lib$(LIB_NAME).a (String + StringBuffer)"
 	@echo "  string-lib-clean   Remove library objects, archive, and generated surface"
 	@echo "  run-lib FILE=filename  Compile and run FILE with lib"
-	@echo "  cloc               Count TMod-c .mc lines (needs cloc; tools/tmodc.cloc)"
+	@echo "  cloc               Count TMod-c .mc lines (needs cloc; $(TOOLS_DIR)/tmodc.cloc)"
 	@echo "  CC=gcc|clang|tcc   Host C compiler (default gcc). make clean when switching."
 	@echo ""
 	@echo "VERSION:      $(VERSION)"
@@ -566,9 +622,9 @@ promote:
 	fi
 
 # Count authored .mc (src, examples, tests, hello.mc). .mc is "Windows Message
-# File" in stock cloc; tools/tmodc.cloc + --force-lang remaps it. Braces are code.
+# File" in stock cloc; $(TOOLS_DIR)/tmodc.cloc + --force-lang remaps it. Braces are code.
 CLOC ?= cloc
-CLOC_LANG_DEF = tools/tmodc.cloc
+CLOC_LANG_DEF = $(TOOLS)/tmodc.cloc
 
 cloc:
 	@command -v $(CLOC) >/dev/null 2>&1 || { \
@@ -580,6 +636,6 @@ cloc:
 
 # 		--include-lang='TMod-c' \
 
-.PHONY: all test test2 test3 clean distclean string-lib string-lib-clean tmodc cloc
+.PHONY: all test test2 test3 clean distclean string-lib string-lib-clean tmodc cloc $(EXAMPLES)
 
 # msr/gk/msr

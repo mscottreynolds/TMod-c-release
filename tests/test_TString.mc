@@ -1,4 +1,4 @@
-program test_String()
+program test_TString()
 
 import size_t from "stddef.h"
 import printf from "stdio.h"

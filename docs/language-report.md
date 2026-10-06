@@ -518,6 +518,37 @@ var buf: array[N] of char
 
 Open / suffix forms (`T[]`, `integer[8]`) follow the syntax document.
 
+#### Slice formals *Planned (0.27)*
+
+An open-array formal is a **slice**. `s: char[]` and `s: array[] of char` are the same formal. A type alias of an open array is too (`type Buf = char[]`, then `s: Buf`). The source parameter list has no length argument. Generated C keeps the pointer and inserts an **`integer`** element count immediately after it. `countof(s)` reads that word.
+
+```mod-c
+function show(s: char[]): integer
+begin
+	return countof(s)
+end
+
+var buf: array[32] of char
+n := show(buf)          (* passes buf and 32 *)
+```
+
+`(* C: integer show(char *s, integer s_length);  show(buf, (integer)32); *)`
+
+The count is the number of elements, not the result of `strlen`. Each open-array formal gets its own count, placed after that pointer and before the next source formal or `...`.
+
+A slice `countof` is not a constant. `array[countof(s)]` is illegal when `s` is a slice. Passing a slice formal through to another slice formal passes the hidden integer along. An actual with no element count (`^char`, `string`, a scalar) is an error.
+
+These stay one C parameter, with no hidden length:
+
+- `array[N] of T` and `T[N]`. The bound is the type. `countof` folds, as in §10.2.
+- `^T`. Use this for a C function that takes one pointer. A `char[]` formal would pass a count that definition does not take.
+
+A field `buf: array[] of char` is a C flexible array member, not a slice. `countof` of that field has no stored length. Index syntax `a[i..j]` is not part of this plan.
+
+Hosted `main` stays `int main(int argc, char **argv)`. A program `kilo(argc: integer, argv: ^char[])` lowers the program function to `(integer argc, char **argv, integer argv_length)`. The wrapper calls `kilo(argc, argv, argc)`. `countof(argv)` is `argc` and does not include the `NULL` at `argv[argc]`.
+
+Same-unit calls do not need `.mh`. An exported slice round-trips only once the `.mh` type-spec can spell `[]`. Until then the export is `?` and another module cannot insert the length. Not in 0.26.x. See `CURRENT.md` (Future plan: slice formals).
+
 #### Enumerations *Implemented (0.24.6–0.24.7)*
 
 ```mod-c
@@ -1252,6 +1283,8 @@ A type operand is legal (`countof(array[4] of integer)`). A type alias of a fixe
 
 Rejected: pointers, scalars, `string`, and open arrays. `array_size == 0` is an open array and is also how `array[0]` is spelled. This is not string length. No VLAs.
 
+**Planned (0.27):** `countof` of an open-array formal reads the hidden `integer` length inserted after the pointer (§5.4). That result is not a constant. `countof` of a fixed array is unchanged. `countof` of a flexible array member stays rejected.
+
 Interim `LEN(designator)` (*0.26.8.194*) is removed. It accepted a designator only and always emitted the sizeof division.
 
 `SIZEOF(...)` — size in bytes; type **`integer`**; C `((integer)sizeof(...))` — not `size_t` (*0.25.4*).
@@ -1285,7 +1318,8 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **Automatic includes (0.26.1):** `<stdint.h>`, `<stdbool.h>`, `<assert.h>` only. Prelude: `typedef uint8_t byte;`, `#define nil ((void *)0)`, `#define NIL nil`, plus the portable four typedefs unless rebound.  
 - **Prelude location (0.26.5):** prelude and unit prototype live in the generated **`.h`**. Generated `.c` begins with `#include "UnitName.h"`. **`-C` writes a companion `.h`**.  
 - Multi-TU hand-written C: `#include "tmodc.h"` (planned `tmodc.mc` → `tmodc.h`). Per-unit binds stay on that unit’s `.h`.  
-- Foreign functions: `IMPORT` / `EXTERN`. Unresolved free calls and unknown types are errors.  
+- Foreign functions: `IMPORT` / `EXTERN`. Unresolved free calls and unknown types are errors.
+- **Slice formals (planned, 0.27):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays and `^T` do not gain a parameter. See §5.4.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 
 **Example** — source:
@@ -1385,6 +1419,7 @@ Do not maintain a second full EBNF elsewhere.
 | 22 September 2026 | **§3.2 / §5.5 / §10.1 / §10.2 (0.26.8.194):** `.mh` alias RHS; in-tree `lp64`/`ilp32` packs; `LEN(designator)` interim C `sizeof/sizeof[0]`. Build-time defaults deferred. |
 | 2 October 2026 | **§6.2 / §8.3 alias name versus written `^` (0.26.8.196):** `type pERow = ^ERow` is its own method owner. `var q: ^ERow` calls `ERow::`; `var row: pERow` calls `pERow::`. `row^`, `row[i]`, and field auto-deref still see `ERow`. |
 | 2 October 2026 | **§9.1 / §10.2 `COUNTOF` (0.26.9.198):** replaces interim `LEN`. Outermost bound of a complete fixed array; type or designator; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. |
+| 5 October 2026 | **§5.4 / §10.2 / §11 slice formals (planned, 0.27):** open-array formal `T[]` / `array[] of T` lowers to a pointer plus a hidden `integer` length. `countof` on that formal reads it and is not a constant. Fixed `array[N]` and `^T` stay one C parameter. Flexible array members stay bare. `a[i..j]` is not part of the plan. Not implemented. |
 
 ---
 

@@ -11,33 +11,29 @@ module codegen_header(ctx: CodegenContext)
  * Only emits the exported surface of a program/module.
  *)
 
-import dynbuf_append_char, dynbuf_append, dynbuf_appendn from dynbuf
-import size_t from "stddef.h"
-import exit from "stdlib.h"
-
-import 
-	CodegenContext, 
-	emit_indent,
-	emit_var_decl, 
-	emit_doc_comment_as_c,
-	codegen_common_expr,
-	codegen_common_type_decl,
-	codegen_common_import,
-	codegen_common_module_prototype,
-	codegen_common_proc_or_func,
-	codegen_emit_c_prelude,
-	codegen_common_define,
-	from "codegen_common.h"
-import type_is_portable_rebindable from ttype
-import 
-	Node, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
+import dynbuf_append_char, dynbuf_append, dynbuf_appendn 
+	from dynbuf
+import size_t 
+	from "stddef.h"
+import exit 
+	from "stdlib.h"
+import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c, 
+	codegen_common_expr, codegen_common_type_decl, codegen_common_import, 
+	codegen_common_module_prototype, codegen_common_proc_or_func, 
+	codegen_emit_c_prelude, codegen_common_define,
+	from codegen_common
+import type_is_portable_rebindable 
+	from ttype
+import Node, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
 	NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,
 	NODE_DOC_COMMENT, NODE_PROGRAM, NODE_IMPORT, NODE_DEFINE,
 	from "node.h"
-import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE from Lexer
-import VERSION_BASE from "version.h"
-
-import fprintf, stderr from "stdio.h"
+import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE 
+	from Lexer
+import VERSION_BASE 
+	from "version.h"
+import fprintf, stderr 
+	from "stdio.h"
 
 
 (**

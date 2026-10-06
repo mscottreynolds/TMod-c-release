@@ -268,16 +268,25 @@ begin
             fp^ := SDS_TYPE_5 | (newlen << SDS_TYPE_BITS)
 
         case SDS_TYPE_8:
-            SDS_HDR(8, s)^.length := newlen
+            // ((struct sdshdr8 *)((s)-(sizeof(struct sdshdr8))))
+            var ps: ^sdshdr8 = ((s-sizeof(sdshdr8)) as ^sdshdr8)
+            ps.length := newlen
+            // SDS_HDR(8, s)^.length := newlen
 
         case SDS_TYPE_16:
-            SDS_HDR(16, s)^.length := newlen
+            var ps: ^sdshdr16 = ((s-sizeof(sdshdr16)) as ^sdshdr16)
+            ps.length := newlen
+            // SDS_HDR(16, s)^.length := newlen
 
         case SDS_TYPE_32:
-            SDS_HDR(32, s)^.length := newlen
+            var ps: ^sdshdr32 = ((s-sizeof(sdshdr32)) as ^sdshdr32)
+            ps.length := newlen
+            // SDS_HDR(32, s)^.length := newlen
 
         case SDS_TYPE_64:
-            SDS_HDR(64, s)^.length := newlen
+            var ps: ^sdshdr64 = ((s-sizeof(sdshdr64)) as ^sdshdr64)
+            ps.length := newlen
+            // SDS_HDR(64, s)^.length := newlen
 
         else:
             ;
