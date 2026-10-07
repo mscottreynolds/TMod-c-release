@@ -119,7 +119,10 @@ typedef float real;
  * For general type expressions (including method types, struct types, etc.),
  * use parse_type_expression().
  *
- * Allow opaque: true only for TYPE RHS (parse_type_expression)
+ * Allow opaque: true only only for a TYPE RHS (parse_type_expression).
+ * Bare OPAQUE that is RHS only.
+ * ^OPAQUE and POINTER TO OPAQUE are type-specifiers. is_pointer is already 
+ * set, so they are accepted here when allow_opaque is false.
  *
  * Exits on fatal parse error. 
  */

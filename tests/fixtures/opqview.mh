@@ -1,0 +1,6 @@
+# modc-mh/1
+@module opqview
+@format 1
+export type Box complete struct (p: ^opaque)
+export procedure show complete (^opaque)
+export function id complete (^opaque) : ^opaque

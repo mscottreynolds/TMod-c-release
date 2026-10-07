@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 30 September 2026  
+**Last updated:** 6 October 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -399,28 +399,36 @@ A type determines the set of values a variable of that type may assume, and the 
 ### 5.1 Type expressions vs type specifiers
 
 - **Full `type-expression`:** RHS of `TYPE` (and optional `EXTERN TYPE … = …`) — structs, enums, method types, **opaque**, arrays, …  
-- **`type-specifier`:** formals, fields, `VAR`/`LET` annotations — **no bare `OPAQUE`**.
+- **`type-specifier`:** formals, fields, `VAR`/`LET`, casts, `sizeof`. **`^OPAQUE`** and **`POINTER TO OPAQUE`** are legal (*0.26.9.200*). **Bare `OPAQUE`** is still only a type-expression.
 
 **Examples:**
 
 ```mod-c
 type Handle = opaque              (* type-expression *)
-var h: Handle                     (* type-specifier: named *)
+var h: Handle                     (* type-specifier: named alias *)
+var p: ^opaque = nil              (* type-specifier; C void * *)
 (* var x: opaque  — illegal *)
 ```
 
-### 5.2 Opaque types *Implemented (0.24.11)*
+### 5.2 Opaque types *Implemented (0.24.11); `^opaque` type-specifier (0.26.9.200)*
 
 ```mod-c
 type Handle  = opaque
 type address = ^opaque            (* or POINTER TO opaque *)
+
+var p: ^opaque = nil
+var c: const ^opaque = nil        (* C const void * *)
+procedure take(p: ^opaque)
+function id(p: POINTER TO opaque): ^opaque
+var a: array[2] of ^opaque        (* C void *a[2] *)
 ```
 
-- **`OPAQUE` only on TYPE RHS.**  
-- Illegal: `var x: opaque`, `procedure f(p: ^opaque)` — **name the type first**.  
-- Distinct named opaques are **not** freely interchangeable (`Handle` ≠ `File`).  
-- No user-facing type named **`void`**. Prefer procedures with no result, and `^opaque` / user aliases for C `void *`.  
-- **C lowering (v1):** named `opaque` and `^opaque` aliases both emit as **`typedef void *Name;`**.
+- **Bare `OPAQUE`** is a TYPE RHS only (`opaque-type-expression`). `var x: opaque`, `procedure f(p: opaque)`, and `array[N] of opaque` are errors.  
+- **`^opaque` and `POINTER TO opaque`** are type-specifiers (*0.26.9.200*). C is `void *`. `const ^opaque` is `const void *`. `sizeof(^opaque)` is legal.  
+- **`^opaque[N]`** and **`array[N] of ^opaque`** are arrays of `void *`. An open-array parameter `array[] of ^opaque` decays to `void **`. A block-scope `var a: ^opaque[]` is an incomplete C array, the same constraint as `var a: char[]`.  
+- Distinct named opaques are **not** freely interchangeable (`Handle` ≠ `File`). A named alias is also distinct from a written `^opaque`.  
+- No user-facing type named **`void`**. A procedure has no result type. C `void *` is written `^opaque`.  
+- **C lowering:** a written `^opaque` / `POINTER TO opaque` emits `void *` (`const void *` when `CONST`). A named alias still emits **`typedef void *Name`** for both `type Handle = opaque` and `type address = ^opaque` (v1; `const` on that typedef is not kept).
 
 ### 5.3 Pointers and auto-dereference *Types implemented (one `^`); field / `p[i]` / instance on `^T` Implemented (0.26.5.176–178)*
 
@@ -435,6 +443,8 @@ Need another level? **Name the inner type**, or use an array of pointers (`^char
 | `unsigned char` | `unsigned char` | Multi-word C spelling (§3.2) |
 | `unsigned char *` | `^unsigned char` | or `type uchar = unsigned char` then `^uchar` |
 | `const char *` | `const ^char` | `CONST` is prefix too; same as unbound `string` |
+| `void *` | `^opaque` | or `POINTER TO opaque`. `const void *` is `const ^opaque` (*0.26.9.200*) |
+| `void **` | `^opaque[]` or `array[] of ^opaque` | array of `void *`; a parameter decays. Not `^^opaque` |
 | `char **` | `^char[]` or `^pchar` after `type pchar = ^char` | not `^^char` |
 
 Do **not** write `unsigned ^char`. After `unsigned` the parser is collecting C words (`unsigned int`, `unsigned char`); `^` is not a word in `type-name`, so a `TYPE` declaration errors with “expected end-of-statement … (got ^)”. There is also no C type “unsigned pointer to char”: `unsigned` qualifies integer types only.
@@ -1057,7 +1067,7 @@ end
 - **`PROCEDURE`** — no result type.  
 - **`FUNCTION`** — has a result type; the body must `RETURN` a value.  
 
-Avoid “returns void” as a type.
+Avoid “returns void” as a type. C `void *` is `^opaque` (§5.2), not a type named `void`.
 
 **`RECURSIVE` (enforced 0.25.4):** required on a procedure/function that **directly** calls itself. The completing declaration (the one with the body) must carry the tag. Mutual recursion is not checked.
 
@@ -1319,6 +1329,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **Prelude location (0.26.5):** prelude and unit prototype live in the generated **`.h`**. Generated `.c` begins with `#include "UnitName.h"`. **`-C` writes a companion `.h`**.  
 - Multi-TU hand-written C: `#include "tmodc.h"` (planned `tmodc.mc` → `tmodc.h`). Per-unit binds stay on that unit’s `.h`.  
 - Foreign functions: `IMPORT` / `EXTERN`. Unresolved free calls and unknown types are errors.
+- **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
 - **Slice formals (planned, 0.27):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays and `^T` do not gain a parameter. See §5.4.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 
@@ -1420,6 +1431,7 @@ Do not maintain a second full EBNF elsewhere.
 | 2 October 2026 | **§6.2 / §8.3 alias name versus written `^` (0.26.8.196):** `type pERow = ^ERow` is its own method owner. `var q: ^ERow` calls `ERow::`; `var row: pERow` calls `pERow::`. `row^`, `row[i]`, and field auto-deref still see `ERow`. |
 | 2 October 2026 | **§9.1 / §10.2 `COUNTOF` (0.26.9.198):** replaces interim `LEN`. Outermost bound of a complete fixed array; type or designator; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. |
 | 5 October 2026 | **§5.4 / §10.2 / §11 slice formals (planned, 0.27):** open-array formal `T[]` / `array[] of T` lowers to a pointer plus a hidden `integer` length. `countof` on that formal reads it and is not a constant. Fixed `array[N]` and `^T` stay one C parameter. Flexible array members stay bare. `a[i..j]` is not part of the plan. Not implemented. |
+| 6 October 2026 | **§5.1 / §5.2 / §5.3 / §11 `^opaque` type-specifier (0.26.9.200):** `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). `^opaque[]` / `array[N] of ^opaque` are arrays of `void *`. Bare `opaque` stays a TYPE RHS. Named aliases stay `typedef void *Name`. |
 
 ---
 

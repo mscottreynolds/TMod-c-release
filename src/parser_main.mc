@@ -466,7 +466,10 @@ end TParser::parse_array_type_after_lbracket
  * For general type expressions (including method types, struct types, etc.),
  * use parse_type_expression().
  *
- * Allow opaque: true only for TYPE RHS (parse_type_expression)
+ * Allow opaque: true only only for a TYPE RHS (parse_type_expression).
+ * Bare OPAQUE that is RHS only.
+ * ^OPAQUE and POINTER TO OPAQUE are type-specifiers. is_pointer is already 
+ * set, so they are accepted here when allow_opaque is false.
  *
  * Exits on fatal parse error. 
  *)
@@ -526,11 +529,28 @@ begin
         return arr
     end
 
-    if allow_opaque and p.match(TOK_KEYWORD_OPAQUE) then
-        var t: pTType = type_create_opaque(p.arena)
-        t^.is_pointer := is_pointer
-        t^.is_const := is_const
-        return t
+    // if allow_opaque and p.match(TOK_KEYWORD_OPAQUE) then
+    //     var t: pTType = type_create_opaque(p.arena)
+    //     t^.is_pointer := is_pointer
+    //     t^.is_const := is_const
+    //     return t
+
+    // Bare OPAQUE: TYPE RHS only.
+    // ^OPAQUE / POINTER TO OPAQUE: any type-specifier (is_pointer is already set).
+    if allow_opaque or is_pointer then
+        if p.match(TOK_KEYWORD_OPAQUE) then
+            element := type_create_opaque(p.arena)
+            element^.is_pointer := is_pointer
+            element^.is_const := is_const
+            if p.match(TOK_LBRACKET) then
+                element := p.parse_array_type_after_lbracket(element)
+            end
+            return element
+        end
+    end
+
+    if p.check(TOK_KEYWORD_OPAQUE) then
+        p.error_at("TParser::parse_return_type_ex: bare opaque is only legal on a TYPE right-hand side", true)
     end
 
     // Normal type identifier (possibly with pointer ^ already handled)

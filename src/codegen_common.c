@@ -102,6 +102,11 @@ static void emit_type_leaf_name(pDynBuf out, const TType* t)
         dynbuf_appendn(out, (*(t)).name, (*(t)).name_len);
                 return;
     }
+    if ((*(t)).is_opaque)
+    {
+        dynbuf_append(out, "void");
+                return;
+    }
     dynbuf_append(out, "int");
 }
 
@@ -128,8 +133,8 @@ CodegenContext ctx_push(const CodegenContext* ctx, const Node* new_parent)
         }
     }
     /* return value captured before defers */
-    CodegenContext __ret_l252 = child;
-    return __ret_l252;
+    CodegenContext __ret_l255 = child;
+    return __ret_l255;
 }
 
 /**
@@ -157,18 +162,18 @@ void emit_doc_comment_as_c(pDynBuf out, const Node* n)
     {
                 return;
     }
-    size_t text_len_l285_c17 = ((*(n)).doc_comment).text_len;
-    const char* text_l286_c13 = ((*(n)).doc_comment).text;
-    if (text_len_l285_c17 > 5)
+    size_t text_len_l288_c17 = ((*(n)).doc_comment).text_len;
+    const char* text_l289_c13 = ((*(n)).doc_comment).text;
+    if (text_len_l288_c17 > 5)
     {
-        if (strncmp(text_l286_c13, "/**", 3) == 0 && text_l286_c13[text_len_l285_c17 - 1] == '/')
+        if (strncmp(text_l289_c13, "/**", 3) == 0 && text_l289_c13[text_len_l288_c17 - 1] == '/')
         {
-            dynbuf_appendn(out, text_l286_c13, text_len_l285_c17);
+            dynbuf_appendn(out, text_l289_c13, text_len_l288_c17);
         }
-        else if (strncmp(text_l286_c13, "(**", 3) == 0 && text_l286_c13[text_len_l285_c17 - 1] == ')')
+        else if (strncmp(text_l289_c13, "(**", 3) == 0 && text_l289_c13[text_len_l288_c17 - 1] == ')')
         {
             dynbuf_append_char(out, '/');
-            dynbuf_appendn(out, text_l286_c13 + 1, text_len_l285_c17 - 2);
+            dynbuf_appendn(out, text_l289_c13 + 1, text_len_l288_c17 - 2);
             dynbuf_append_char(out, '/');
         }
         dynbuf_append_char(out, '\n');
@@ -189,12 +194,12 @@ bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name
     if (prog == nil || (*(prog)).kind != NODE_PROGRAM || name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l320 = false;
-        return __ret_l320;
+        bool __ret_l323 = false;
+        return __ret_l323;
     }
     {
-        const long long __for_end_l322 = (long long)(((*(prog)).program_decl).count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l322; i++)
+        const long long __for_end_l325 = (long long)(((*(prog)).program_decl).count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l325; i++)
         {
             {
                 d = ((*(prog)).program_decl).decls[i];
@@ -218,8 +223,8 @@ bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name
                     if (memcmp(((*(d)).type_decl).name, name, name_len) == 0)
                     {
                         /* return value captured before defers */
-                        bool __ret_l335 = true;
-                        return __ret_l335;
+                        bool __ret_l338 = true;
+                        return __ret_l338;
                     }
                                         /* INVARIANT (on loop exit) */
                     continue;
@@ -235,8 +240,8 @@ bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name
                     continue;
                 }
                 {
-                    const long long __for_end_l346 = (long long)(((*(d)).import_stmt).count - 1);
-                    for (j = 0; (long long)(j) <= __for_end_l346; j++)
+                    const long long __for_end_l349 = (long long)(((*(d)).import_stmt).count - 1);
+                    for (j = 0; (long long)(j) <= __for_end_l349; j++)
                     {
                         {
                             item = ((*(d)).import_stmt).items[j];
@@ -255,8 +260,8 @@ bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name
                             if (bind != nil && bind_len == name_len && memcmp(bind, name, name_len) == 0)
                             {
                                 /* return value captured before defers */
-                                bool __ret_l360 = true;
-                                return __ret_l360;
+                                bool __ret_l363 = true;
+                                return __ret_l363;
                             }
                         }
                     }
@@ -265,8 +270,8 @@ bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name
         }
     }
     /* return value captured before defers */
-    bool __ret_l364 = false;
-    return __ret_l364;
+    bool __ret_l367 = false;
+    return __ret_l367;
 }
 
 /**
@@ -516,8 +521,8 @@ void emit_param_list(pDynBuf out, pNode* params, size_t count, bool is_parameter
     if (params != nil && count > 0)
     {
         {
-            const long long __for_end_l615 = (long long)(count - 1);
-            for (i = 0; (long long)(i) <= __for_end_l615; i++)
+            const long long __for_end_l618 = (long long)(count - 1);
+            for (i = 0; (long long)(i) <= __for_end_l618; i++)
             {
                 {
                     const Node* param = params[i];
@@ -584,12 +589,12 @@ static bool codegen_param_is_by_ref(const Node* param_decl)
     if (param_decl == nil || (*(param_decl)).kind != NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l686 = false;
-        return __ret_l686;
+        bool __ret_l689 = false;
+        return __ret_l689;
     }
     /* return value captured before defers */
-    bool __ret_l688 = ((*(param_decl)).param).is_var || ((*(param_decl)).param).is_ref;
-    return __ret_l688;
+    bool __ret_l691 = ((*(param_decl)).param).is_var || ((*(param_decl)).param).is_ref;
+    return __ret_l691;
 }
 
 /**
@@ -601,31 +606,31 @@ static bool codegen_param_needs_pointee_load(const Node* param_decl)
     if (!codegen_param_is_by_ref(param_decl))
     {
         /* return value captured before defers */
-        bool __ret_l700 = false;
-        return __ret_l700;
+        bool __ret_l703 = false;
+        return __ret_l703;
     }
     ty = ((*(param_decl)).param).param_type;
     if (ty == nil)
     {
         /* return value captured before defers */
-        bool __ret_l704 = false;
-        return __ret_l704;
+        bool __ret_l707 = false;
+        return __ret_l707;
     }
     if ((*(ty)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l709 = false;
-        return __ret_l709;
+        bool __ret_l712 = false;
+        return __ret_l712;
     }
     if ((*(ty)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l714 = ((*(param_decl)).param).is_var;
-        return __ret_l714;
+        bool __ret_l717 = ((*(param_decl)).param).is_var;
+        return __ret_l717;
     }
     /* return value captured before defers */
-    bool __ret_l716 = true;
-    return __ret_l716;
+    bool __ret_l719 = true;
+    return __ret_l719;
 }
 
 /**
@@ -640,22 +645,22 @@ static const Node* codegen_call_formal_for_arg(const Node* call, size_t arg_inde
     if (call == nil || (*(call)).resolved_sym == nil || ((*(*(call)).resolved_sym)).decl == nil)
     {
         /* return value captured before defers */
-        const Node* __ret_l731 = nil;
-        return __ret_l731;
+        const Node* __ret_l734 = nil;
+        return __ret_l734;
     }
     decl = ((*(*(call)).resolved_sym)).decl;
     if ((*(decl)).kind != NODE_PROC_DECL && (*(decl)).kind != NODE_FUNC_DECL)
     {
         /* return value captured before defers */
-        const Node* __ret_l735 = nil;
-        return __ret_l735;
+        const Node* __ret_l738 = nil;
+        return __ret_l738;
     }
     pl = ((*(decl)).proc_decl).params;
     if (pl == nil || (*(pl)).kind != NODE_PARAM_LIST || ((*(pl)).param_list).params == nil)
     {
         /* return value captured before defers */
-        const Node* __ret_l739 = nil;
-        return __ret_l739;
+        const Node* __ret_l742 = nil;
+        return __ret_l742;
     }
     fi = arg_index;
     if (((*(call)).call).receiver_expr != nil)
@@ -665,12 +670,12 @@ static const Node* codegen_call_formal_for_arg(const Node* call, size_t arg_inde
     if (fi >= ((*(pl)).param_list).count)
     {
         /* return value captured before defers */
-        const Node* __ret_l746 = nil;
-        return __ret_l746;
+        const Node* __ret_l749 = nil;
+        return __ret_l749;
     }
     /* return value captured before defers */
-    const Node* __ret_l748 = ((*(pl)).param_list).params[fi];
-    return __ret_l748;
+    const Node* __ret_l751 = ((*(pl)).param_list).params[fi];
+    return __ret_l751;
 }
 
 /**
@@ -683,32 +688,32 @@ static const Node* codegen_call_formal_receiver(const Node* call)
     if (call == nil || ((*(call)).call).receiver_expr == nil)
     {
         /* return value captured before defers */
-        const Node* __ret_l761 = nil;
-        return __ret_l761;
+        const Node* __ret_l764 = nil;
+        return __ret_l764;
     }
     if ((*(call)).resolved_sym == nil || ((*(*(call)).resolved_sym)).decl == nil)
     {
         /* return value captured before defers */
-        const Node* __ret_l764 = nil;
-        return __ret_l764;
+        const Node* __ret_l767 = nil;
+        return __ret_l767;
     }
     decl = ((*(*(call)).resolved_sym)).decl;
     if ((*(decl)).kind != NODE_PROC_DECL && (*(decl)).kind != NODE_FUNC_DECL)
     {
         /* return value captured before defers */
-        const Node* __ret_l768 = nil;
-        return __ret_l768;
+        const Node* __ret_l771 = nil;
+        return __ret_l771;
     }
     pl = ((*(decl)).proc_decl).params;
     if (pl == nil || (*(pl)).kind != NODE_PARAM_LIST || ((*(pl)).param_list).count == 0)
     {
         /* return value captured before defers */
-        const Node* __ret_l772 = nil;
-        return __ret_l772;
+        const Node* __ret_l775 = nil;
+        return __ret_l775;
     }
     /* return value captured before defers */
-    const Node* __ret_l774 = ((*(pl)).param_list).params[0];
-    return __ret_l774;
+    const Node* __ret_l777 = ((*(pl)).param_list).params[0];
+    return __ret_l777;
 }
 
 /**
@@ -720,43 +725,43 @@ static bool codegen_args_needs_address(const Node* formal, const Node* arg)
     if (formal == nil || arg == nil || (*(formal)).kind != NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l786 = false;
-        return __ret_l786;
+        bool __ret_l789 = false;
+        return __ret_l789;
     }
     if ((*(arg)).kind == NODE_UNARY && ((*(arg)).unary).op == TOK_AT)
-    {
-        /* return value captured before defers */
-        bool __ret_l791 = false;
-        return __ret_l791;
-    }
-    if (!codegen_param_is_by_ref(formal))
     {
         /* return value captured before defers */
         bool __ret_l794 = false;
         return __ret_l794;
     }
-    ty = ((*(formal)).param).param_type;
-    if (ty == nil)
+    if (!codegen_param_is_by_ref(formal))
     {
         /* return value captured before defers */
-        bool __ret_l798 = false;
-        return __ret_l798;
+        bool __ret_l797 = false;
+        return __ret_l797;
     }
-    if ((*(ty)).is_array)
+    ty = ((*(formal)).param).param_type;
+    if (ty == nil)
     {
         /* return value captured before defers */
         bool __ret_l801 = false;
         return __ret_l801;
     }
+    if ((*(ty)).is_array)
+    {
+        /* return value captured before defers */
+        bool __ret_l804 = false;
+        return __ret_l804;
+    }
     if ((*(ty)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l805 = ((*(formal)).param).is_var;
-        return __ret_l805;
+        bool __ret_l808 = ((*(formal)).param).is_var;
+        return __ret_l808;
     }
     /* return value captured before defers */
-    bool __ret_l809 = true;
-    return __ret_l809;
+    bool __ret_l812 = true;
+    return __ret_l812;
 }
 
 /**
@@ -787,8 +792,8 @@ static void codegen_emit_call_arg_deref(const Node* formal, const Node* arg, boo
         dynbuf_append_char((ctx).out, ')');
     }
     {
-        const long long __for_end_l839 = (long long)(base_depth - 1);
-        for (i = 0; (long long)(i) <= __for_end_l839; i++)
+        const long long __for_end_l842 = (long long)(base_depth - 1);
+        for (i = 0; (long long)(i) <= __for_end_l842; i++)
         {
             {
                 dynbuf_append((ctx).out, ".base");
@@ -1031,8 +1036,8 @@ void codegen_common_struct_decl(const Node* n, CodegenContext ctx)
         dynbuf_append((ctx).out, " base;\n");
     }
     {
-        const long long __for_end_l1089 = (long long)(((*(n)).struct_decl).field_count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l1089; i++)
+        const long long __for_end_l1092 = (long long)(((*(n)).struct_decl).field_count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l1092; i++)
         {
             {
                 Node* f = ((*(n)).struct_decl).fields[i];
@@ -1086,8 +1091,8 @@ void codegen_common_union_decl(const Node* n, CodegenContext ctx)
     dynbuf_appendn((ctx).out, ((*(n)).struct_decl).name, ((*(n)).struct_decl).name_len);
     dynbuf_append((ctx).out, " {\n");
     {
-        const long long __for_end_l1148 = (long long)(((*(n)).struct_decl).field_count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l1148; i++)
+        const long long __for_end_l1151 = (long long)(((*(n)).struct_decl).field_count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l1151; i++)
         {
             {
                 const Node* f = ((*(n)).struct_decl).fields[i];
@@ -1134,8 +1139,8 @@ void codegen_common_enum_type(const Node* en, const char* type_name, size_t type
     emit_indent((ctx).out, (ctx).indent);
     dynbuf_append((ctx).out, "enum {\n");
     {
-        const long long __for_end_l1197 = (long long)(((*(en)).enum_type).count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l1197; i++)
+        const long long __for_end_l1200 = (long long)(((*(en)).enum_type).count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l1200; i++)
         {
             {
                 const Node* item = ((*(en)).enum_type).elements[i];
@@ -1286,8 +1291,8 @@ void codegen_common_expr(const Node* n, CodegenContext ctx)
                 codegen_emit_call_arg_deref(codegen_call_formal_receiver(n), ((*(n)).call).receiver_expr, ((*(n)).call).auto_deref, ((*(n)).call).base_depth, ctx);
             }
             {
-                const long long __for_end_l1331 = (long long)(((*(n)).call).argc - 1);
-                for (i = 0; (long long)(i) <= __for_end_l1331; i++)
+                const long long __for_end_l1334 = (long long)(((*(n)).call).argc - 1);
+                for (i = 0; (long long)(i) <= __for_end_l1334; i++)
                 {
                     {
                         if (i > 0 || (((*(n)).call).callee_expr == nil && ((*(n)).call).receiver_expr != nil))
@@ -1551,8 +1556,8 @@ void codegen_common_expr(const Node* n, CodegenContext ctx)
             dynbuf_append_char((ctx).out, ')');
         }
         {
-            const long long __for_end_l1499 = (long long)(up - 1);
-            for (ui = 0; (long long)(ui) <= __for_end_l1499; ui++)
+            const long long __for_end_l1502 = (long long)(up - 1);
+            for (ui = 0; (long long)(ui) <= __for_end_l1502; ui++)
             {
                 {
                     dynbuf_append((ctx).out, ".base");
@@ -1592,8 +1597,8 @@ void codegen_common_emit_literal(const Node* n, CodegenContext ctx)
             if (prefix == 'x' || prefix == 'X')
             {
                 {
-                    const long long __for_end_l1538 = (long long)(len - 1);
-                    for (i = 0; (long long)(i) <= __for_end_l1538; i++)
+                    const long long __for_end_l1541 = (long long)(len - 1);
+                    for (i = 0; (long long)(i) <= __for_end_l1541; i++)
                     {
                         {
                             if (s[i] != '_')
@@ -1609,8 +1614,8 @@ void codegen_common_emit_literal(const Node* n, CodegenContext ctx)
             {
                 dynbuf_append_char((ctx).out, '0');
                 {
-                    const long long __for_end_l1547 = (long long)(len - 1);
-                    for (i = 2; (long long)(i) <= __for_end_l1547; i++)
+                    const long long __for_end_l1550 = (long long)(len - 1);
+                    for (i = 2; (long long)(i) <= __for_end_l1550; i++)
                     {
                         {
                             if (s[i] != '_')
@@ -1632,8 +1637,8 @@ void codegen_common_emit_literal(const Node* n, CodegenContext ctx)
             }
         }
         {
-            const long long __for_end_l1564 = (long long)(len - 1);
-            for (i = 0; (long long)(i) <= __for_end_l1564; i++)
+            const long long __for_end_l1567 = (long long)(len - 1);
+            for (i = 0; (long long)(i) <= __for_end_l1567; i++)
             {
                 {
                     if (s[i] != '_')
@@ -1669,8 +1674,8 @@ void codegen_common_array_literal(const Node* n, CodegenContext ctx)
     }
     dynbuf_append((ctx).out, "{");
     {
-        const long long __for_end_l1597 = (long long)(((*(n)).array_literal).count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l1597; i++)
+        const long long __for_end_l1600 = (long long)(((*(n)).array_literal).count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l1600; i++)
         {
             {
                 if (i > 0)
@@ -1735,8 +1740,8 @@ void codegen_common_field_access(const Node* n, CodegenContext ctx)
         size_t d = ((*(n)).field_access).base_depth;
         size_t i = {0};
         {
-            const long long __for_end_l1657 = (long long)(d - 1);
-            for (i = 0; (long long)(i) <= __for_end_l1657; i++)
+            const long long __for_end_l1660 = (long long)(d - 1);
+            for (i = 0; (long long)(i) <= __for_end_l1660; i++)
             {
                 {
                     dynbuf_append((ctx).out, ".base");
@@ -1823,13 +1828,13 @@ void codegen_common_inc_dec(const Node* n, CodegenContext ctx, bool as_statement
     {
                 return;
     }
-    bool is_compound_l1745_c20 = (((*(n)).binary).right != nil);
-    if (is_compound_l1745_c20 && !as_statement)
+    bool is_compound_l1748_c20 = (((*(n)).binary).right != nil);
+    if (is_compound_l1748_c20 && !as_statement)
     {
         dynbuf_append_char((ctx).out, '(');
     }
     codegen_common_expr(((*(n)).binary).left, ctx);
-    if (is_compound_l1745_c20)
+    if (is_compound_l1748_c20)
     {
         if ((*(n)).kind == NODE_INC)
         {
@@ -1852,7 +1857,7 @@ void codegen_common_inc_dec(const Node* n, CodegenContext ctx, bool as_statement
             dynbuf_append((ctx).out, "--");
         }
     }
-    if (is_compound_l1745_c20 && !as_statement)
+    if (is_compound_l1748_c20 && !as_statement)
     {
         dynbuf_append_char((ctx).out, ')');
     }

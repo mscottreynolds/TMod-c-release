@@ -215,6 +215,12 @@ begin
         return
     end
 
+    // ^opaque / POINTER TO opaque has no name. Callers add '*' when is_pointer.
+    if t.is_opaque then
+        dynbuf_append(out, "void")
+        return
+    end
+
     dynbuf_append(out, "int")
 end emit_type_leaf_name
 

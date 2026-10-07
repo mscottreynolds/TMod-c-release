@@ -444,7 +444,10 @@ static pTType TParser__parse_array_type_after_lbracket(TParser* p, pTType elemen
  * For general type expressions (including method types, struct types, etc.),
  * use parse_type_expression().
  *
- * Allow opaque: true only for TYPE RHS (parse_type_expression)
+ * Allow opaque: true only only for a TYPE RHS (parse_type_expression).
+ * Bare OPAQUE that is RHS only.
+ * ^OPAQUE and POINTER TO OPAQUE are type-specifiers. is_pointer is already 
+ * set, so they are accepted here when allow_opaque is false.
  *
  * Exits on fatal parse error. 
  */
@@ -508,17 +511,28 @@ static pTType TParser__parse_return_type_ex(TParser* p, bool allow_opaque)
         ((*arr)).is_const = is_const;
         ((*arr)).is_pointer = is_pointer;
         /* return value captured before defers */
-        pTType __ret_l526 = arr;
-        return __ret_l526;
+        pTType __ret_l529 = arr;
+        return __ret_l529;
     }
-    if (allow_opaque && TParser__match(&(*p), TOK_KEYWORD_OPAQUE))
+    if (allow_opaque || is_pointer)
     {
-        pTType t = type_create_opaque(((*p)).arena);
-        ((*t)).is_pointer = is_pointer;
-        ((*t)).is_const = is_const;
-        /* return value captured before defers */
-        pTType __ret_l533 = t;
-        return __ret_l533;
+        if (TParser__match(&(*p), TOK_KEYWORD_OPAQUE))
+        {
+            element = type_create_opaque(((*p)).arena);
+            ((*element)).is_pointer = is_pointer;
+            ((*element)).is_const = is_const;
+            if (TParser__match(&(*p), TOK_LBRACKET))
+            {
+                element = TParser__parse_array_type_after_lbracket(&(*p), element);
+            }
+            /* return value captured before defers */
+            pTType __ret_l548 = element;
+            return __ret_l548;
+        }
+    }
+    if (TParser__check(&(*p), TOK_KEYWORD_OPAQUE))
+    {
+        TParser__error_at(&(*p), "TParser::parse_return_type_ex: bare opaque is only legal on a TYPE right-hand side", true);
     }
     if ((((*p)).current).kind != TOK_IDENT)
     {
@@ -575,8 +589,8 @@ static pTType TParser__parse_return_type_ex(TParser* p, bool allow_opaque)
         element = TParser__parse_array_type_after_lbracket(&(*p), element);
     }
     /* return value captured before defers */
-    pTType __ret_l585 = element;
-    return __ret_l585;
+    pTType __ret_l605 = element;
+    return __ret_l605;
 }
 
 static void TParser__parse_optional_end_tag(TParser* p)
@@ -605,26 +619,26 @@ static pNode TParser__parse_decl(TParser* p)
     if (TParser__check(&(*p), TOK_DOC_COMMENT))
     {
         /* return value captured before defers */
-        pNode __ret_l626 = TParser__parse_doc_comment(&(*p));
-        return __ret_l626;
+        pNode __ret_l646 = TParser__parse_doc_comment(&(*p));
+        return __ret_l646;
     }
     if (TParser__check(&(*p), TOK_PREPROCESSOR))
     {
         /* return value captured before defers */
-        pNode __ret_l631 = TParser__parse_preprocessor(&(*p));
-        return __ret_l631;
+        pNode __ret_l651 = TParser__parse_preprocessor(&(*p));
+        return __ret_l651;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_IMPORT))
     {
         /* return value captured before defers */
-        pNode __ret_l636 = parse_import_stmt(&(*p));
-        return __ret_l636;
+        pNode __ret_l656 = parse_import_stmt(&(*p));
+        return __ret_l656;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_DEFINE))
     {
         /* return value captured before defers */
-        pNode __ret_l640 = TParser__parse_define(&(*p), false);
-        return __ret_l640;
+        pNode __ret_l660 = TParser__parse_define(&(*p), false);
+        return __ret_l660;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_EXTERN))
     {
@@ -634,20 +648,20 @@ static pNode TParser__parse_decl(TParser* p)
         if (TParser__check(&(*p), TOK_KEYWORD_TYPE))
         {
             /* return value captured before defers */
-            pNode __ret_l651 = parse_extern_type_decl(&(*p), ext_exported);
-            return __ret_l651;
+            pNode __ret_l671 = parse_extern_type_decl(&(*p), ext_exported);
+            return __ret_l671;
         }
         if (TParser__check(&(*p), TOK_KEYWORD_VAR))
         {
             /* return value captured before defers */
-            pNode __ret_l654 = parse_var_decl(&(*p), ext_exported, true, false);
-            return __ret_l654;
+            pNode __ret_l674 = parse_var_decl(&(*p), ext_exported, true, false);
+            return __ret_l674;
         }
         if (TParser__check(&(*p), TOK_KEYWORD_PROCEDURE) || TParser__check(&(*p), TOK_KEYWORD_FUNCTION))
         {
             /* return value captured before defers */
-            pNode __ret_l657 = parse_proc_or_func_decl(&(*p), ext_exported, false, true);
-            return __ret_l657;
+            pNode __ret_l677 = parse_proc_or_func_decl(&(*p), ext_exported, false, true);
+            return __ret_l677;
         }
         TParser__error_at(&(*p), "TParser::parse_decl: EXTERN requires TYPE, VAR, PROCEDURE or FUNCTION", true);
     }
@@ -664,50 +678,50 @@ static pNode TParser__parse_decl(TParser* p)
     if (TParser__check(&(*p), TOK_KEYWORD_DEFINE))
     {
         /* return value captured before defers */
-        pNode __ret_l677 = TParser__parse_define(&(*p), exported);
-        return __ret_l677;
+        pNode __ret_l697 = TParser__parse_define(&(*p), exported);
+        return __ret_l697;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_VAR))
     {
         /* return value captured before defers */
-        pNode __ret_l681 = parse_var_decl(&(*p), exported, is_extern, is_static);
-        return __ret_l681;
+        pNode __ret_l701 = parse_var_decl(&(*p), exported, is_extern, is_static);
+        return __ret_l701;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_CONST))
     {
         /* return value captured before defers */
-        pNode __ret_l684 = parse_const_decl(&(*p), exported);
-        return __ret_l684;
+        pNode __ret_l704 = parse_const_decl(&(*p), exported);
+        return __ret_l704;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_LET))
     {
         /* return value captured before defers */
-        pNode __ret_l687 = parse_let_decl(&(*p), exported);
-        return __ret_l687;
+        pNode __ret_l707 = parse_let_decl(&(*p), exported);
+        return __ret_l707;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_TYPE))
     {
         /* return value captured before defers */
-        pNode __ret_l690 = parse_type_decl(&(*p), exported);
-        return __ret_l690;
+        pNode __ret_l710 = parse_type_decl(&(*p), exported);
+        return __ret_l710;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_PROCEDURE) || TParser__check(&(*p), TOK_KEYWORD_FUNCTION))
     {
         /* return value captured before defers */
-        pNode __ret_l694 = parse_proc_or_func_decl(&(*p), exported, is_recursive, is_extern);
-        return __ret_l694;
+        pNode __ret_l714 = parse_proc_or_func_decl(&(*p), exported, is_recursive, is_extern);
+        return __ret_l714;
     }
     TParser__error_at(&(*p), "TParser::parse_decl: unexpected token at top level (expected declaration)", true);
     /* return value captured before defers */
-    pNode __ret_l699 = nil;
-    return __ret_l699;
+    pNode __ret_l719 = nil;
+    return __ret_l719;
 }
 
 static pNode TParser__parse_decl_sequence(TParser* p)
 {
     /* return value captured before defers */
-    pNode __ret_l708 = TParser__parse_decl(&(*p));
-    return __ret_l708;
+    pNode __ret_l728 = TParser__parse_decl(&(*p));
+    return __ret_l728;
 }
 
 static pNode TParser__parse_program(TParser* p)
@@ -792,8 +806,8 @@ static pNode TParser__parse_program(TParser* p)
         TParser__advance(&(*p));
     }
     /* return value captured before defers */
-    pNode __ret_l799 = prog;
-    return __ret_l799;
+    pNode __ret_l819 = prog;
+    return __ret_l819;
 }
 
 /**
@@ -834,8 +848,8 @@ void TParser__register_type_name(TParser* p, const char* start, size_t length)
                 return;
     }
     {
-        const long long __for_end_l841 = (long long)(((*p)).type_name_count);
-        for (i = 1; (long long)(i) <= __for_end_l841; i++)
+        const long long __for_end_l861 = (long long)(((*p)).type_name_count);
+        for (i = 1; (long long)(i) <= __for_end_l861; i++)
         {
             {
                 if ((((*p)).type_names[i - 1]).length == length && memcmp((((*p)).type_names[i - 1]).start, start, length) == 0)
@@ -871,26 +885,26 @@ bool TParser__is_user_type_name(TParser* p, const char* start, size_t length)
     if (start == nil || length == 0)
     {
         /* return value captured before defers */
-        bool __ret_l876 = false;
-        return __ret_l876;
+        bool __ret_l896 = false;
+        return __ret_l896;
     }
     {
-        const long long __for_end_l879 = (long long)(((*p)).type_name_count);
-        for (i = 1; (long long)(i) <= __for_end_l879; i++)
+        const long long __for_end_l899 = (long long)(((*p)).type_name_count);
+        for (i = 1; (long long)(i) <= __for_end_l899; i++)
         {
             {
                 if ((((*p)).type_names[i - 1]).length == length && memcmp((((*p)).type_names[i - 1]).start, start, length) == 0)
                 {
                     /* return value captured before defers */
-                    bool __ret_l881 = true;
-                    return __ret_l881;
+                    bool __ret_l901 = true;
+                    return __ret_l901;
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l885 = false;
-    return __ret_l885;
+    bool __ret_l905 = false;
+    return __ret_l905;
 }
 
 /**
@@ -899,8 +913,8 @@ bool TParser__is_user_type_name(TParser* p, const char* start, size_t length)
 pNode TParser__parse_expr(TParser* p)
 {
     /* return value captured before defers */
-    pNode __ret_l899 = parse_conditional(&(*p));
-    return __ret_l899;
+    pNode __ret_l919 = parse_conditional(&(*p));
+    return __ret_l919;
 }
 
 /**
@@ -912,8 +926,8 @@ pNode TParser__parse_expr(TParser* p)
 pTType TParser__parse_return_type(TParser* p)
 {
     /* return value captured before defers */
-    pTType __ret_l911 = TParser__parse_return_type_ex(&(*p), false);
-    return __ret_l911;
+    pTType __ret_l931 = TParser__parse_return_type_ex(&(*p), false);
+    return __ret_l931;
 }
 
 /**
@@ -924,8 +938,8 @@ pTType TParser__parse_return_type(TParser* p)
 pTType TParser__parse_parameter_type(TParser* p)
 {
     /* return value captured before defers */
-    pTType __ret_l922 = TParser__parse_return_type_ex(&(*p), false);
-    return __ret_l922;
+    pTType __ret_l942 = TParser__parse_return_type_ex(&(*p), false);
+    return __ret_l942;
 }
 
 /**
@@ -936,8 +950,8 @@ pTType TParser__parse_parameter_type(TParser* p)
 pTType TParser__parse_type_expression(TParser* p)
 {
     /* return value captured before defers */
-    pTType __ret_l933 = TParser__parse_return_type_ex(&(*p), true);
-    return __ret_l933;
+    pTType __ret_l953 = TParser__parse_return_type_ex(&(*p), true);
+    return __ret_l953;
 }
 
 /**
@@ -947,8 +961,8 @@ pTType TParser__parse_type_expression(TParser* p)
 pNode TParser__parse_const_expression(TParser* p)
 {
     /* return value captured before defers */
-    pNode __ret_l943 = TParser__parse_expr(&(*p));
-    return __ret_l943;
+    pNode __ret_l963 = TParser__parse_expr(&(*p));
+    return __ret_l963;
 }
 
 /**
@@ -968,12 +982,12 @@ pNode TParser__parse_designator(TParser* p)
                 {
                     TParser__error_at(&(*p), "TParser::parse_designator: expected identifer after '.'", true);
                 }
-                TToken field_tok_l964_c26 = ((*p)).current;
+                TToken field_tok_l984_c26 = ((*p)).current;
                 TParser__advance(&(*p));
-                fa = node_create(((*p)).arena, NODE_FIELD_ACCESS, field_tok_l964_c26);
+                fa = node_create(((*p)).arena, NODE_FIELD_ACCESS, field_tok_l984_c26);
                 (((*fa)).field_access).record_ = d;
-                (((*fa)).field_access).field_name = (field_tok_l964_c26).start;
-                (((*fa)).field_access).field_len = (field_tok_l964_c26).length;
+                (((*fa)).field_access).field_name = (field_tok_l984_c26).start;
+                (((*fa)).field_access).field_len = (field_tok_l984_c26).length;
                 d = fa;
             }
             else if (TParser__check(&(*p), TOK_LBRACKET))
@@ -997,8 +1011,8 @@ pNode TParser__parse_designator(TParser* p)
         }
     }
     /* return value captured before defers */
-    pNode __ret_l985 = d;
-    return __ret_l985;
+    pNode __ret_l1005 = d;
+    return __ret_l1005;
 }
 
 /**
@@ -1139,8 +1153,8 @@ pNode TParser__parse_block(TParser* p)
     {
     }
     /* return value captured before defers */
-    pNode __ret_l1152 = block;
-    return __ret_l1152;
+    pNode __ret_l1172 = block;
+    return __ret_l1172;
 }
 
 /**
@@ -1234,8 +1248,8 @@ pNode TParser__parse_statement_sequence(TParser* p)
         }
     }
     /* return value captured before defers */
-    pNode __ret_l1264 = block;
-    return __ret_l1264;
+    pNode __ret_l1284 = block;
+    return __ret_l1284;
 }
 
 /**
@@ -1252,8 +1266,8 @@ pNode TParser__parse_stmt(TParser* p)
     if (TParser__check(&(*p), TOK_PREPROCESSOR))
     {
         /* return value captured before defers */
-        pNode __ret_l1280 = TParser__parse_preprocessor(&(*p));
-        return __ret_l1280;
+        pNode __ret_l1300 = TParser__parse_preprocessor(&(*p));
+        return __ret_l1300;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_DEFINE))
     {
@@ -1262,74 +1276,74 @@ pNode TParser__parse_stmt(TParser* p)
     if (TParser__check(&(*p), TOK_KEYWORD_ASSERT))
     {
         /* return value captured before defers */
-        pNode __ret_l1288 = TParser__parse_builtin_stmt(&(*p));
-        return __ret_l1288;
+        pNode __ret_l1308 = TParser__parse_builtin_stmt(&(*p));
+        return __ret_l1308;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_INC) || TParser__check(&(*p), TOK_KEYWORD_DEC))
     {
         /* return value captured before defers */
-        pNode __ret_l1292 = parse_inc_dec_stmt(&(*p));
-        return __ret_l1292;
+        pNode __ret_l1312 = parse_inc_dec_stmt(&(*p));
+        return __ret_l1312;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_LET))
     {
         /* return value captured before defers */
-        pNode __ret_l1296 = parse_let_decl(&(*p), false);
-        return __ret_l1296;
+        pNode __ret_l1316 = parse_let_decl(&(*p), false);
+        return __ret_l1316;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_IF))
     {
         /* return value captured before defers */
-        pNode __ret_l1300 = parse_if_stmt(&(*p));
-        return __ret_l1300;
+        pNode __ret_l1320 = parse_if_stmt(&(*p));
+        return __ret_l1320;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_WHILE))
     {
         /* return value captured before defers */
-        pNode __ret_l1304 = parse_while_stmt(&(*p));
-        return __ret_l1304;
+        pNode __ret_l1324 = parse_while_stmt(&(*p));
+        return __ret_l1324;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_FOR))
     {
         /* return value captured before defers */
-        pNode __ret_l1308 = parse_for_stmt(&(*p));
-        return __ret_l1308;
+        pNode __ret_l1328 = parse_for_stmt(&(*p));
+        return __ret_l1328;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_REPEAT))
     {
         /* return value captured before defers */
-        pNode __ret_l1312 = parse_repeat_until_stmt(&(*p));
-        return __ret_l1312;
+        pNode __ret_l1332 = parse_repeat_until_stmt(&(*p));
+        return __ret_l1332;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_LOOP))
     {
         /* return value captured before defers */
-        pNode __ret_l1316 = parse_loop_stmt(&(*p));
-        return __ret_l1316;
+        pNode __ret_l1336 = parse_loop_stmt(&(*p));
+        return __ret_l1336;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_SWITCH))
     {
         /* return value captured before defers */
-        pNode __ret_l1320 = parse_switch_stmt(&(*p));
-        return __ret_l1320;
+        pNode __ret_l1340 = parse_switch_stmt(&(*p));
+        return __ret_l1340;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_BREAK))
     {
         /* return value captured before defers */
-        pNode __ret_l1324 = parse_break_stmt(&(*p));
-        return __ret_l1324;
+        pNode __ret_l1344 = parse_break_stmt(&(*p));
+        return __ret_l1344;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_CONTINUE))
     {
         /* return value captured before defers */
-        pNode __ret_l1328 = parse_continue_stmt(&(*p));
-        return __ret_l1328;
+        pNode __ret_l1348 = parse_continue_stmt(&(*p));
+        return __ret_l1348;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_RETURN))
     {
         /* return value captured before defers */
-        pNode __ret_l1332 = parse_return_stmt(&(*p));
-        return __ret_l1332;
+        pNode __ret_l1352 = parse_return_stmt(&(*p));
+        return __ret_l1352;
     }
     if (TParser__check(&(*p), TOK_IDENT) || TParser__check(&(*p), TOK_CARET) || TParser__check(&(*p), TOK_LPAREN))
     {
@@ -1355,8 +1369,8 @@ pNode TParser__parse_stmt(TParser* p)
                 TParser__error_at(&(*p), "TParser::parse_stmt expected end-of-statement after assignment", true);
             }
             /* return value captured before defers */
-            pNode __ret_l1363 = assign;
-            return __ret_l1363;
+            pNode __ret_l1383 = assign;
+            return __ret_l1383;
         }
         while (1)
         {
@@ -1426,30 +1440,30 @@ pNode TParser__parse_stmt(TParser* p)
             TParser__error_at(&(*p), "TParser::parse_stmt: expected end-of-statement after expression", true);
         }
         /* return value captured before defers */
-        pNode __ret_l1431 = stmt;
-        return __ret_l1431;
+        pNode __ret_l1451 = stmt;
+        return __ret_l1451;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_DEFER))
     {
         /* return value captured before defers */
-        pNode __ret_l1435 = parse_defer_stmt(&(*p));
-        return __ret_l1435;
+        pNode __ret_l1455 = parse_defer_stmt(&(*p));
+        return __ret_l1455;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_DEBUG))
     {
         /* return value captured before defers */
-        pNode __ret_l1439 = parse_debug_stmt(&(*p));
-        return __ret_l1439;
+        pNode __ret_l1459 = parse_debug_stmt(&(*p));
+        return __ret_l1459;
     }
     if (TParser__check(&(*p), TOK_KEYWORD_BEGIN))
     {
         /* return value captured before defers */
-        pNode __ret_l1443 = TParser__parse_block(&(*p));
-        return __ret_l1443;
+        pNode __ret_l1463 = TParser__parse_block(&(*p));
+        return __ret_l1463;
     }
     /* return value captured before defers */
-    pNode __ret_l1447 = nil;
-    return __ret_l1447;
+    pNode __ret_l1467 = nil;
+    return __ret_l1467;
 }
 
 /**
@@ -1479,12 +1493,12 @@ pNode TParser__parse_builtin_stmt(TParser* p)
         (((*n)).assert_stmt).condition = cond;
         (((*n)).assert_stmt).const_expr = const_expr;
         /* return value captured before defers */
-        pNode __ret_l1478 = n;
-        return __ret_l1478;
+        pNode __ret_l1498 = n;
+        return __ret_l1498;
     }
     /* return value captured before defers */
-    pNode __ret_l1480 = nil;
-    return __ret_l1480;
+    pNode __ret_l1500 = nil;
+    return __ret_l1500;
 }
 
 /**
@@ -1500,8 +1514,8 @@ pNode TParser__parse(TParser* p)
     }
     TParser__skip_empty_statements(&(*p));
     /* return value captured before defers */
-    pNode __ret_l1498 = TParser__parse_program(&(*p));
-    return __ret_l1498;
+    pNode __ret_l1518 = TParser__parse_program(&(*p));
+    return __ret_l1518;
 }
 
 

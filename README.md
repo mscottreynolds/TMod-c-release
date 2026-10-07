@@ -68,6 +68,7 @@ We are not cloning Oberon. We are not licensing John Carter. We are admitting th
 
 Features (Early Design Goals)
 -----------------------------
+- No user-facing `void`. A procedure has no result. C `void *` is `^opaque` or `POINTER TO opaque` (0.26.9.200). A named `type Handle = opaque` stays a distinct `typedef void *Handle`
 - Clear distinction between immutable (`const`, `let`) and mutable (`var`) bindings
 - `=` for immutable assignments, `:=` for mutable assignments
 - Optional type inference with required annotations when ambiguous
@@ -86,6 +87,8 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.26.9.200** (6 October 2026): `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). Bare `opaque` stays a TYPE RHS. Named `type Handle = opaque` stays `typedef void *Name`. Tests green on gcc, clang, and tcc
+- **0.26.9.199** (3 October 2026): `codegen_common.mc` self-host (shared emitter). `codegen_c.c` and `node.c` / `node.h` stay hand-written C. Tests green on gcc, clang, and tcc
 - **0.26.9.198** (2 October 2026): `countof(designator | type)` replaces interim `LEN`. Outermost bound of a complete fixed array; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. Compiler tests pass
 - **0.26.8.196** (30 September 2026): named type is the method owner (`sds::free(s: sds)` / `x.free()` even if `sds = ^char`); C-index of written `^Named` (`tokens[0].length()`); unreachable after `RETURN`/`BREAK`/`CONTINUE` is a warning. **TSDSLib 2.0** (`examples/sds/`). Kilo `ABuffer` grow-by-doubling. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
 - **0.26.8.194** (22 September 2026): `.mh` alias RHS (`export type integer complete integer 64`); in-tree `lp64`/`ilp32` packs; `LEN(n)` → `sizeof(n)/sizeof((n)[0])`. **#11** build-time defaults deferred. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
@@ -106,7 +109,7 @@ Current focus:
 - **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
 - **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
 - **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- Next on **0.26:** **#11** build-time defaults **deferred**. Soft **21a-ternary**. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later
+- Next on **0.26:** **#11** build-time defaults **deferred**. Soft **21a-ternary**. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Slice formals are **0.27** (planned, not implemented)
 - Later (after item 15): cyclic TMod-c `IMPORT` policy. Self-host of remaining compiler units continues in the background
 
 Credits & Acknowledgments

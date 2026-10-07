@@ -25,7 +25,7 @@ import SYM_KIND_LET, SYM_KIND_IMPORT, SYM_KIND_PARAM, SYM_KIND_PROC, SYM_KIND_FU
 	from symkind
 import 
 	pTType, type_create_named, type_is_builtin_name, type_is_portable_rebindable,
-	type_copy_shell, TType,
+	type_copy_shell, type_create_opaque, TType,
 	from ttype
 
 import size_t from "stddef.h"
@@ -1742,6 +1742,15 @@ begin
 	if ctx == nil or name == nil or name_len == 0 then
 		return nil
 	end
+	if name_len == 6 and memcmp(name, "opaque", 6) == 0 then
+		if not is_pointer then
+			semantic_error_at(nil, "semantic_mh_make_type: bare opaque is not a type-spec")
+		end
+		ty := type_create_opaque(ctx^.arena)
+		ty^.is_const := is_const
+		ty^.is_pointer := true
+		return ty
+	end
 	nm := semantic_arena_strndup(ctx^.arena, name, name_len)
 	ty := type_create_named(ctx^.arena, nm, name_len)
 	ty^.is_const := is_const
@@ -2943,17 +2952,35 @@ begin
 
 	if n^.sizeof_expr.is_type then
 		ty := n^.sizeof_expr.target.sizeof_type
-		if ty == nil or ty^.name == nil or ty^.name_len == 0 then
+		// if ty == nil or ty^.name == nil or ty^.name_len == 0 then
+		if ty == nil then
 			semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF type operand has no name")
 		end
-		name := ty^.name
-		name_len := ty^.name_len
-		if not type_is_builtin_name(name, name_len) then
-			sym := symtab_lookup(ctx^.scope, name, name_len)
-			if sym == nil or sym^.kind <> SYM_KIND_TYPE then
-				semantic_error_at(n, "semantic_resolve_sizeof: unknown type in SIZEOF")
+		if ty^.is_opaque then
+			if not ty^.is_pointer then
+				semantic_error_at(n, "semantic_resolve_sizeof: bare opaque is not a type")
+			end
+		elsif ty^.name == nil or ty^.name_len == 0 then
+			semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF type operand has no name")
+		else
+			name := ty^.name
+			name_len := ty^.name_len
+			if not type_is_builtin_name(name, name_len) then
+				sym := symtab_lookup(ctx^.scope, name, name_len)
+				if sym == nil or sym^.kind <> SYM_KIND_TYPE then
+					semantic_error_at(n, "semantic_resolve_sizeof: unknown type in SIZEOF")
+				end
 			end
 		end
+
+		// name := ty^.name
+		// name_len := ty^.name_len
+		// if not type_is_builtin_name(name, name_len) then
+		// 	sym := symtab_lookup(ctx^.scope, name, name_len)
+		// 	if sym == nil or sym^.kind <> SYM_KIND_TYPE then
+		// 		semantic_error_at(n, "semantic_resolve_sizeof: unknown type in SIZEOF")
+		// 	end
+		// end
 		semantic_resolve_type(ctx, ty, n)
 	else
 		d := n^.sizeof_expr.target.designator

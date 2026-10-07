@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 30 September 2026
+**Last updated:** 6 October 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -93,13 +93,16 @@ opaque-type-expression = "OPAQUE"
                        | "^" "OPAQUE"
                        | "POINTER" "TO" "OPAQUE" ;
 
-(* Used for VAR / LET / CONST / formals / fields — no OPAQUE here.
+(* Used for VAR / LET / CONST / formals / fields / casts / sizeof.
+   Bare OPAQUE is opaque-type-expression (TYPE RHS) only.
+   ^OPAQUE and POINTER TO OPAQUE are type-specifiers (C void *; 0.26.9.200).
    At most one pointer constructor (^ or POINTER TO) per specifier.
    Further levels: name the inner type, or ^T[]  — not ^^T.
    ARRAY OF may nest; the element type may itself include one ^.
-   Language Report §5.3. *)
+   Language Report §5.1–§5.3. *)
 type-specifier = [ "CONST" ] type-name [ array-suffix ]
 			   | [ "CONST" ] ( "^" | "POINTER" "TO" ) type-name [ array-suffix ]
+			   | [ "CONST" ] ( "^" | "POINTER" "TO" ) "OPAQUE" [ array-suffix ]
 			   | [ "CONST" ] ( "^" | "POINTER" "TO" ) "ARRAY" [ array-suffix ] "OF" type-specifier
 			   | [ "CONST" ] "ARRAY" [ array-suffix ] "OF" type-specifier
 			   | [ "CONST" ] set-type ;   (* Planned: SET OF enum; no array of sets in v1 *)

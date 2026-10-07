@@ -1,2 +1,2 @@
 special-vendored-path/* linguist-vendored
-*.mc linguist-language=Pascal
+*.mc linguist-language=pascal
