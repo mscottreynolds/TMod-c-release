@@ -16,20 +16,29 @@ import strlen from "string.h"
  * Basic TString type.
  *)
 export type TString = struct
-    _value: const ^char
-    _length: size_t
+    value: const ^char
+    length: size_t
 end    
+
+
+export function TString::new(s: string): TString
+begin
+    var ts: TString
+    ts.value := s
+    ts.length := strlen(s)
+    return ts
+end
 
 
 export function TString::cstring(ref self: TString): const ^char
 begin
-    return self._value
+    return self.value
 end
 
 
 export function TString::length(ref self: TString): size_t
 begin
-    return self._length
+    return self.length
 end
 
 

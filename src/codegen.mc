@@ -32,10 +32,12 @@ import Node
 import CodegenTarget, CodegenContext, TARGET_C, TARGET_HEADER, 
     TARGET_MH, TARGET_VM, TARGET_WASM, TARGET_JSON,
     from codegen_common
-import codegen_c 
-    from "codegen_c.h"
+import codegen_c,
+    from codegen_c
+// import codegen_c 
+//     from "codegen_c.h"
 import codegen_header 
-    from "codegen_header.h"
+    from codegen_header
 
 
 // type CodegenTarget = enum TARGET_C, TARGET_HEADER, TARGET_VM, TARGET_WASM, TARGET_JSO end

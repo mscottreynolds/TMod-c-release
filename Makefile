@@ -283,7 +283,7 @@ debug: CFLAGS += $(DEBUG_FLAGS)
 debug: $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
 
-test-all: test test2 test3
+test-all: tmodc test test2 test3
 
 # Test AST and semantic analysis
 test: $(TARGET)

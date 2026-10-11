@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 6 October 2026  
+**Last updated:** 10 October 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -878,7 +878,30 @@ switch c of
 end
 ```
 
-`(* C: switch without fallthrough; ELSE is mandatory in the grammar. *)`
+`ELSE` is mandatory and is the last arm. Comma labels on one `CASE` share one body. There is no fallthrough from one arm into the next. Each arm lowers to its labels, the body, and one C `break`. `ELSE` lowers to `default:`.
+
+**`ELSE CASE` *Planned* (not parsed yet).** Constants that share the else body are written after `else`, so a scan still sees `else` first:
+
+```mod-c
+switch kind of
+	case Node_Inc, Node_Dec:
+		emit_inc_dec()
+	else case Node_Paren, Node_Call:
+		emit_unhandled()
+end
+```
+
+Those constants and every unnamed value select that one arm. A label on `ELSE CASE` is not also a label on a `CASE` arm. Generated C lists the names and ends the arm with `default:`, so the default label is last in the switch (MISRA C:2012 Rule 16.5; MISRA C:2004 Rule 15.3):
+
+```c
+case Node_Paren:
+case Node_Call:
+default:
+    emit_unhandled();
+    break;
+```
+
+The named labels are what `-Wswitch-enum` checks. The required `ELSE` remains the default for a value outside the enumeration (MISRA C:2012 Rule 16.4).
 
 #### While / repeat / for / loop
 
@@ -1432,6 +1455,7 @@ Do not maintain a second full EBNF elsewhere.
 | 2 October 2026 | **§9.1 / §10.2 `COUNTOF` (0.26.9.198):** replaces interim `LEN`. Outermost bound of a complete fixed array; type or designator; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. |
 | 5 October 2026 | **§5.4 / §10.2 / §11 slice formals (planned, 0.27):** open-array formal `T[]` / `array[] of T` lowers to a pointer plus a hidden `integer` length. `countof` on that formal reads it and is not a constant. Fixed `array[N]` and `^T` stay one C parameter. Flexible array members stay bare. `a[i..j]` is not part of the plan. Not implemented. |
 | 6 October 2026 | **§5.1 / §5.2 / §5.3 / §11 `^opaque` type-specifier (0.26.9.200):** `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). `^opaque[]` / `array[N] of ^opaque` are arrays of `void *`. Bare `opaque` stays a TYPE RHS. Named aliases stay `typedef void *Name`. |
+| 10 October 2026 | **§7.1 `ELSE CASE` (planned):** `else case A, B:` shares the else body with those labels. `else` stays first and required. Generated C lists the labels and ends the arm with `default:`. Not parsed yet. |
 
 ---
 

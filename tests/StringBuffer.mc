@@ -20,9 +20,9 @@ import memcpy, strlen from "string.h"
  * The bufffer owns its _data pointer - caller must call TStringBuffer::free().
  *)
 export type TStringBuffer = struct
-    _data: ^char
-    _capacity: size_t
-    _length: size_t
+    data: ^char
+    capacity: size_t
+    length: size_t
 end
 export type pStringBuffer = ^TStringBuffer
 
@@ -35,14 +35,14 @@ const INITIAL_BUFFER_SIZE = 1024u
  *)
 export function TStringBuffer::getData(ref b: TStringBuffer): ^char
 begin
-    return b._data
+    return b.data
 end TStringBuffer::getData
 
 
 export function pStringBuffer::getData(p: pStringBuffer): ^char
 begin
     require p <> nil
-    return p^._data
+    return p.data
 end pStringBuffer::getData
 
 
@@ -51,7 +51,7 @@ end pStringBuffer::getData
  *)
 export function TStringBuffer::getCapacity(ref b: TStringBuffer): size_t
 begin
-    return b._capacity
+    return b.capacity
 end TStringBuffer::getCapacity
 
 
@@ -60,7 +60,7 @@ end TStringBuffer::getCapacity
  *)
 export function TStringBuffer::getLength(ref b: TStringBuffer): size_t
 begin
-    return b._length
+    return b.length
 end TStringBuffer::getLength
 
 
@@ -70,16 +70,23 @@ end TStringBuffer::getLength
  *)
 export procedure TStringBuffer::init(ref b: TStringBuffer)
 begin
-    b._capacity := INITIAL_BUFFER_SIZE;
-    b._length := 0;
-    b._data := malloc(b._capacity);
+    if b.data <> nil then
+        // Free previous data.
+        free(b.data)
+        b.data := nil
+        b.capacity := 0
+        b.length := 0
+    end
+    b.capacity := INITIAL_BUFFER_SIZE;
+    b.length := 0;
+    b.data := malloc(b.capacity);
 
-    if not b._data then
-        fprintf(stderr, "ERROR: TStringBuffer::init: malloc(%zu) failed\n", b._capacity)
+    if not b.data then
+        fprintf(stderr, "ERROR: TStringBuffer::init: malloc(%zu) failed\n", b.capacity)
         exit(1)
     end
 
-    b._data[0] := '\0'      // always null-terminated
+    b.data[0] := '\0'      // always null-terminated
 end TStringBuffer::init
 
 
@@ -90,41 +97,41 @@ end TStringBuffer::init
  *)
 export procedure TStringBuffer::appendn(ref b: TStringBuffer, str: const ^char, str_len: size_t)
 begin
-    if str == nil or str_len == 0 or b._data == nil then
+    if str == nil or str_len == 0 or b.data == nil then
         return
     end
 
-    let needed: size_t = b._length + str_len + 1      // +1 for null terminator
+    let needed: size_t = b.length + str_len + 1      // +1 for null terminator
 
-    while needed > b._capacity do
+    while needed > b.capacity do
         var new_capacity: size_t
         var new_data: ^char
 
-        if b._capacity > 0 then
-            new_capacity := b._capacity * 2
+        if b.capacity > 0 then
+            new_capacity := b.capacity * 2
         else
             new_capacity := INITIAL_BUFFER_SIZE
         end
 
         // Prevent overflow in capacity calculation
-        if new_capacity / 2 <> b._capacity or new_capacity < b._capacity then
-            fprintf(stderr, "ERROR: TStringBuffer::appendn: _capacity overflow (current %zu)\n", b._capacity)
+        if new_capacity / 2 <> b.capacity or new_capacity < b.capacity then
+            fprintf(stderr, "ERROR: TStringBuffer::appendn: _capacity overflow (current %zu)\n", b.capacity)
             exit(1)
         end
 
-        new_data := realloc(b._data, new_capacity)
+        new_data := realloc(b.data, new_capacity)
         if not new_data then
             fprintf(stderr, "ERROR: TStringBuffer::appendn: realloc(%zu) failed\n", new_capacity)
             exit(1)
         end
 
-        b._capacity := new_capacity
-        b._data := new_data
+        b.capacity := new_capacity
+        b.data := new_data
     end
 
-    memcpy(b._data + b._length, str, str_len)
-    b._length += str_len
-    b._data[b._length] := '\0'
+    memcpy(b.data + b.length, str, str_len)
+    b.length += str_len
+    b.data[b.length] := '\0'
 
 end TStringBuffer::appendn
 
@@ -151,36 +158,36 @@ end TStringBuffer::append
  *)
 export procedure TStringBuffer::append_char(ref b: TStringBuffer, c: char) 
 begin
-    let needed: size_t = b._length + 2        // current + char + null
+    let needed: size_t = b.length + 2        // current + char + null
 
-    if needed > b._capacity then
+    if needed > b.capacity then
         var new_capacity: size_t
         var new_data: ^char
 
-        if b._capacity > 0 then
-            new_capacity := b._capacity * 2
+        if b.capacity > 0 then
+            new_capacity := b.capacity * 2
         else
             new_capacity := INITIAL_BUFFER_SIZE
         end
 
-        if new_capacity / 2 <> b._capacity or new_capacity < b._capacity then
-            fprintf(stderr, "ERROR: TStringBuffer::append_char: _capacity overflow (current %zu)\n", b._capacity)
+        if new_capacity / 2 <> b.capacity or new_capacity < b.capacity then
+            fprintf(stderr, "ERROR: TStringBuffer::append_char: _capacity overflow (current %zu)\n", b.capacity)
             exit(1)
         end
 
-        new_data := realloc(b._data, new_capacity)
+        new_data := realloc(b.data, new_capacity)
         if  not new_data then
             fprintf(stderr, "ERROR: TStringBuffer::append_char: realloc(%zu) failed\n", new_capacity)
             exit(1)
         end
 
-        b._data := new_data;
-        b._capacity := new_capacity;
+        b.data := new_data;
+        b.capacity := new_capacity;
     end
 
-    b._data[b._length] := c
-    inc(b._length)
-    b._data[b._length] := '\0'
+    b.data[b.length] := c
+    inc(b.length)
+    b.data[b.length] := '\0'
 
 end TStringBuffer::append_char
 
@@ -191,12 +198,12 @@ end TStringBuffer::append_char
  *)
 export procedure TStringBuffer::free(ref b: TStringBuffer) 
 begin
-    if b._data then
-        free(b._data)
+    if b.data then
+        free(b.data)
     end
-    b._data := nil
-    b._capacity := 0
-    b._length := 0
+    b.data := nil
+    b.capacity := 0
+    b.length := 0
 
 end TStringBuffer::free
 

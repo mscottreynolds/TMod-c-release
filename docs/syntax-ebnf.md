@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 6 October 2026
+**Last updated:** 10 October 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -231,10 +231,13 @@ if-then-statement =
     [ "ELSE" statement-sequence ]
     "END" ;
 
+(* No fallthrough between arms. ELSE is required and is the last arm.
+   "ELSE" [ "CASE" case-labels ] is planned (not parsed yet): those
+   constants share the else body. Bare "ELSE" ":" stays valid. *)
 switch-statement =
     "SWITCH" expression "OF"
         { "CASE" case-labels ":" statement-sequence }
-        "ELSE" ":" statement-sequence
+        "ELSE" [ "CASE" case-labels ] ":" statement-sequence
     "END" ;
 
 case-labels = const-expression { "," const-expression } ;
