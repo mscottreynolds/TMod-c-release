@@ -498,6 +498,30 @@ end emit_array_type
 
 
 (**
+ * Array view of a formal type.
+ * A written integer[] is alread is_array. A name sunch as 
+ * type array_of_integer = integer[] keeps the array on resolved_type.
+ * One step. Pointer aliases (pTType = ^TType) are not arrays.
+ * Do not copy is_array onto the use type: method owner is the written name.
+ *)
+function codegen_param_array_view(t: const ^TType): const ^TType
+begin
+    if t == nil then
+        return nil
+    end
+    if t.is_array and t.element_type <> nil then
+        return t
+    end
+    if t.resolved_type <> nil and t.resolved_type.is_array and
+            t.resolved_type.element_type <> nil and
+            not t.resolved_type.is_pointer then
+        return t.resolved_type
+    end
+    return nil
+end codegen_param_array_view
+
+
+(**
  * Emit type specifier (for typedef, function returns, parameters, etc.)
  * Supports: normal types, open arrays T[], fixed arrays T[N]. If type is an array
  * it needs the name of an identifier associated with the type as array information
@@ -518,7 +542,9 @@ export recursive procedure emit_type_specifier(out: pDynBuf, t: const ^TType,
             name: const ^char, length: size_t,
             is_param: bool, is_var: bool, is_ref: bool, is_const: bool)
 begin
-    if t == nil then
+    var ty: const ^TType = t
+
+    if ty == nil then
         dynbuf_append(out, "int ")
         if name <> nil and length > 0 then
             dynbuf_appendn(out, name, length)
@@ -526,8 +552,16 @@ begin
         return
     end
 
+    // VAR/REF of a named array alias decays like the written array.
+    if is_param and (is_var or is_ref) then
+        var view: const ^TType = codegen_param_array_view(ty)
+        if view <> nil then
+            ty := view
+        end
+    end
+
     // Parameter qualifiers take precedence
-    if (is_const or t.is_const) then
+    if (is_const or ty.is_const) then
         if not (is_param and (is_var or is_ref)) then
             dynbuf_append(out, "const ")
         end
@@ -539,28 +573,28 @@ begin
     // C: T (*name)[N]. Open N => T (*name)[]. Named ^Vector3 is not this
     // arm (is_pointer only on the use type -> Vector3 *p below).
     // v1: element is a leaf (integer, struct name), not a nested array.
-    if t.is_array and t.element_type <> nil and t.is_pointer then
+    if ty.is_array and ty.element_type <> nil and ty.is_pointer then
         var buf: array[32] of char
 
-        emit_type_leaf_name(out, t.element_type)
+        emit_type_leaf_name(out, ty.element_type)
         dynbuf_append(out, " (*")
         if name <> nil and length > 0 then
             dynbuf_appendn(out, name, length)
         end
         dynbuf_append(out, ")")
         dynbuf_append_char(out, '[')
-        if t.array_size > 0 then
-            snprintf(buf, sizeof(buf), "%zu", t.array_size)
+        if ty.array_size > 0 then
+            snprintf(buf, sizeof(buf), "%zu", ty.array_size)
             dynbuf_append(out, buf)
         end
         dynbuf_append_char(out, ']')
         return
     end
 
-    if t.is_array and t.element_type <> nil then
+    if ty.is_array and ty.element_type <> nil then
         if is_param then
             // Parameters: array decay to pointer (C standard)
-            emit_type_specifier(out, t.element_type, nil, 0, true, false, false, is_const)
+            emit_type_specifier(out, ty.element_type, nil, 0, true, false, false, is_const)
             dynbuf_append_char(out, '*')        // ensure pointer
 
             if name <> nil and length > 0 then
@@ -569,30 +603,30 @@ begin
             end
         else
             // Typedefs / variable declarations: emit full C array syntax
-            emit_array_type(out, t, name, length)
+            emit_array_type(out, ty, name, length)
             return      // recursion already emitted everything.
         end
         return
     end
 
     // Normal non-array type (pointer, named type, etc.)
-    if t.is_pointer then
-        if t.name <> nil and t.name_len > 0 then
-            emit_type_leaf_name(out, t)
+    if ty.is_pointer then
+        if ty.name <> nil and ty.name_len > 0 then
+            emit_type_leaf_name(out, ty)
         else
             dynbuf_append(out, "void")
         end
         dynbuf_append_char(out, '*')
     else
-        emit_type_leaf_name(out, t)
+        emit_type_leaf_name(out, ty)
     end
 
     // VAR/REF on a non-pointer T => T* (alias / reference to value).
     // REF on ^T => leave as T* (pointer by value; no rebind of caller's pointer).
     // VAR on ^T => T** so p := nil can rebind the caller's pointer variable.
-    if is_param and (is_var or is_ref) and not t.is_pointer then
+    if is_param and (is_var or is_ref) and not ty.is_pointer then
         dynbuf_append_char(out, '*')
-    elsif is_param and is_var and t.is_pointer then
+    elsif is_param and is_var and ty.is_pointer then
         dynbuf_append_char(out, '*')        // T** for VAR p: ^T
     end
 
@@ -708,7 +742,7 @@ begin
     end
 
     // Open array already decays to pointer; use name as pointer
-    if ty.is_array then
+    if codegen_param_array_view(ty) <> nil then
         return false
     end
 
@@ -800,7 +834,7 @@ begin
     if ty == nil then
         return false
     end
-    if ty.is_array then
+    if codegen_param_array_view(ty) <> nil then
         return false
     end
     if ty.is_pointer then

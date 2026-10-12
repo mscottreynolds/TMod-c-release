@@ -87,6 +87,9 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.26.10.206** (12 October 2026): `@` binds tighter than `as`. `@e as T` is `(@e) as T`. The operand of `@` is a postfix. `as` stays tighter than `&` and arithmetic. A same-line nested `FOR` names its end temporary `__for_end_l{line}_c{column}`. Kilo status-bar ternaries cast the pointer arm to `string`. User reported `make all` after those casts. Stem stays **0.26.10**
+- **0.26.10.204** (12 October 2026): `VAR` / `REF` of a named open-array alias decays like a written `integer[]` (element pointer, call passes the array). The method owner stays the written name. No hidden length. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
+- **0.26.10.203** (12 October 2026): ternary `cond ? a : b` has the type of the then arm when both arms share one static type (one alias step, then name, width, pointer, array, and `const`). A string literal has type `string`. Brace lists still take their type from a written target. The condition is unchecked. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
 - **0.26.9.201** (10 October 2026): `codegen_c.mc` self-host (statements and the full program). Generated `codegen_c.c` / `.h` / `.mh`. Expressions stay in `codegen_common.mc`. No new language behavior. `node.c` / `node.h` and `tmodc.h` stay hand-written C. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
 - **0.26.9.200** (6 October 2026): `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). Bare `opaque` stays a TYPE RHS. Named `type Handle = opaque` stays `typedef void *Name`. Tests green on gcc, clang, and tcc
 - **0.26.9.199** (3 October 2026): `codegen_common.mc` self-host (shared emitter). `codegen_c.c` and `node.c` / `node.h` stay hand-written C. Tests green on gcc, clang, and tcc
@@ -110,7 +113,7 @@ Current focus:
 - **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
 - **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
 - **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- Next on **0.26:** **#11** build-time defaults **deferred**. Soft **21a-ternary**. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Slice formals are **0.27** (planned, not implemented). Remaining hand-written compiler C is `node.c` / `node.h` (`tmodc.h` is the hand ABI header)
+- Next on **0.26:** no soft language item. **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. Slice formals are **0.27** (planned, not implemented). Remaining hand-written compiler C is `node.c` / `node.h` (`tmodc.h` is the hand ABI header)
 - Later (after item 15): cyclic TMod-c `IMPORT` policy. Self-host of remaining compiler units continues in the background
 
 Credits & Acknowledgments
@@ -154,7 +157,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.26.5 hello.mc -C hello.c
+./bin/modc.0.26.10 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```

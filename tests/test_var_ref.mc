@@ -37,6 +37,15 @@ begin
 	end
 end IncrementAll
 
+procedure IncrementAllWritten(VAR arr: integer[], arr_len: integer)
+begin
+	var i: integer = 0
+	while i < arr_len do
+		arr[i] := arr[i] + 1
+		i += 1
+	end
+end IncrementAllWritten
+
 begin
 	var x: integer = 10
 	var y: integer = 20
@@ -51,7 +60,10 @@ begin
 	PrintArray(data, 5)
 
 	IncrementAll(data, 5)
+	printf("After increment: ")
+	PrintArray(data, 5)
 
+	IncrementAllWritten(data, 5)
 	printf("After increment: ")
 	PrintArray(data, 5)
 

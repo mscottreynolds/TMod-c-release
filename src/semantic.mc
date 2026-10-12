@@ -25,7 +25,7 @@ import SYM_KIND_LET, SYM_KIND_IMPORT, SYM_KIND_PARAM, SYM_KIND_PROC, SYM_KIND_FU
 	from symkind
 import 
 	pTType, type_create_named, type_is_builtin_name, type_is_portable_rebindable,
-	type_copy_shell, type_create_opaque, TType,
+	type_copy_shell, type_create_opaque, type_equals, TType,
 	from ttype
 
 import size_t from "stddef.h"
@@ -656,6 +656,24 @@ begin
 end semantic_type_is_realish
 
 
+(**
+ * One static type for 21a-ternary.
+ * Follow one alias step, the type_equals (name, width, pointer, array, const).
+ *)
+function semantic_types_same(a: pTType, b: pTType): bool
+begin
+	var a1: pTType = a
+	var b1: pTType = b
+
+	if a <> nil and a^.resolved_type <> nil then
+		a1 := a^.resolved_type
+	end
+	if b <> nil and b^.resolved_type <> nil then
+		b1 := b^.resolved_type
+	end
+	return type_equals(a1, b1)
+end semantic_types_same
+
 
 (**
  * Thin expression typing (item 21a). Not full type-checking.
@@ -821,8 +839,24 @@ begin
 				return nil
 			end
 
-		// Still deferred
-		case NODE_TERNARY, NODE_ARRAY_LITERAL:
+		case NODE_TERNARY:
+			begin
+				var then_ty: pTType = nil
+				var else_ty: pTType = nil
+
+				then_ty := semantic_type_of_expr(ctx, n^.ternary.then_expr)
+				else_ty := semantic_type_of_expr(ctx, n^.ternary.else_expr)
+				if then_ty == nil or else_ty == nil then
+					return nil
+				end
+				if not semantic_types_same(then_ty, else_ty) then
+					return nil
+				end
+				return then_ty
+			end
+
+		// Brace lists take their type from a written target.
+		case NODE_ARRAY_LITERAL:
 			return nil
 
 		else:
@@ -3075,6 +3109,18 @@ begin
 			semantic_resolve_expr(ctx, n^.ternary.cond)
 			semantic_resolve_expr(ctx, n^.ternary.then_expr)
 			semantic_resolve_expr(ctx, n^.ternary.else_expr)
+			begin
+				var then_ty: pTType = nil
+				var else_ty: pTType = nil
+
+				then_ty := semantic_type_of_expr(ctx, n^.ternary.then_expr)
+				else_ty := semantic_type_of_expr(ctx, n^.ternary.else_expr)
+				if then_ty <> nil and else_ty <> nil and
+						not semantic_types_same(then_ty, else_ty) then
+					semantic_error_at(n,
+						"semantic_resolve_expr: ternary arms must have the same type")
+				end
+			end
 
 		case NODE_ARRAY_INDEX:
 			semantic_resolve_expr(ctx, n^.array_index.array_)

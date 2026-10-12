@@ -1,4 +1,4 @@
-module tmodc()
+header tmodc()
 
 (**
  * some additional type definitions.
@@ -42,5 +42,4 @@ export type TString = struct
 end
 
 
-begin
 end

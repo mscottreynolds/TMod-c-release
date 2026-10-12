@@ -548,9 +548,45 @@ begin
 		return parse_inc_dec_expr(p)
 	end
 
+	// if op == TOK_NOT or op == TOK_SUB or op == TOK_ADD or
+	// 		op == TOK_KEYWORD_NOT or op == TOK_BITWISE_NOT or 
+	// 		op == TOK_AT then 		// @ = address-of
+	// @ binds tighter than AS: @e as T is (@e) as T. Operand is a postfix.
+	if op == TOK_AT then
+		var tok: TToken = {0}
+		var operand: ^Node = nil
+		var unary: ^Node = nil
+
+		tok := p^.current
+		advance(p)
+
+		operand := parse_postfix(p)
+		if operand == nil then
+			error_at(p, "parse_unary: expected expression after unary operator", true)
+		end
+
+		unary := node_create(p^.arena, NODE_UNARY, tok)
+		unary^.unary.operand 	:= operand
+		unary^.unary.op 		:= op
+
+		if match(p, TOK_KEYWORD_AS) then
+			var target: pointer to TType
+			var cast_node: pointer to Node
+
+			target := TParser::parse_parameter_type(p^)
+
+			cast_node := node_create(p^.arena, NODE_CAST, unary^.token)
+			cast_node^.cast_expr.expr 			:= unary
+			cast_node^.cast_expr.target_type	:= target
+
+			return cast_node
+		end
+
+		return unary
+	end
+
 	if op == TOK_NOT or op == TOK_SUB or op == TOK_ADD or
-			op == TOK_KEYWORD_NOT or op == TOK_BITWISE_NOT or 
-			op == TOK_AT then 		// @ = address-of
+			op == TOK_KEYWORD_NOT or op == TOK_BITWISE_NOT then
 		var tok: TToken = {0}
 		var operand: ^Node = nil
 		var unary: ^Node = nil

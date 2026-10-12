@@ -122,7 +122,7 @@ type pchar = ^char
 type ppchar = const ^pchar
 type uchar = unsigned char
 type puchar = ^uchar
-
+type cpchar = const ^char
 
 (* =========== Data =========== *)
 
@@ -441,7 +441,7 @@ begin
 
 	while i < row.rsize do
 		var c: char = row.render[i]
-		var prev_hl: uchar = (i > 0) ? row.hl[i - 1] : HL_NORMAL
+		var prev_hl: uchar = (i > 0) ? row.hl[i - 1] : HL_NORMAL as uchar
 
 		if scs_len and not in_string and not in_comment then
 			if not strncmp(@row.render[i], scs, scs_len) then
@@ -1176,10 +1176,10 @@ begin
 
 	ab.append("\x1b[7m", 4)
 	length := snprintf(status, sizeof(status), "%.20s - %d lines %s",
-		E.filename ? E.filename : "[No Name]", E.numrows,
+		E.filename ? E.filename as string : "[No Name]", E.numrows,
 		E.dirty ? "(modified)" : "")
 	rlength := snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-		E.syntax ? E.syntax.filetype : "no filetype", 
+		E.syntax ? E.syntax.filetype as string : "no filetype", 
 		E.cy + 1, E.numrows)
 	if length > E.screencols then
 		length := E.screencols

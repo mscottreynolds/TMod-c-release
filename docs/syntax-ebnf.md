@@ -340,6 +340,7 @@ power-expression = unary-expression
     | unary-expression "**" power-expression; (* right-associative *)
 
 unary-expression = inc-dec-expr
+    | "@" postfix-expression [ "AS" type-specifier ]     (* (@e) as T *)
     | cast-expression
     | prefix-op unary-expression ;
 
@@ -347,7 +348,7 @@ cast-expression = "CAST" "(" type-specifier "," expression ")"
     | postfix-expression "AS" type-specifier  (* postfix cast *)
     | postfix-expression ;
 
-prefix-op = "NOT" | "!" | "~" | "+" | "-" | "^" | "@" ;
+prefix-op = "NOT" | "!" | "~" | "+" | "-" | "^";
 
 postfix-expression = primary-expression
     { "[" expression "]"

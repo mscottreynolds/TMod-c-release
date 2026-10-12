@@ -735,7 +735,7 @@ A second binding of the same name in the same unit is an error. Binding affects 
 
 `bool`, `byte`, and `char` are **not** rebindable. Width forms (`integer N`, …) are **not** rebindable names; they are type constructors on the RHS / in type positions. Closed *N:* 8/16/32/64 for integers; 32/64 for `real`. `integer 128` is illegal until the closed set is extended.
 
-*Status: Phase A (0.24.18); widths (0.26.5); import-as-bind and `.mh` width tails (0.26.5.174); alias RHS and in-tree packs (0.26.8.194). Build-time defaults deferred.*
+*Status: Phase A (0.24.18); widths (0.26.5); import-as-bind and `.mh` width tails (0.26.5.174); alias RHS and in-tree packs (0.26.8.194). Build-time defaults parked indefinitely (12 October 2026) until another architecture can prove them. Unbound units stay `cint`.*
 
 **Examples:**
 
@@ -816,6 +816,8 @@ row[at].updateRow()     (* C: ERow__updateRow(&row[at]) *)
 
 Precedence is C-like: conditional `? :`, then `or`, `and`, equality (`==`, `!=` / `<>`), relational, shifts, additive, multiplicative (`*`, `/`, `DIV`, `MOD`, `%`), power `**` (right-associative), unary (`not`, `~`, `+`, `-`, `^`, `@`).
 
+`@e as T` is `(@e) as T` (**0.26.10.206**). The operand of `@` is a postfix. `as` stays tighter than `&` and the arithmetic operators: `exp & 1 as cardinal` is `exp & (1 as cardinal)`. Other prefixes still apply outside the cast: `-n as integer` is `-(n as integer)`, and `^p as T` is `^(p as T)`.
+
 Logical `and` / `or` are sequential (short-circuit), like C `&&` / `||`.
 
 **Examples:**
@@ -831,6 +833,10 @@ x < 0 ? -x : x
 n as integer 64
 CAST(integer, c)
 ```
+
+`cond ? a : b` has the type of `a` when `a` and `b` have the same static type (**0.26.10.203**). One alias step counts (`type Count = integer` matches `integer`). Name, width, pointer, array, and `const` all count. `integer`, `integer 32`, `cardinal`, and `real` are distinct types. An arm with no type leaves the conditional untyped. A brace list `{ … }` takes its type from a written target. The condition is unchecked, as with `IF`.
+
+A string literal has type `string`. In `? :`, `string`, `^char`, and `const ^char` are three types. `as` gives that arm the target type (`"no filetype" as pchar` has type `pchar`).
 
 `IN` is *Planned* as set membership (`x IN s` for `SET OF` enum; §5). It is not a type guard. `IS` is **dropped** (no RTTI / no `IS` on structs).
 
@@ -1291,7 +1297,7 @@ Everyday portable names answer **“what exactly is this?”** — not C’s ran
 
 **Unit binding:** at most one bind per unit via `TYPE` or named `.mh` import. Unbound defaults as above. `import integer as i64` does not bind `integer`. Include-only and foreign `.h` imports do not count.
 
-**Width forms:** exact C11 `intN_t` / `uintN_t` / `float` / `double`. `.mh` type-spec may write `integer 32`. **Alias RHS** in the export table: `export type integer complete integer 64` (optional; old lines without a tail stay valid). **Packs:** `tests/fixtures/lp64` and `ilp32` (lean `.h`; stand-in for `tmodc.lp64` until item 15). **Build-time defaults** (unbound `cint` vs `lp64`) deferred.
+**Width forms:** exact C11 `intN_t` / `uintN_t` / `float` / `double`. `.mh` type-spec may write `integer 32`. **Alias RHS** in the export table: `export type integer complete integer 64` (optional; old lines without a tail stay valid). **Packs:** `tests/fixtures/lp64` and `ilp32` (lean `.h`; stand-in for `tmodc.lp64` until item 15). **Build-time defaults** (unbound `cint` vs `lp64`) are parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`.
 
 **Not C rank:** bare `integer` always has a known unit binding or a documented default.
 
@@ -1456,6 +1462,10 @@ Do not maintain a second full EBNF elsewhere.
 | 5 October 2026 | **§5.4 / §10.2 / §11 slice formals (planned, 0.27):** open-array formal `T[]` / `array[] of T` lowers to a pointer plus a hidden `integer` length. `countof` on that formal reads it and is not a constant. Fixed `array[N]` and `^T` stay one C parameter. Flexible array members stay bare. `a[i..j]` is not part of the plan. Not implemented. |
 | 6 October 2026 | **§5.1 / §5.2 / §5.3 / §11 `^opaque` type-specifier (0.26.9.200):** `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). `^opaque[]` / `array[N] of ^opaque` are arrays of `void *`. Bare `opaque` stays a TYPE RHS. Named aliases stay `typedef void *Name`. |
 | 10 October 2026 | **§7.1 `ELSE CASE` (planned):** `else case A, B:` shares the else body with those labels. `else` stays first and required. Generated C lists the labels and ends the arm with `default:`. Not parsed yet. |
+| 12 October 2026 | **§6.3 ternary (0.26.10.203):** `cond ? a : b` has the type of `a` when both arms share one static type (one alias step, then name, width, pointer, array, and `const`). Brace-list inference remains open. The condition is unchecked. |
+| 12 October 2026 | **§10.1 build-time defaults:** `TMODC_ARCH` parked indefinitely until another architecture can prove a compiler-build default. Unbound units stay `cint`. |
+| 12 October 2026 | **§6.3 `@` and `as` (0.26.10.206):** `@e as T` is `(@e) as T`. `as` stays tighter than `&` and the arithmetic operators. Other prefixes still wrap the cast. |
+| 12 October 2026 | **§6.3 string arms:** a string literal has type `string`. In `? :`, `string`, `^char`, and `const ^char` are three types. Clarifies **0.26.10.203**. No checker change. |
 
 ---
 

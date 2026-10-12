@@ -19,6 +19,7 @@ module codegen_c(ctx: CodegenContext)
  * 10 June 2026 Add codegen for SWITCH (explicit breaks for no-fallthrough,
  *              ELSE required -> default:, comma labels as cascaded cases).
  * Port to TMod-c started 6 Oct 2026.
+ * Port to TMod-c finished 10 Oct 2026.
  *)
 
 import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_expr,
@@ -278,7 +279,7 @@ begin
     // Evaluate end bound once
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "const long long __for_end_l")
-    snprintf(buf, sizeof(buf), "%d", n.token.line)
+    snprintf(buf, sizeof(buf), "%d_c%d", n.token.line, n.token.column)
     dynbuf_append(ctx.out, buf)
     dynbuf_append(ctx.out, " = (long long)(")
     codegen_common_expr(n.for_stmt.end_, ctx)
@@ -301,7 +302,7 @@ begin
     else
         dynbuf_append(ctx.out, " >= __for_end_l")
     end
-    snprintf(buf, sizeof(buf), "%d", n.token.line)
+    snprintf(buf, sizeof(buf), "%d_c%d", n.token.line, n.token.column)
     dynbuf_append(ctx.out, buf)
     dynbuf_append(ctx.out, "; ")
 
