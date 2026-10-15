@@ -11,7 +11,7 @@ module codegen_header(ctx: CodegenContext)
  * Only emits the exported surface of a program/module.
  *)
 
-import dynbuf_append_char, dynbuf_append, dynbuf_appendn 
+import pDynBuf, dynbuf_append_char, dynbuf_append, dynbuf_appendn 
 	from dynbuf
 import size_t 
 	from "stddef.h"
@@ -28,7 +28,7 @@ import Node, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
 	NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,
 	NODE_DOC_COMMENT, NODE_PROGRAM, NODE_IMPORT, NODE_DEFINE,
 	from "node.h"
-import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE 
+import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
 	from Lexer
 import VERSION_BASE 
 	from "version.h"
@@ -147,12 +147,39 @@ begin
 end codegen_header_emit_exported
 
 
+(*
+ * MODC_<KIND>_<stem>_H. A dot or other non-identifier in the stem becomes '_'.
+ *)
+procedure emit_header_guard_name(out: pDynBuf, header_type: const ^char,
+	base: const ^char, base_len: size_t)
+begin
+	var i: size_t = 0
+	var c: char = 0
+
+	dynbuf_append(out, "MODC_")
+	dynbuf_append(out, header_type)
+	dynbuf_append_char(out, '_')
+	for i := 0 to base_len - 1 do
+		c := base[i]
+		if (c >= 'A' and c <= 'Z') or (c >= 'a' and c <= 'z') or
+				(c >= '0' and c <= '9') or c == '_' then
+			dynbuf_append_char(out, c)
+		else
+			dynbuf_append_char(out, '_')
+		end
+	end
+	dynbuf_append(out, "_H")
+end emit_header_guard_name
+
+
 (**
  * Walk the AST, create header file, and emit only exported declarations.
  *)
 procedure codegen_header_program(n: const ^Node, ctx: CodegenContext)
 begin
 	var header_type: const ^char = "UNKNOWN"
+	var guard_base: const ^char = nil
+	var guard_len: size_t = 0
 
 	if n == nil or n^.kind <> NODE_PROGRAM then
 		fprintf(stderr, "ERROR: codegen_header_program: expected PROGRAM node\n")
@@ -170,6 +197,8 @@ begin
 		header_type := "PROGRAM"
 	elsif n^.program_decl.unit_kind == TOK_KEYWORD_MODULE then
 		header_type := "MODULE"
+	elsif n^.program_decl.unit_kind == TOK_KEYWORD_HEADER then
+		header_type := "HEADER"
 	end
 
 	dynbuf_append(ctx.out, "/* =====================================\n")
@@ -184,17 +213,27 @@ begin
 	dynbuf_append_char(ctx.out, '\n')
 	dynbuf_append(ctx.out, " * ===================================== */\n\n")
 
-	// Emit header guard from program/header name.
-	dynbuf_append(ctx.out, "#ifndef MODC_")
-	dynbuf_append(ctx.out, header_type)
-	dynbuf_append_char(ctx.out, '_')
-	dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
-	dynbuf_append(ctx.out, "_H\n")
-	dynbuf_append(ctx.out, "#define MODC_")
-	dynbuf_append(ctx.out, header_type)
-	dynbuf_append_char(ctx.out, '_')
-	dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
-	dynbuf_append(ctx.out, "_H\n\n")
+	// Guard uses the header filename stem. A single-identifer file keeps the unit name.
+	guard_base := n^.program_decl.name
+	guard_len := n^.program_decl.name_len
+	if ctx.header_base <> nil and ctx.header_base_len > 0 then
+		guard_base := ctx.header_base
+		guard_len := ctx.header_base_len
+	end
+	dynbuf_append(ctx.out, "#ifndef ")
+	// dynbuf_append(ctx.out, header_type)
+	// dynbuf_append_char(ctx.out, '_')
+	// dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
+	// dynbuf_append(ctx.out, "_H\n")
+	emit_header_guard_name(ctx.out, header_type, guard_base, guard_len)
+	dynbuf_append(ctx.out, "\n")
+	dynbuf_append(ctx.out, "#define ")
+	// dynbuf_append(ctx.out, header_type)
+	// dynbuf_append_char(ctx.out, '_')
+	// dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
+	// dynbuf_append(ctx.out, "_H\n\n")
+	emit_header_guard_name(ctx.out, header_type, guard_base, guard_len)
+	dynbuf_append(ctx.out, "\n\n")
 
 	codegen_emit_c_prelude(ctx.out, n)
 
@@ -213,19 +252,20 @@ begin
 		end
 	end
 
-	// If not unit_kind PROGRAM output prototype
-	// if n^.program_decl.unit_kind <> TOK_KEYWORD_PROGRAM then
-		// Program/module prototype
-		// dynbuf_append(ctx.out, "/* === MODULE === */\n")
+	// HEADER has no entry function. PROGRAM and MODULE still emit one.
+	if n^.program_decl.unit_kind <> TOK_KEYWORD_HEADER then
 		codegen_common_module_prototype(n, ctx)
-	// end
+	end
 
 	// endif for header guard.
-	dynbuf_append(ctx.out, "#endif /* MODC_")
-	dynbuf_append(ctx.out, header_type)
-	dynbuf_append_char(ctx.out, '_')
-	dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
-	dynbuf_append(ctx.out, "_H */\n")
+	// dynbuf_append(ctx.out, "#endif /* MODC_")
+	// dynbuf_append(ctx.out, header_type)
+	// dynbuf_append_char(ctx.out, '_')
+	// dynbuf_appendn(ctx.out, n^.program_decl.name, n^.program_decl.name_len)
+	// dynbuf_append(ctx.out, "_H */\n")
+	dynbuf_append(ctx.out, "#endif /* ")
+	emit_header_guard_name(ctx.out, header_type, guard_base, guard_len)
+	dynbuf_append(ctx.out, " */\n")
 end codegen_header_program
 
 

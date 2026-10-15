@@ -59,6 +59,7 @@ export type TParser = struct
     type_names: pParserTypeName // User TYPE names (sizeof disambiguation)
     type_name_count: size_t
     type_name_capacity: size_t
+    token_count: size_t         // Total number of tokens.
 end
 export type pParser = ^TParser
 
@@ -74,6 +75,7 @@ export type pParser = ^TParser
 export procedure advance(p: pParser)
 begin
     p^.current := TLexer::next(p^.lexer)
+    inc(p^.token_count)
     if p^.show_tokens then
         TToken::print(p^.current)
     end
@@ -86,6 +88,7 @@ end advance
 export procedure TParser::advance(ref p: TParser)
 begin
     p.current := TLexer::next(@p.lexer)
+    inc(p.token_count)
     if p.show_tokens then
         TToken::print(@p.current)
     end

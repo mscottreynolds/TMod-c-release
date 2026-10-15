@@ -145,6 +145,10 @@ void node_print(const Node *n, int indent)
 		case NODE_PROGRAM:
 			kind_name = TokenKind__string(n->program_decl.unit_kind);
 			print_kind_line_column(n, kind_name);
+			if (n->program_decl.package_path and n->program_decl.package_path_len > 0) {
+				printf("'%.*s'.", (int)n->program_decl.package_path_len,
+					n->program_decl.package_path);
+			}
 			if (n->program_decl.name and n->program_decl.name_len > 0) {
 				printf("'%.*s'", (int)n->program_decl.name_len, n->program_decl.name);
 			} else {

@@ -107,6 +107,53 @@ begin
 end ends_with
 
 
+(*
+ * Basename with the last extension removed. Internal dots stay.
+ * Returns pointer to new allocated name.
+ *)
+function path_file_stem(path: string, out_len: ^size_t): pchar
+begin
+    var slen: size_t = 0
+    var start: size_t = 0
+    var stem_end: size_t = 0
+    var i: size_t = 0
+
+    if out_len <> nil then
+        out_len^ := 0
+    end
+    if path == nil or path[0] == '\0' then
+        return nil
+    end
+
+    slen := strlen(path)
+    i := slen
+    while i > 0 do
+        i := i - 1
+        if path[i] == '/' or path[i] == '\\' then
+            start := i + 1
+            break
+        end
+    end
+
+    stem_end := slen
+    i := slen
+    while i > start do
+        i := i - 1
+        if path[i] == '.' then
+            stem_end := i
+            break
+        end
+    end
+    if stem_end <= start then
+        return nil
+    end
+    if out_len <> nil then
+        out_len^ := stem_end - start
+    end
+    return utils_strndup(path + start, stem_end - start)
+end path_file_stem
+
+
 (* Same directory and stem as path, with new_ext (include the dot. e.g. .h"). *)
 function path_replace_ext(path: string, new_ext: string): pchar
 begin
@@ -270,6 +317,8 @@ function resolve_output_path(input_file: string, unit_name: string, unit_name_le
                 output_dir_opt: string, output_base_opt: string, ext: string): pchar
 begin
     var dir_owned: pchar = nil
+    var stem_owned: pchar = nil
+    var stem_len: size_t = 0
     var dir: string = output_dir_opt
     var base: string = unit_name
     var base_len: size_t = unit_name_len
@@ -277,17 +326,25 @@ begin
     if output_base_opt <> nil and output_base_opt[0] <> '\0' then
         base := output_base_opt
         base_len := strlen(output_base_opt)
+    else
+        stem_owned := path_file_stem(input_file, @stem_len)
+        if stem_owned <> nil and stem_len > 0 then
+            base := stem_owned
+            base_len := stem_len
+        end
     end
 
     if dir == nil or dir[0] == '\0' then
         dir_owned := path_dirname(input_file)
         if dir_owned == nil then
+            free(stem_owned)
             return nil
         end
         dir := dir_owned
     end
 
     let result: pchar = build_output_file_path(dir, base, base_len, ext)
+    free(stem_owned)
     free(dir_owned)
     return result
 end resolve_output_path
@@ -336,9 +393,9 @@ end resolve_output_path
                 fprintf(stderr, "  -a, --ast        Display the Abstract Syntax Tree with semantic analysis.\n")
                 fprintf(stderr, "  -i, --info       Dislay options passed to Mod-c\n")
                 fprintf(stderr, "  -t, --tokens     Enable token tracing in AST\n")
-                fprintf(stderr, "  -C [file.c]      Generate C and companion .h; default name/dir from PROGRAM/MODULE\n")
+                fprintf(stderr, "  -C [file.c]      Generate C and companion .h; default stem from the source filename\n")
                 fprintf(stderr, "                   Several .mc: omit [file.c]; use -d for a shared output directory\n")
-                fprintf(stderr, "  -H [file.h]      Generate header; default name/dir from PROGRAM/MODULE\n")
+                fprintf(stderr, "  -H [file.h]      Generate header; default stem from the source filename\n")
                 fprintf(stderr, "  -M [file.mh]     Generate modc-mh/1 export table\n")
                 fprintf(stderr, "  -d directory     Output directory for auto-named -C/-H files\n")
                 fprintf(stderr, "  -b basename      Output base name (stem) for auto-named -C/-H files\n")
@@ -517,11 +574,14 @@ begin
     // context doesn't need to point to out_buffer anymore
     context.out := nil
 
-    // Write to output file.
+    // HEADER C output leaves the buffer empty. Do not create that file.
+    // .h and .mh always emit a banner, so those files are still written.
     if file_name == nil then
         perror("ERROR: modc.generate_from_ast: output file_name not specified")
         return_code += 1
-    else
+
+    // Only create output if there is something in the buffer.
+    elsif out_buffer.used > 0 then
         let out_file: pFILE = fopen(file_name, "w")
         if out_file == nil then
             perror("ERROR: modc.generate_from_ast: Cannot open out_file")
@@ -536,7 +596,7 @@ begin
     end
 
     return return_code
-end
+end generate_from_ast
 
 
 (**
@@ -587,6 +647,7 @@ begin
                 var mh_auto: pchar = nil
                 var unit_name: string = nil
                 var unit_len: size_t = 0
+                var header_base: pchar = nil
 
                 // Perform semantic analysis
                 semantic_analyze(@arena, ast, options.mc_input_file)
@@ -599,6 +660,9 @@ begin
                 context.debug_enabled := options.debug_enabled
                 context.assert_off := options.assert_off
                 context.dbc_off := options.dbc_off
+                context.header_base := nil
+                context.header_base_len := 0
+                context.source_path := options.mc_input_file
 
                 // Setup output file paths
                 if options.generate_c and c_file == nil then
@@ -622,6 +686,11 @@ begin
                     mh_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
                         options.output_dir, options.output_base, ".mh")
                     mh_file := mh_auto
+                end
+
+                if h_file <> nil then
+                    header_base := path_file_stem(h_file, @context.header_base_len)
+                    context.header_base := header_base
                 end
 
                 // Generate C code.
@@ -666,17 +735,22 @@ begin
                 if mh_auto <> nil then
                     free(mh_auto)
                 end
+                if header_base <> nil then
+                    free(header_base)
+                end
             elsif options.show_ast then
                 // Perform semantic analysis and display AST
                 // printf("0000:0000 %s: ", options.mc_input_file)
                 // printf("Abstract Syntax Tree with Semantic Analysis\n")
                 semantic_analyze(@arena, ast, options.mc_input_file)
                 node_print(ast, 0)
+                printf("Total tokens: %zu\n", p.token_count)
             else
                 // Default, show AST without semantic_analysis
                 // printf("0000:0000 %s: ", options.mc_input_file)
                 // printf("Abstract Syntax Tree\n")
                 node_print(ast, 0)
+                printf("Total tokens: %zu\n", p.token_count)
             end
         end
     end
@@ -753,137 +827,6 @@ begin
         end
         inc(i)
     end
-
-    // // Open input file, read in source, close input file
-    // source := allocate_source_file(options.mc_input_file)
-    // if source <> nil then
-    //     defer free(source)
-
-    //     // Initialize arena
-    //     arena_init(@arena, 1024 * 1024)
-    //     defer arena_free(@arena)
-
-    //     // Initialize parser
-    //     TParser::init(p, @arena, source, nil)
-    //     // defer parser_free(@p)        // TODO: ??
-
-    //     // Pass flags to parser/lexer
-    //     p.show_tokens := options.show_tokens
-    //     p.debug_enabled := options.debug_enabled
-
-    //     // Build the Abstract Syntax Tree
-    //     ast := TParser::parse(p)
-
-    //     if ast == nil then
-    //         perror("ERROR: main: TParser::parse returned NIL\n")
-    //         return_code += 1
-    //     else
-    //         // defer node_free(ast)     TODO: ??
-
-    //         // Any code options passed?
-    //         if options.generate_c or options.generate_h or options.generate_mh then
-    //             var context: InitialContext
-    //             var c_file: pchar = options.c_output_path
-    //             var h_file: pchar = options.h_output_path
-    //             var mh_file: pchar = options.mh_output_path
-    //             var c_auto: pchar = nil
-    //             var h_auto: pchar = nil
-    //             var mh_auto: pchar = nil
-    //             var unit_name: string = nil
-    //             var unit_len: size_t = 0
-
-    //             // Perform semantic analysis
-    //             semantic_analyze(@arena, ast, options.mc_input_file)
-
-    //             unit_name := ast.program_decl.name
-    //             unit_len := ast.program_decl.name_len
-
-    //             // Setup context.
-    //             context.ast := ast
-    //             context.debug_enabled := options.debug_enabled
-    //             context.assert_off := options.assert_off
-    //             context.dbc_off := options.dbc_off
-
-    //             // Setup output file paths
-    //             if options.generate_c and c_file == nil then
-    //                 c_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
-    //                     options.output_dir, options.output_base, ".c")
-    //                 c_file := c_auto
-    //             end
-    //             if options.generate_c and h_file == nil then
-    //                 if c_file <> nil then
-    //                     h_auto := path_replace_ext(c_file, ".h")
-    //                     h_file := h_auto
-    //                 end
-    //             end
-    //             if options.generate_h and h_file == nil then
-    //                 h_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
-    //                     options.output_dir, options.output_base, ".h")
-    //                 h_file := h_auto
-    //             end
-    //             if (options.generate_mh or (options.generate_c and codegen_mh_has_exports(ast))) and
-    //                     mh_file == nil then
-    //                 mh_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
-    //                     options.output_dir, options.output_base, ".mh")
-    //                 mh_file := mh_auto
-    //             end
-
-    //             // Generate C code.
-    //             if options.generate_c then
-    //                 if c_file == nil then
-    //                     fprintf(stderr, "ERROR: could not determine C output path\n")
-    //                     return_code += 1
-    //                 else
-    //                     context.target := TARGET_C
-    //                     return_code += generate_from_ast(context, c_file, options.be_quiet)
-    //                 end
-    //             end
-
-    //             // Generate HEADER (.h) code.
-    //             if options.generate_h or options.generate_c then
-    //                 if h_file == nil then
-    //                     fprintf(stderr, "ERROR: could not determine header output path\n")
-    //                     return_code += 1
-    //                 else
-    //                     context.target := TARGET_HEADER
-    //                     return_code += generate_from_ast(context, h_file, options.be_quiet)
-    //                 end
-    //             end
-
-    //             // Generate .mh export table
-    //             if options.generate_mh or (options.generate_c and codegen_mh_has_exports(ast)) then
-    //                 if mh_file == nil then
-    //                     fprintf(stderr, "ERROR: could not determine .mh output path\n")
-    //                     return_code += 1
-    //                 else
-    //                     context.target := TARGET_MH
-    //                     return_code += generate_from_ast(context, mh_file, options.be_quiet)
-    //                 end
-    //             end
-
-    //             if c_auto <> nil then
-    //                 free(c_auto)
-    //             end
-    //             if h_auto <> nil then
-    //                 free(h_auto)
-    //             end
-    //             if mh_auto <> nil then
-    //                 free(mh_auto)
-    //             end
-    //         elsif options.show_ast then
-    //             // Perform semantic analysis and display AST
-    //             // printf("0000:0000 %s: ", options.mc_input_file)
-    //             // printf("Abstract Syntax Tree with Semantic Analysis\n")
-    //             semantic_analyze(@arena, ast, options.mc_input_file)
-    //             node_print(ast, 0)
-    //         else
-    //             // Default, show AST without semantic_analysis
-    //             // printf("0000:0000 %s: ", options.mc_input_file)
-    //             // printf("Abstract Syntax Tree\n")
-    //             node_print(ast, 0)
-    //         end
-    //     end
-    // end
 
     return return_code
 end modc

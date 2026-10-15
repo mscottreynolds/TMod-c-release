@@ -214,12 +214,26 @@ begin
 end mh_path_is_mh
 
 
+export function mh_resolve_import_path(source_path: const ^char,
+		package_path: const ^char, package_path_len: size_t,
+		unit_name: const ^char, unit_name_len: size_t,
+		from_path: const ^char, from_len: size_t,
+		out: ^char, out_cap: size_t): bool forward
+
+function mh_include_from_mh(source_path: const ^char, resolved: const ^char,
+		out: ^char, out_cap: size_t): bool forward
+
 (**
  * Format the C #include path for a Mod-c import source (.mh symtab world).
- * Quoted "*.mh" -> same path with .h; qualident -> sources + .h.
+ * Quoted "*.mh" -> the written path with .h.
+ * Unquoted qualident -> the .h of the directory-form .mh.
+ * source_path nil keeps the dot-to-slash spelling.
  *)
-export function mh_format_h_include(from_path: const ^char, from_len: size_t,		\
-	out: ^char, out_cap: size_t): bool
+export function mh_format_h_include(source_path: const ^char,
+		package_path: const ^char, package_path_len: size_t,
+		unit_name: const ^char, unit_name_len: size_t,
+		from_path: const ^char, from_len: size_t,
+		out: ^char, out_cap: size_t): bool
 begin
 	var inner: pcchar = nil
 	var inner_len: size_t = 0
@@ -246,6 +260,17 @@ begin
 		out[inner_len - 2] := 'h'
 		out[inner_len - 1] := '\0'
 		return true
+	end
+
+	if source_path <> nil and source_path[0] <> '\0' then
+		var resolved: array[4096] of char
+
+		if not mh_resolve_import_path(source_path, package_path, package_path_len,
+				unit_name, unit_name_len, from_path, from_len,
+				@resolved[0], sizeof(resolved)) then
+			return false
+		end
+		return mh_include_from_mh(source_path, @resolved[0], out, out_cap)
 	end
 
 	while i < inner_len do
@@ -318,10 +343,340 @@ end mh_dirname_copy
 
 
 (**
- * Resolve IMPORT apth relative to the compiling .mc file directory.
+ * Directory prefix of a C-string path.
+ * "tests/Foo.c" -> 5. "Foo.mc" -> 0. "/Foo.mc" -> 1.
  *)
-export function mh_resolve_import_path(source_path: const ^char,				\
-	from_path: const ^char, from_len: size_t, out: ^char, out_cap: size_t): bool
+function mh_dirname_len(path: const ^char): size_t
+begin
+	var slash: ^char = nil
+
+	if path == nil or path[0] == '\0' then
+		return 0
+	end
+	slash := strrchr(path, '/')
+	if slash == nil then
+		return 0
+	end
+	if slash == path then
+		return 1
+	end
+	return (slash - path) as size_t
+end mh_dirname_len
+
+
+(**
+ * package + '.' + unit, or unit alone. Writes a trailing NUL.
+ *)
+function mh_build_qualident(package_path: const ^char, package_path_len: size_t,
+		unit_name: const ^char, unit_name_len: size_t,
+		out: ^char, out_cap: size_t, out_len: ^size_t): bool
+begin
+	var n: size_t = 0
+
+	if unit_name == nil or unit_name_len == 0 or
+			out == nil or out_len == nil or out_cap == 0 then
+		return false
+	end
+	if package_path_len > 0 then
+		if package_path == nil then
+			return false
+		end
+		n := package_path_len + 1 + unit_name_len
+	else
+		n := unit_name_len
+	end
+	if n + 1 > out_cap then
+		return false
+	end
+	if package_path_len > 0 then
+		memcpy(out, package_path, package_path_len)
+		out[package_path_len] := '.'
+		memcpy(out + package_path_len + 1, unit_name, unit_name_len)
+	else
+		memcpy(out, unit_name, unit_name_len)
+	end
+	out[n] := '\0'
+	out_len^ := n
+	return true
+end mh_build_qualident
+
+
+(**
+ * Package root as a prefix of source_path. Length 0 means the current directory.
+ * Directory layout (.../tmodc/lib/String.mc for tmodc.lib.String) peels to the
+ * directory above tmodc/. Any other file uses the directory that contains it.
+ *)
+function mh_package_root_len(source_path: const ^char, 
+		package_path: const ^char, package_path_len: size_t,
+		unit_name: const ^char, unit_name_len: size_t,
+		root_len: ^size_t): bool
+begin
+	var qual: array[1024] of char
+	var qual_len: size_t = 0
+	var form: array[2048] of char
+	var form_len: size_t = 0
+	var path_len: size_t = 0
+	var off: size_t = 0
+	var i: size_t = 0
+	var last_dot: size_t = 0
+	var ext_len: size_t = 0
+	var cut: size_t = 0
+
+	if root_len == nil then
+		return false
+	end
+	root_len^ := 0
+	if source_path == nil or source_path[0] == '\0' then
+		return true
+	end
+	if package_path_len == 0 or package_path == nil or
+			unit_name == nil or unit_name_len == 0 then
+		root_len^ := mh_dirname_len(source_path)
+		return true
+	end
+	if not mh_build_qualident(package_path, package_path_len,
+			unit_name, unit_name_len, @qual[0], sizeof(qual), @qual_len) then
+		return false
+	end
+
+	path_len :=strlen(source_path)
+	off := 0
+	i := 0
+	while i < path_len do
+		if source_path[i] == '/' then
+			off := i + 1
+		end
+		i := i + 1
+	end
+	last_dot := path_len
+	i := off
+	while i < path_len do
+		if source_path[i] == '.' then
+			last_dot := i
+		end
+		i := i + 1
+	end
+	if last_dot < path_len then
+		ext_len := path_len - last_dot
+	end
+	if qual_len + ext_len + 1 <= sizeof(form) then
+		i := 0
+		while i < qual_len do
+			var c: char = qual[i]
+			if c == '.' then
+				c := '/'
+			end
+			form[i] := c
+			i := i + 1
+		end
+		if ext_len > 0 then
+			memcpy(@form[qual_len], source_path + last_dot, ext_len)
+		end
+		form_len := qual_len + ext_len
+		form[form_len] := '\0'
+		if path_len == form_len and memcmp(source_path, @form[0], form_len) == 0 then
+			root_len^ := 0
+			return true
+		end
+		if path_len > form_len and
+				source_path[path_len - form_len - 1] == '/' and
+				memcmp(source_path + (path_len - form_len), @form[0], form_len) == 0 then
+			cut := path_len - form_len - 1
+			if cut == 0 then
+				root_len^ := 1
+			else
+				root_len^ := cut
+			end
+			return true
+		end
+	end
+	root_len^ := mh_dirname_len(source_path)
+	return true
+end mh_package_root_len
+
+
+(**
+ * root + '/' + rel. root_len 0 copies rel. A root of "/" does not double the slash.
+ *)
+function mh_join_path(root: const ^char, root_len: size_t,
+		rel: const ^char, rel_len: size_t,
+		out: ^char, out_cap: size_t): bool
+begin
+	var n: size_t = 0
+
+	if rel == nil or out == nil or out_cap == 0 then
+		return false
+	end
+	if root_len == 0 then
+		if rel_len + 1 > out_cap then
+			return false
+		end
+		memcpy(out, rel, rel_len)
+		out[rel_len] := '\0'
+		return true
+	end
+	if root == nil then
+		return false
+	end
+	if root_len == 1 and root[0] == '/' then
+		n := 1 + rel_len
+		if n + 1 > out_cap then
+			return false
+		end
+		out[0] := '/'
+		memcpy(out + 1, rel, rel_len)
+		out[n] := '\0'
+		return true
+	end
+	n := root_len + 1 + rel_len
+	if n + 1 > out_cap then
+		return false
+	end
+	memcpy(out, root, root_len)
+	out[root_len] := '/'
+	memcpy(out + root_len + 1, rel, rel_len)
+	out[n] := '\0'
+	return true
+end mh_join_path
+
+
+(**
+ * #include spelling of a resolved .mh path, relative to the source file's directory.
+ * The trailing .mh becomes .h. A nested importer walks up with "../".
+ *)
+function mh_include_from_mh(source_path: const ^char, resolved: const ^char,
+		out: ^char, out_cap: size_t): bool
+begin
+	var from_: const ^char = nil
+	var from_len: size_t = 0
+	var res_len: size_t = 0
+	var ai: size_t = 0
+	var bi: size_t = 0
+	var ae: size_t = 0
+	var be: size_t = 0
+	var a_done: bool = false
+	var ups: size_t = 0
+	var rest: size_t = 0
+	var j: size_t = 0
+	var u: size_t = 0
+	var k: size_t = 0
+	var tail_len: size_t = 0
+
+	if resolved == nil or out == nil or out_cap == 0 then
+		return false
+	end
+	res_len := strlen(resolved)
+	if source_path <> nil then
+		from_ := source_path
+		from_len := mh_dirname_len(source_path)
+	end
+
+	while ai < from_len and bi < res_len do
+		ae := ai
+		be := bi
+		while ae < from_len and from_[ae] <> '/' do
+			ae := ae + 1
+		end
+		while be < res_len and resolved[be] <> '/' do
+			be := be + 1
+		end
+		if (ae - ai) <> (be - bi) then
+			break
+		end
+		if ae > ai and memcmp(from_ + ai, resolved + bi, ae - ai) <> 0 then
+			break
+		end
+		if ae == from_len then
+			a_done := true
+			bi := be
+			break
+		end
+		if be == res_len then
+			ai := ae
+			bi := be
+			if ai < from_len and from_[ai] == '/' then
+				ai := ai + 1
+			end
+			break
+		end
+		ai := ae + 1
+		bi := be + 1
+	end
+
+	if a_done then
+		ups := 0
+		if bi < res_len and resolved[bi] == '/' then
+			rest := bi + 1
+		else
+			rest := bi
+		end
+	else
+		ups := 0
+		if ai < from_len then
+			ups := 1
+			k := ai
+			while k < from_len do
+				if from_[k] == '/' then
+					ups := ups + 1
+				end
+				k := k + 1
+			end
+		end
+		rest := bi
+	end
+
+	j := 0
+	u := 0
+	while u < ups do
+		if j + 3 >= out_cap then
+			return false
+		end
+		out[j] := '.'
+		out[j + 1] := '.'
+		out[j + 2] := '/'
+		j := j + 3
+		u := u + 1
+	end
+	if rest > res_len then
+		return false
+	end
+	tail_len := res_len - rest
+	if tail_len >= 3 and resolved[res_len - 3] == '.' and
+			resolved[res_len - 2] == 'm' and resolved[res_len - 1] == 'h' then
+		if j + tail_len > out_cap then
+			return false
+		end
+		if tail_len > 3 then
+			memcpy(out + j, resolved + rest, tail_len - 3)
+			j := j + (tail_len - 3)
+		end
+		out[j] := '.'
+		out[j + 1] := 'h'
+		out[j + 2] := '\0'
+		return true
+	end
+	if j + tail_len + 1 > out_cap then
+		return false
+	end
+	if tail_len > 0 then
+		memcpy(out + j, resolved + rest, tail_len)
+		j := j + tail_len
+	end
+	out[j] := '\0'
+	return true
+end mh_include_from_mh
+
+
+(**
+ * Resolve IMPORT ... FROM to a .mh path.
+ * Quoted: the written file, joined to the compiling .mc directory.
+ * Unquoted: <package root>/dots turned into slashes>.mh.
+ *)
+export function mh_resolve_import_path(source_path: const ^char,
+		package_path: const ^char, package_path_len: size_t,
+		unit_name: const ^char, unit_name_len: size_t,
+		from_path: const ^char, from_len: size_t,
+		out: ^char, out_cap: size_t): bool
 begin
 	var inner: pcchar = nil
 	var inner_len: size_t = 0
@@ -346,11 +701,16 @@ begin
 		end
 		memcpy(@rel[0], inner, rel_len)
 		rel[rel_len] := '\0'
+	elsif not mh_qualident_to_mh_relpath(inner, inner_len, @rel[0], sizeof(rel)) then
+		return false
 	else
-		if not mh_qualident_to_mh_relpath(inner, inner_len, @rel[0], sizeof(rel)) then
+		var root_len: size_t = 0
+
+		if not mh_package_root_len(source_path, package_path, package_path_len,
+				unit_name, unit_name_len, @root_len) then
 			return false
 		end
-		rel_len := strlen(@rel[0])
+		return mh_join_path(source_path, root_len, @rel[0], strlen(@rel[0]), out, out_cap)
 	end
 
 	// if inner_len > 0 and inner[0] == '/' then

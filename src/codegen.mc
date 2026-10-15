@@ -50,6 +50,9 @@ export type InitialContext = struct
     assert_off: bool
     dbc_off: bool
     target: CodegenTarget
+    header_base: const ^char        // header filename stem, internal dots kept. Nil if unknown.
+    header_base_len: size_t
+    source_path: const ^char        // compiling .mc path. Nil if unknown
 end
 
 
@@ -74,6 +77,9 @@ begin
     ctx.debug_enabled := initial.debug_enabled
     ctx.assert_off := initial.assert_off
     ctx.dbc_off := initial.dbc_off
+    ctx.header_base := initial.header_base
+    ctx.header_base_len := initial.header_base_len
+    ctx.source_path := initial.source_path
     ctx.parent_ctx := nil
     ctx.parent_node := nil
     ctx.enclosing_func := nil

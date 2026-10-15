@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.26.10
+VERSION 	:= 0.26.12
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
@@ -86,6 +86,9 @@ SH_BUILD_DIR := $(BUILD_DIR)/selfhost
 
 # Bootstrap build directory.
 BS_BUILD_DIR := $(BUILD_DIR)/bootstrap
+
+# Stage 5 output. Same basenames as selfhost; the #include and guard use the -H stem.
+VF_BUILD_DIR := $(BUILD_DIR)/bootstrap-verify
 
 # RELEASE_SOURCE_DIR and TAR_DIR should not be the same.
 RELEASE_SOURCE_NAME := "release-$(VERSION).$(BUILD_NUMBER)"
@@ -515,7 +518,8 @@ selfhost: $(TARGET)
 		c_out=$(SH_BUILD_DIR)/$$base.c;							\
 		h_out=$(SH_BUILD_DIR)/$$base.h;							\
 		echo "Processing $$mc -> $$c_out and $$h_out"; 			\
-		./$(TARGET) $$mc -C $$c_out -H $$h_out || exit 1; 		\
+		rm -f "$$c_out";										\
+		./$(TARGET) $$mc -C $$c_out -H $$h_out || exit 1;		\
 	done
 	@echo "=== Stage 2: Building temporary compiler ==="
 	@for c in $(SH_BUILD_DIR)/*.c; do 							\
@@ -528,7 +532,7 @@ selfhost: $(TARGET)
 
 # Stage 3, 4, and 5. Full bootstrap with verification (2 stage)
 bootstrap: selfhost
-	mkdir -p $(BS_BUILD_DIR)
+	mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
 	@echo "=== Stage 3: Regenerating with new compiler ==="
 	@cp -p $(SRC_DIR)/*.h $(BS_BUILD_DIR) && cp -p $(SRC_DIR)/*.c $(BS_BUILD_DIR)
 	@for mc in $(SRC_MC_FILES); do 											\
@@ -536,6 +540,7 @@ bootstrap: selfhost
 		c_out=$(BS_BUILD_DIR)/$$base.c;										\
 		h_out=$(BS_BUILD_DIR)/$$base.h;										\
 		echo "Processing $$mc -> $$c_out and $$h_out"; 						\
+		rm -f "$$c_out";													\
 		./$(BIN_DIR)/modc.selfhost $$mc -C $$c_out -H $$h_out || exit 1; 	\
 	done
 	@echo "=== Stage 4: Building second-generation compiler ==="
@@ -549,8 +554,9 @@ bootstrap: selfhost
 	@success=true;																\
 	for mc in $(SRC_MC_FILES); do												\
 		base=$$(basename $$mc .mc);												\
-		c_regen=$(BS_BUILD_DIR)/$$base.regen.c;									\
-		h_regen=$(BS_BUILD_DIR)/$$base.regen.h;									\
+		c_regen=$(VF_BUILD_DIR)/$$base.c;									\
+		h_regen=$(VF_BUILD_DIR)/$$base.h;									\
+		rm -f "$$c_regen";														\
 		./$(BIN_DIR)/modc.bootstrap $$mc -C $$c_regen -H $$h_regen || exit 1;	\
 		c_selfhost=$(SH_BUILD_DIR)/$$base.c;									\
 		if [ -f "$$c_selfhost" ] && [ -f "$$c_regen" ]; then					\
@@ -560,6 +566,8 @@ bootstrap: selfhost
 			else																\
 				echo "=== $$c_selfhost, $$c_regen: identical ===";				\
 			fi;																	\
+		elif [ ! -f "$$c_selfhost" ] && [ ! -f "$$c_regen" ]; then				\
+			echo "=== $$base.c absent on both sides ===";						\
 		else 																	\
 			echo "=== ERROR: missing $$c_selfhost or $$c_regen ===";			\
 			success=false;														\
@@ -592,12 +600,17 @@ promote:
 	@success=true;														\
 	for mc in $(SRC_MC_FILES); do										\
 		base=$$(basename $$mc .mc);										\
-		c_regen=$(BS_BUILD_DIR)/$$base.regen.c;							\
-		h_regen=$(BS_BUILD_DIR)/$$base.regen.h;							\
+		c_regen=$(VF_BUILD_DIR)/$$base.c;								\
+		h_regen=$(VF_BUILD_DIR)/$$base.h;								\
 		c_selfhost=$(SH_BUILD_DIR)/$$base.c;							\
 		h_selfhost=$(SH_BUILD_DIR)/$$base.h;							\
-		if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then		\
-			echo "=== ERROR: $$c_selfhost and $$c_regen differ ==="; 	\
+		if [ -f "$$c_selfhost" ] || [ -f "$$c_regen" ]; then			\
+			if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then	\
+				echo "=== ERROR: $$c_selfhost and $$c_regen differ ===";	\
+				success=false;											\
+			fi;															\
+		fi;																\
+		if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then		\
 			success=false;												\
 		fi;																\
 		if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then		\
@@ -612,7 +625,11 @@ promote:
 			h_new=$(SH_BUILD_DIR)/$$base.h;								\
 			c_src=$(SRC_DIR)/$$base.c;									\
 			h_src=$(SRC_DIR)/$$base.h;									\
-			cp -fv $$c_new $$c_src;										\
+			if [ -f "$$c_new" ]; then 									\
+				cp -fv $$c_new $$c_src;									\
+			elif [ -f "$$c_src" ]; then									\
+				rm -fv $$c_src;											\
+			fi;															\
 			cp -fv $$h_new $$h_src;										\
 		done;															\
 	else																\
@@ -624,7 +641,7 @@ promote:
 # Count authored .mc (src, examples, tests, hello.mc). .mc is "Windows Message
 # File" in stock cloc; $(TOOLS_DIR)/tmodc.cloc + --force-lang remaps it. Braces are code.
 CLOC ?= cloc
-CLOC_LANG_DEF = $(TOOLS)/tmodc.cloc
+CLOC_LANG_DEF = $(TOOLS_DIR)/tmodc.cloc
 
 cloc:
 	@command -v $(CLOC) >/dev/null 2>&1 || { \

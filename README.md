@@ -78,6 +78,9 @@ Features (Early Design Goals)
 - Type names must resolve: every non-builtin type is a declaration, `IMPORT`, or `EXTERN` (0.26.1)
 - Newline-aware statement termination with implied continuation inside delimiters
 - Header (`.mh`) vs implementation (`.mc`) file distinction
+- `HEADER` unit (0.26.11.208): declarations and `END` only. No parameters, no `BEGIN`, no `.c` file. `-C` still writes `.h` and `.mh`
+- Package path (0.26.12.212): `module tmodc.lib.String()` is the unit `String` in `tmodc/lib/String.mc`. An unquoted import is one directory path from that unit's package root
+- Type call (0.26.12.212): `Ident(...)` on a declared type is `Ident::Ident(...)`. The keyword `opaque` is not a type name
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -87,6 +90,8 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.26.12.212** (14 October 2026): package path and type call. A unit name may be a qualident; the last identifier is the unit. An unquoted import is `<root>/dots/as/slashes.mh`. `Ident(...)` on a declared type calls `Ident::Ident`. Prelude names and the keyword `opaque` do not. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc. Promoted **0.26.12.212**
+- **0.26.11.208** (13 October 2026): `HEADER` unit. `header Name` … `end`. No parameters, no return type, no `BEGIN`. Prototypes only. No `.c` file. `-C` still writes `.h` and `.mh`. No unit-entry export. `src/tmodc.mc` generates `tmodc.h` and `tmodc.mh`. Bootstrap treats a missing `.c` pair as agreement. Promoted **0.26.11.208**
 - **0.26.10.206** (12 October 2026): `@` binds tighter than `as`. `@e as T` is `(@e) as T`. The operand of `@` is a postfix. `as` stays tighter than `&` and arithmetic. A same-line nested `FOR` names its end temporary `__for_end_l{line}_c{column}`. Kilo status-bar ternaries cast the pointer arm to `string`. User reported `make all` after those casts. Stem stays **0.26.10**
 - **0.26.10.204** (12 October 2026): `VAR` / `REF` of a named open-array alias decays like a written `integer[]` (element pointer, call passes the array). The method owner stays the written name. No hidden length. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
 - **0.26.10.203** (12 October 2026): ternary `cond ? a : b` has the type of the then arm when both arms share one static type (one alias step, then name, width, pointer, array, and `const`). A string literal has type `string`. Brace lists still take their type from a written target. The condition is unchecked. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
@@ -113,7 +118,7 @@ Current focus:
 - **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
 - **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
 - **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- Next on **0.26:** no soft language item. **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. Slice formals are **0.27** (planned, not implemented). Remaining hand-written compiler C is `node.c` / `node.h` (`tmodc.h` is the hand ABI header)
+- Next on **0.26:** no soft language item. **Package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. Slice formals are **0.27** (planned, not implemented). Remaining hand-written compiler C is `node.c` / `node.h`. `tmodc.h` is generated from `src/tmodc.mc` (**0.26.11.208**)
 - Later (after item 15): cyclic TMod-c `IMPORT` policy. Self-host of remaining compiler units continues in the background
 
 Credits & Acknowledgments
@@ -157,7 +162,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.26.10 hello.mc -C hello.c
+./bin/modc.0.26.12 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```

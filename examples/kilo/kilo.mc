@@ -1349,7 +1349,8 @@ end EditorConfig::moveCursor
 
 procedure EditorConfig::processKeypress(ref E: EditorConfig)
 begin
-	static var quit_times: integer = KILO_QUIT_TIMES
+	// static var quit_times: integer = KILO_QUIT_TIMES
+	static var quit_times: integer = 3
 	var c: integer = readKey()
 
 	switch c of

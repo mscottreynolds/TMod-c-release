@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 10 October 2026
+**Last updated:** 14 October 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -15,7 +15,7 @@ Notation is EBNF as used in the productions below. Keywords are case-insensitive
  *  	 	bool, byte, char, integer, cardinal, real, string
  *)
 
-tmodc-unit = program-unit | module-unit ;
+tmodc-unit = program-unit | module-unit | header-unit ;
 
 (**** Top-level units **********************************************)
 
@@ -29,7 +29,16 @@ module-unit = "MODULE" module-name formal-parameters EOS
     declaration-sequence 
     block ;
 
-module-name = identifier ;
+header-unit = "HEADER" module-name EOS
+    { import-stmt }
+    declaration-sequence
+    "END" [ end-tag ] ;
+
+(* Parsed (0.26.12.212).
+   The last identifier is the unit name. A prefix is the package path.
+   The end tag repeats that unit name, not the whole qualident.
+   Unquoted import search: Language Report §3.1.1. *)
+module-name = qualident ;
 
 (**** Imports ******************************************************)
 

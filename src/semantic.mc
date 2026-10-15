@@ -40,7 +40,8 @@ import TOK_NUMBER, TOK_ADD, TOK_SUB, TOK_MUL, TOK_DIV,
 	TOK_BITWISE_LSHIFT, TOK_BITWISE_RSHIFT, TOK_POWER,
 	TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_XOR, TOK_KEYWORD_NOT,
 	TOK_KEYWORD_DIV, TOK_EQ_EQ, TOK_NOT_EQ, TOK_LESS, TOK_LESS_EQ,
-	TOK_GREATER, TOK_GREATER_EQ, TokenKind, TOK_KEYWORD_MODULE, TToken,
+	TOK_GREATER, TOK_GREATER_EQ, TokenKind, TOK_KEYWORD_MODULE, 
+	TOK_KEYWORD_HEADER, TToken,
 	from Lexer
 import 
 	Node, NODE_IMPORT_ITEM, NODE_IMPORT, NODE_PARAM, NODE_IDENT, NODE_CALL,
@@ -2165,7 +2166,7 @@ end semantic_bind_mh_export
  * .mh paths: parse export table and register real symbol kinds.
  * .h paths: minimal SYM_KIND_IMPORT placeholders (unchanged).
  *)
-procedure semantic_register_import(ctx: pTSemanticContext, decl: pNode)
+procedure semantic_register_import(ctx: pTSemanticContext, root: pNode, decl: pNode)
 begin
 	var i: size_t = 0
 	var resolved: ARRAY[4096] of char		// SEMANTIC_MH_PATH_MAX
@@ -2186,8 +2187,10 @@ begin
 			semantic_error_at(decl, "semantic_register_import: internal error: missing source_path for .mh")
 		end
 		if not mh_resolve_import_path(ctx^.source_path,
-			decl^.import_stmt.from_path, decl^.import_stmt.path_len,
-			@resolved[0], SEMANTIC_MH_PATH_MAX) then
+				root^.program_decl.package_path, root^.program_decl.package_path_len,
+				root^.program_decl.name, root^.program_decl.name_len,
+				decl^.import_stmt.from_path, decl^.import_stmt.path_len,
+				@resolved[0], SEMANTIC_MH_PATH_MAX) then
 			semantic_error_at(decl, "semantic_register_import: cannot resolve .mh path")
 		end
 		if not mh_reader_load(@resolved[0], @m) then
@@ -2729,6 +2732,19 @@ begin
 end semantic_find_instance_on_chain
 
 
+(**
+ * True when sym is a declared TYPE: struct, union, alias, or named opaque.
+ * Prelude names (integer, decl == nil) stay non-callable.
+ * The keyword opaque is not a symbol, so opaque::opaque is not this case.
+ *)
+function semantic_sym_is_named_type(sym: pTSymbol): bool
+begin
+	if sym == nil or sym^.kind <> SYM_KIND_TYPE or sym^.decl == nil then
+		return false
+	end
+	return true
+end semantic_sym_is_named_type
+
 
 (**
  * Resolve a call target (procedure/function) and its arguments.
@@ -2737,11 +2753,13 @@ end semantic_find_instance_on_chain
  * obj.field: method-typed field call-through (Oberon: no auto-self); callee_expr
  * Ambiguity if both instance method and method-typed field share the name
  * Free name: PROC/FUNC/IMPORT, or VAR/PARAM/LET/CONST of method type.
+ * Type name Ident(): Ident::Ident when that function is in scope.
  * Unresolved free names and Type::name are errors (0.26).
  *)
 recursive procedure semantic_resolve_call(ctx: pTSemanticContext, n: pNode)
 begin
 	var sym: pTSymbol = nil
+	var ctor: pTSymbol = nil
 	var lookup_name: const ^char = nil
 	var lookup_len: size_t = 0
 	var mangled: ^char = nil
@@ -2864,7 +2882,28 @@ begin
 			if sym^.kind <> SYM_KIND_PROC and sym^.kind <> SYM_KIND_FUNC and
 					sym^.kind <> SYM_KIND_IMPORT and
 					not semantic_sym_is_method_value(ctx, sym) then
-				semantic_error_at(n, "semantic_resolve_call: identifier isnot callable")
+				// semantic_error_at(n, "semantic_resolve_call: identifier is not callable")
+				if semantic_sym_is_named_type(sym) and
+						(n^.call.method_owner == nil or n^.call.method_owner_len == 0) then
+					mangled := semantic_mangle_method(ctx^.arena,
+						n^.call.name, n^.call.name_len,
+						n^.call.name, n^.call.name_len)
+					ctor := symtab_lookup(ctx^.scope, mangled,
+						n^.call.name_len + 2 + n^.call.name_len)
+					if ctor <> nil and (ctor^.kind == SYM_KIND_PROC or
+							ctor^.kind == SYM_KIND_FUNC or
+							ctor^.kind == SYM_KIND_IMPORT or
+							semantic_sym_is_method_value(ctx, ctor)) then
+						n^.call.method_owner := n^.call.name
+						n^.call.method_owner_len := n^.call.name_len
+						sym := ctor
+					else
+						semantic_error_at(n,
+							"semantic_resolve_call: type has no Type::Type")
+					end
+				else
+					semantic_error_at(n, "semantic_resolve_call: identifier is not callable")
+				end
 			end
 		else
 			if n^.call.method_owner <> nil and n^.call.method_owner_len > 0 then
@@ -3641,7 +3680,7 @@ begin
 	for i := 1 to root^.program_decl.count do
 		let decl: pNode = root^.program_decl.decls[i-1]
 		if decl <> nil and decl^.kind == NODE_IMPORT then
-			semantic_register_import(ctx, decl)
+			semantic_register_import(ctx, root, decl)
 		end
 	end
 
@@ -3669,6 +3708,18 @@ begin
 	// Pass 1 1/2: resolve TYPE alias bodies (all TYPE names now in symtab)
 	semantic_resolve_type_decls(ctx, root)
 
+	// HEADER declarations are prototypes. A procedure or function body is a BEGIN.
+	if root^.program_decl.unit_kind == TOK_KEYWORD_HEADER then
+		for i := 1 to root^.program_decl.count do
+			let decl: pNode = root^.program_decl.decls[i-1]
+			if decl <> nil and 
+					(decl^.kind == NODE_PROC_DECL or decl^.kind == NODE_FUNC_DECL) and
+						decl^.proc_decl.body <> nil then
+				semantic_error_at(decl^.proc_decl.body,
+					"BEGIN is not allowed in a HEADER unit")
+			end
+		end
+	end
 	// Pass 2: procedure / function bodies
 	for i := 1 to root^.program_decl.count do
 		let decl: pNode = root^.program_decl.decls[i-1]

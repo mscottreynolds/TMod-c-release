@@ -1,11 +1,13 @@
-header tmodc()
+header tmodc
 
 (**
  * some additional type definitions.
  *)
 
-import from "stddef.h"
-import from "stdint.h"
+import size_t, 
+    from "stddef.h"
+import int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t,
+    from "stdint.h"
 import from "stdbool.h"
 import from "limits.h"
 import from "float.h"
@@ -34,12 +36,13 @@ export type uint64 = uint64_t
 
 
 (**
- * Basic string type.
+ * Basic String slice.
+ * Example: s: String = { "Hello world", 11}
  *)
-export type TString = struct
-    value: const ^char
-    length: size_t
+export type String = struct
+    value: const ^char              // only initialize to existing strings.
+    length: size_t                  // Initialize with strlen("...")
 end
 
 
-end
+end tmodc

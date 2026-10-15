@@ -98,6 +98,9 @@ export type CodegenContext = struct
                                         // emitted (or block.count at fall-through
                                         // END). Cutoff for DEFER: only stmts[i]
                                         // with i < stmt_index have been executed.
+    header_base: const ^char            // header filename stem. Nil uses the unit name.
+    header_base_len: size_t
+    source_path: const ^char            // compiling .mc path. Nil if unknown
 end
 export type pCodegenContext = ^CodegenContext
 
@@ -1848,6 +1851,10 @@ begin
     var from_path: const ^char
     var path_len: size_t
     var include_path: array[4096] of char
+    var package_path: const ^char = nil
+    var package_len: size_t = 0
+    var unit_name: const ^char = nil
+    var unit_len: size_t = 0
 
     if n == nil or n.kind <> NODE_IMPORT then
         return
@@ -1861,7 +1868,15 @@ begin
 
     dynbuf_append(ctx.out, "#include ")
     if mh_path_is_mh(from_path, path_len) then
-        if not mh_format_h_include(from_path, path_len, include_path, sizeof(include_path)) then
+        if ctx.ast <> nil and ctx.ast.kind == NODE_PROGRAM then
+            package_path := ctx.ast.program_decl.package_path
+            package_len := ctx.ast.program_decl.package_path_len
+            unit_name := ctx.ast.program_decl.name
+            unit_len := ctx.ast.program_decl.name_len
+        end
+        if not mh_format_h_include(ctx.source_path, package_path, package_len,
+                unit_name, unit_len, from_path, path_len,
+                include_path, sizeof(include_path)) then
             return
         end
         dynbuf_append_char(ctx.out, '"')

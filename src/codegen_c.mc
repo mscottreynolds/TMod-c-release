@@ -34,7 +34,7 @@ import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
     from codegen_dbc
 import dynbuf_append_char, dynbuf_appendn, dynbuf_append, 
     from dynbuf
-import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE,
+import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
     from Lexer
 import Node, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP,
     NODE_SWITCH, SwitchCase, NODE_BLOCK, NODE_RETURN, NODE_PROGRAM, NODE_BREAK,
@@ -1070,7 +1070,12 @@ begin
     dynbuf_append(ctx.out, " * ===================================== */\n\n")
 
     dynbuf_append(ctx.out, "#include \"")
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    // dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    if ctx.header_base <> nil and ctx.header_base_len > 0 then
+        dynbuf_appendn(ctx.out, ctx.header_base, ctx.header_base_len)
+    else
+        dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    end
     dynbuf_append(ctx.out, ".h\"\n\n")
 
     // Does it make sense to have the module prototype between imports and
@@ -1127,6 +1132,12 @@ begin
     if ctx.ast == nil or ctx.out == nil then
         fprintf(stderr, "FATAL ERROR: codegen_c_ NULL arguments\n")
         exit(1)
+    end
+
+    // HEADER has no translation unit. Leave the buffer emtpy.
+    if ctx.ast.kind == NODE_PROGRAM and 
+            ctx.ast.program_decl.unit_kind == TOK_KEYWORD_HEADER then
+        return
     end
 
     // TODO: Check AST and call codegen_program for PROGRAM or 

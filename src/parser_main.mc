@@ -26,7 +26,7 @@ import
     TOK_KEYWORD_IF, TOK_KEYWORD_WHILE, TOK_KEYWORD_FOR, TOK_KEYWORD_REPEAT, TOK_KEYWORD_LOOP,
     TOK_KEYWORD_SWITCH, TOK_KEYWORD_BREAK, TOK_KEYWORD_CONTINUE, TOK_KEYWORD_RETURN,
     TOK_KEYWORD_DEFER, TOK_KEYWORD_DEBUG, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE,
-    TOK_KEYWORD_DEFINE, TLexer::capture_line_from,
+    TOK_KEYWORD_HEADER, TOK_KEYWORD_DEFINE, TLexer::capture_line_from,
     from Lexer
 import 
     Arena, pArena, arena_alloc, arena_append_ptr, ppvoid 
@@ -736,42 +736,101 @@ function TParser::parse_program(ref p: TParser): pNode
 begin
     var prog: pNode = node_create(p.arena, NODE_PROGRAM, p.current)
     var param_list: pNode = nil
+    var path_buf: array[512] of char
+    var path_used: size_t = 0
+    var part_start: const ^char = nil
+    var part_len: size_t = 0
 
     p.skip_empty_statements()
 
-    // MUST start with PROGRAM or MODULE (even before comments)
-    if not p.match(TOK_KEYWORD_PROGRAM) and not p.match(TOK_KEYWORD_MODULE) then
-        p.error_at("TParser::parse_program: expected PROGRAM or MODULE at top level", true)
+    // MUST start with PROGRAM, MODULE, or HEADER (even before comments)
+    if not p.match(TOK_KEYWORD_PROGRAM) and not p.match(TOK_KEYWORD_MODULE) and
+        not p.match(TOK_KEYWORD_HEADER) then
+        p.error_at("TParser::parse_program: expected PROGRAM, MODULE, or HEADER at top level", true)
     end
 
     prog^.program_decl.unit_kind := prog^.token.kind;
 
-    // Module/program name (identifier)
-    if p.current.kind == TOK_IDENT then
-        prog^.program_decl.name     := p.current.start
-        prog^.program_decl.name_len := p.current.length
-        p.advance()
-    else
-        p.error_at("TParser::parse_program: expected PROGRAM/MODULE name", true)
-    end
+    // // Module/program name (identifier)
+    // if p.current.kind == TOK_IDENT then
+    //     prog^.program_decl.name     := p.current.start
+    //     prog^.program_decl.name_len := p.current.length
+    //     p.advance()
+    // else
+    //     p.error_at("TParser::parse_program: expected PROGRAM/MODULE name", true)
 
-    // Formal parameter list: (name: type, ...)
-    param_list := parse_param_list(@p)
-    if param_list <> nil then
-        if param_list^.param_list.has_ellipsis then
-            p.error_at("TParser::parse_program: '...' is not allowed on PROGRAM/ODULE parameter lists", true)
+    // Last identifier of a qulident is the unit name.
+    // Earlier identifiers are package_path ("tmodc.lib"), with no trailing dot.
+    // A single identifier leaves package_path empty. The 512-byte cap is the prefix only.
+    prog^.program_decl.package_path := nil
+    prog^.program_decl.package_path_len := 0
+    if p.current.kind <> TOK_IDENT then
+        p.error_at("TParser::parse_program: expected PROGRAM, MODULE, or HEADER name", true)
+    end
+    part_start := p.current.start
+    part_len := p.current.length
+    p.advance()
+    while p.check(TOK_DOT) do
+        if path_used > 0 then
+            if path_used + 1 >= 512 then
+                p.error_at("TParser::parse_progra: unit path too long", true)
+            end
+            path_buf[path_used] := '.'
+            path_used := path_used + 1
         end
-        prog^.program_decl.params           := param_list^.param_list.params
-        prog^.program_decl.param_count      := param_list^.param_list.count
-        prog^.program_decl.param_capacity   := param_list^.param_list.capacity
-    else
-        p.error_at("TParser::parse_program: formal parameters expected", false)
+        if path_used + part_len >= 512 then
+            p.error_at("TParser::parse_program: unit path too long", true)
+        end
+        memcpy(@path_buf[path_used], part_start, part_len)
+        path_used := path_used + part_len
+        p.advance()
+        if p.current.kind <> TOK_IDENT then
+            p.error_at("TParser::parse_program: expected identifier after '.'", true)
+        end
+        part_start := p.current.start
+        part_len := p.current.length
+        p.advance()
+    end
+    if path_used > 0 then
+        var path_copy: ^char = arena_alloc(p.arena, path_used) as ^char
+
+        memcpy(path_copy, @path_buf[0], path_used)
+        prog^.program_decl.package_path := path_copy
+        prog^.program_decl.package_path_len := path_used
+    end
+    prog^.program_decl.name := part_start
+    prog^.program_decl.name_len := part_len
+
+    // HEADER has no entry function, so it has no parameter list.
+    if prog^.program_decl.unit_kind == TOK_KEYWORD_HEADER then
+        if p.check(TOK_LPAREN) then
+            p.error_at("TParser::parse_program: HEADER has no parameter list", true)
+        end
         prog^.program_decl.params           := nil
         prog^.program_decl.param_count      := 0
         prog^.program_decl.param_capacity   := 0
+    else
+        // Formal parameter list: (name: type, ...)
+        param_list := parse_param_list(@p)
+        if param_list <> nil then
+            if param_list^.param_list.has_ellipsis then
+                p.error_at("TParser::parse_program: '...' is not allowed on PROGRAM/MODULE parameter lists", true)
+            end
+            prog^.program_decl.params           := param_list^.param_list.params
+            prog^.program_decl.param_count      := param_list^.param_list.count
+            prog^.program_decl.param_capacity   := param_list^.param_list.capacity
+        else
+            p.error_at("TParser::parse_program: formal parameters expected", false)
+            prog^.program_decl.params           := nil
+            prog^.program_decl.param_count      := 0
+            prog^.program_decl.param_capacity   := 0
+        end
     end
 
     // Optional return type: : TType
+    if prog^.program_decl.unit_kind == TOK_KEYWORD_HEADER and p.check(TOK_COLON) then
+        p.error_at("TParser::parse_program: HEADER has no return type", true)
+    end
     if p.match(TOK_COLON) then
         prog^.program_decl.return_type := p.parse_return_type_ex(false)
         p.advance()
@@ -799,9 +858,22 @@ begin
         p.skip_empty_statements()
     end
 
-    // BEGIN block is required for PROGRAM. Although optional for
-    // MODULE, a warning will still be generated.
-    if p.check(TOK_KEYWORD_BEGIN) then
+    // // BEGIN block is required for PROGRAM. Although optional for
+    // // MODULE, a warning will still be generated.
+    // if p.check(TOK_KEYWORD_BEGIN) then
+    // HEADER Has declarations and END. BEGIN is fatal.
+    // PROGRAM requires BEGIN. MODULE warns when BEGIN is missing.
+    if prog^.program_decl.unit_kind == TOK_KEYWORD_HEADER then
+        if p.check(TOK_KEYWORD_BEGIN) then
+            p.error_at("TParser::parse_program: BEGIN is not allowed in a HEADER unit", true)
+        end
+        if not p.check(TOK_KEYWORD_END) then
+            p.error_at("TParser::parse_program: expected END at end of HEADER", true)
+        end
+        p.advance()
+        p.parse_optional_end_tag()
+        prog^.program_decl.block := nil
+    elsif p.check(TOK_KEYWORD_BEGIN) then
         prog^.program_decl.block := p.parse_block()
     elsif prog^.program_decl.unit_kind == TOK_KEYWORD_PROGRAM then
         p.error_at("TParser::parse_program: PROGRAM requires a BEGIN ... END block", true)
@@ -1510,6 +1582,7 @@ export function TParser::parse(ref p: TParser): pNode
 begin
     if p.lexer.start == p.lexer.current then
         p.advance()         // Prime lexer with first token
+        p.token_count := 0
     end
 
     // First skip any empty statements.

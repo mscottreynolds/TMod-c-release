@@ -6,7 +6,7 @@ module codegen_mh(ctx: CodegenContext)
 
 import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
 	from dynbuf
-import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE 
+import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
 	from Lexer
 import TType 
 	from ttype
@@ -658,6 +658,8 @@ begin
 	for i := 1 to n^.program_decl.count do
 		mh_emit_exported_decl(out, n^.program_decl.decls[i - 1])
 	end
-	mh_emit_unit_entry(out, n)
+	if n^.program_decl.unit_kind <> TOK_KEYWORD_HEADER then
+		mh_emit_unit_entry(out, n)
+	end
 end codegen_mh
 

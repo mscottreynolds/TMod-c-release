@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 10 October 2026  
+**Last updated:** 14 October 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -160,11 +160,11 @@ s := a +
 
 ## 3. Compilation units and modules
 
-### 3.1 Programs and modules
+### 3.1 Programs, modules, and headers
 
-A compilation unit is a **`PROGRAM`** or a **`MODULE`**. Both have a declaration sequence and a body. Exact productions: `program-unit`, `module-unit` in the syntax document.
+A compilation unit is a **`PROGRAM`**, a **`MODULE`**, or a **`HEADER`**. A program or a module has a declaration sequence and a body. A header has a declaration sequence and `END`, and no `BEGIN`. Exact productions: `program-unit`, `module-unit`, `header-unit` in the syntax document.
 
-A **program** is the application entry. A **module** is a compilable collection of declarations (and an optional body) meant to be imported.
+A **program** is the application entry. A **module** is a compilable collection of declarations (and an optional body) meant to be imported. A **header** is that declaration list with no entry function. It takes no parameters and has no return type. The source is `header Name`, not `header Name()`. `-C` still writes the `.h` and, when there is an export, the `.mh`. It does not write a `.c` file.
 
 **Examples:**
 
@@ -184,21 +184,50 @@ module Counters()
 	end bump
 begin
 end Counters
+
+header tmodc
+	export type int8 = int8_t
+	export procedure Valid() forward
+end tmodc
 ```
 
 `(* C: void Demo(int argc, char **argv);  void Counters(void); *)`
 
+A header writes no unit prototype. `BEGIN` anywhere in a header is an error. A procedure or function there is a prototype (`EXTERN`, `FORWARD`, or no body). `@module` still names the unit. The `.mh` has no unit-entry export, so an importer does not bind a callable entry.
+
 Optional `end` tag may repeat the unit or procedure name (`end Demo`, `end Type::name`).
+
+### 3.1.1 Package path *Implemented (0.26.12.212)*
+
+A `PROGRAM`, `MODULE`, or `HEADER` name may be a qualident. The last identifier is the unit name. The identifiers before it are the package path, with no trailing dot. `module tmodc.lib.String()` is the unit `String`, and its entry is `String()`. `header tmodc.lib.tmodc` is the unit `tmodc` and has no entry. `module String()` has an empty path. The optional `end` tag repeats the unit name (`end String`), not the whole qualident.
+
+The C function, `@module`, and the auto-bound import entry use that unit name. `import String::new from tmodc.lib.String` binds `String::new` and, when `String` is not already in scope, the entry `String`. A second unit whose unit name is also `String` does not bind another `String`.
+
+The source file is the directory form `tmodc/lib/String.mc`. Unless `-b` or an explicit `-C` / `-H` / `-M` path is set, the output stem is that filename's stem (`String`), so `-C` writes `String.c`, `String.h`, and `String.mh` beside the source. The unit's own `#include` and header guard use the basename of the `.h` file. A character in that stem that is not an identifier character becomes `_`. The example includes `"String.h"` and guards `MODC_MODULE_String_H`. A header unit guards `MODC_HEADER_…_H`. The C function remains `String`. Two linked units with that unit name define the same C function.
+
+A quoted import path is the written file. A relative quote is joined only to the directory that contains the compiling `.mc`. A quote that does not end in `.mh` is a C `#include`, and the C compiler searches its include paths. A quote that ends in `.mh` is read as that path, and the `#include` is the same path with `.h`.
+
+An unquoted qualident has one candidate. `from something.else.Something` is the file `<root>/something/else/Something.mh`. There is no flat `something.else.Something.mh` probe, and a mixed spelling such as `something.else/Something.mh` is not a candidate. A qualident with no dot is `<root>/Name.mh`. The paired `.h` is that path with `.h`, spelled relative to the compiling `.mc`. An importer at `tmodc/tests/test_String.mc` includes `"../lib/String.h"`.
+
+The root comes from the importing unit's declaration and its source path.
+
+- The source path ends in the directory form of the declared qualident (`…/tmodc/lib/String.mc` for `module tmodc.lib.String`, using the source file's extension). The root is the directory above `tmodc/`. A path that is exactly that form, with nothing before it, has an empty root (the current directory). A leading `/` at that boundary means the root is `/`.
+- Any other source path, including a flat dotted filename such as `tmodc.lib.String.mc`, uses the directory that contains the file. That path is not peeled.
+- A declaration with no prefix (`module String`, and the compiler's own `src/*.mc`) uses the directory that contains the source file.
+
+The search does not walk to the filesystem root, and it does not also look beside a nested source file. From `tmodc/lib/String.mc`, `from something.else.Something` does not open `tmodc/lib/something/else/Something.mh`. A program with no prefix, compiled from `tests/`, still resolves `from fixtures.minimod` as `tests/fixtures/minimod.mh`.
+
+On 13 October 2026 the lock was two candidates, flat file then directory, flat winning. That flat probe was dropped the same day. The directory candidate is the rule that shipped.
 
 ### 3.2 Import and export *Partly implemented*
 
 - **`.mh` / `.h` split:** `.mh` carries TMod-c export semantics; `.h` is the C ABI. Generated C **`#include`s `.h` only**, never `.mh`.  
 - **`IMPORT … FROM`:**  
   - **Quoted string** — foreign/C path or explicit path (`"stdio.h"`, `"path.mh"`).  
-  - **Qualident** — TMod-c module (`fixtures.minimod` → `.mh` + paired `.h`). *Implemented (0.24.5).*  
+  - **Qualident** — TMod-c module. Dots become directory separators under the importing unit's package root (§3.1.1). *Directory form implemented (0.26.12.212).* A unit with no package prefix still resolves beside the compiling file, which is what 0.24.5 did for every unquoted import.  
   - **Import items:** plain names, or **`Type::name`** for type-bound methods (*0.25.2*); lookup uses C mangling `Type__name`.  
 - **Include-only:** `IMPORT FROM source` with no item list — `#include` only, no TMod-c names.  
-- **Module entry (7a, 0.25.3.150):** a named import from an `.mh` also binds the `@module` unit-entry export. Include-only does not. `PROGRAM` names are not bound.  
+- **Module entry (7a, 0.25.3.150):** a named import from an `.mh` also binds the `@module` unit-entry export. Include-only does not. `PROGRAM` names are not bound. A `HEADER` unit writes `@module` and does not write a unit-entry export, so nothing is bound.  
 - **`EXPORT`** — marks declarations written into the unit’s `.mh` table.  
 - **`EXTERN`** — symbol implemented elsewhere (typically C); no body in this unit.  
 - **`EXTERN TYPE`** — foreign type name.  
@@ -206,7 +235,7 @@ Optional `end` tag may repeat the unit or procedure name (`end Demo`, `end Type:
   - `extern type termios = struct` — `typedef struct termios termios;` (C tag with no typedef).  
   - `extern type Foo = struct bar` — `typedef struct bar Foo;`.  
   Not `type T = opaque` (`void *`). Not `type T FORWARD` (must complete in this unit). Layout and fields come from the `#include`. *Implemented (0.26.5.186).*  
-- **Calls (0.26.0):** unresolved free `name(...)` / `Type::name(...)` is an error.  
+- **Calls (0.26.0):** unresolved free `name(...)` / `Type::name(...)` is an error. A declared type name `Ident(...)` is `Ident::Ident(...)` when that function is in scope (**0.26.12.212**, §8.3).  
 - **Types (0.26.1):** unknown **single-word** type is an error. Multi-word C spellings (`long long`, `unsigned int`) remain legal without import. Bare `unsigned` is not a type. `unsigned` is not a modifier on `^T` or on a typedef name — see §5.3.  
 - **C preprocessor:** `#define` / `#if` lines are copied into generated C; they do **not** bind TMod-c names. A name the unit must see (e.g. `switch` `case`) is **`DEFINE`** (§4.1.1), not a pass-through line.
 
@@ -1172,7 +1201,7 @@ end
 
 Expression actuals (`a + b`, `g()`) are **illegal** for `VAR`/`REF` on non-pointer `T` (no address). `REF p: ^T` does not auto-`&`.
 
-### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191; named-type owner 0.26.8.196)*
+### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191; named-type owner 0.26.8.196; type call 0.26.12.212)*
 
 Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**.
 
@@ -1183,7 +1212,9 @@ Classification uses the **written type of the first formal** only. The formal’
 | Kind | First formal | Call |
 |------|----------------|------|
 | **Instance** | Written name is the owner `Type` (not `^Type`) | `Type::m(obj, …)` and `obj.m(…)`; `p.m(…)` when `p` is written `^Type` (**0.26.5.178**); a TYPE alias of that pointer is a different owner (`type pERow = ^ERow`, then `row: pERow` looks up `pERow::`, not `ERow::`) (**0.26.8.196**); `Type::m(p)` when `p` is `^Type` (**0.26.5.179**); `c.m()` / `pc.m()` when `m` is on an `EXTENDS` ancestor (**0.26.5.180**); `p[i].m()` when `p` is `^Type` (**0.26.7.191**); `tokens[0].m()` when `tokens` is `^sds` (**0.26.8.196**) |
-| **Static / factory** | No formals, or first type ≠ `Type` | **`Type::m(…)` only** |
+| **Static / factory** | No formals, or first type ≠ `Type` | **`Type::m(…)` only**, and `Type(…)` when the method is `Type::Type` (**0.26.12.212**) |
+
+**Calling the type name.** `Ident(...)`, when `Ident` is a declared type, is the call `Ident::Ident(...)` if that function is in scope. The type may be a struct, a union, an enum, an alias, a method type, or a named opaque (`type Handle = opaque`). The alias is its own name: `type Alias = Point` calls `Alias::Alias`, not `Point::Point`. Prelude names such as `integer` have no declaration of their own and stay non-callable. The keyword `opaque` is not a type name, so `opaque(...)` and `opaque::opaque` are not this form. `^opaque` has no name and owns no method. A free `function Ident()` cannot share the ordinary name with `type Ident`. The explicit call `Ident::Ident(...)` remains. Another unit lists the function in its import (`import Ident, Ident::Ident`). The lookup does not walk `EXTENDS`. C is still `Ident__Ident`. When `Ident::Ident` is an instance method, the peel above applies. A declared type with no `Ident::Ident` is an error.
 
 Method-typed **fields** are Oberon procedure variables: `obj.field(args)` → `(obj.field)(args)` — **no** auto-receiver. If the same identifier is both an instance method and a method-typed field, `obj.name(...)` is a **compile-time error**; use `Type::name(obj, …)`.
 
@@ -1203,6 +1234,11 @@ begin
 	return p
 end Point::new
 
+function Point::Point(x: integer, y: integer): Point
+begin
+	return Point::new(x, y)
+end Point::Point
+
 procedure Point::print(self: Point)
 begin
 	printf("(%d, %d)\n", self.getX(), self.y)
@@ -1215,6 +1251,7 @@ type Box = struct
 end
 
 var p: Point = Point::new(5, 6)
+var q: Point = Point(3, 4)    (* Point::Point, when that function is in scope *)
 Point::print(p)
 p.print()
 p.getX()
@@ -1466,6 +1503,9 @@ Do not maintain a second full EBNF elsewhere.
 | 12 October 2026 | **§10.1 build-time defaults:** `TMODC_ARCH` parked indefinitely until another architecture can prove a compiler-build default. Unbound units stay `cint`. |
 | 12 October 2026 | **§6.3 `@` and `as` (0.26.10.206):** `@e as T` is `(@e) as T`. `as` stays tighter than `&` and the arithmetic operators. Other prefixes still wrap the cast. |
 | 12 October 2026 | **§6.3 string arms:** a string literal has type `string`. In `? :`, `string`, `^char`, and `const ^char` are three types. Clarifies **0.26.10.203**. No checker change. |
+| 13 October 2026 | **§3.1 `HEADER` unit (0.26.11.208):** `header Name` … `end`. No parameters, no return type, no `BEGIN`. Prototypes only. No `.c` file. `-C` still writes `.h` and `.mh`. No unit-entry export. |
+| 13 October 2026 | **§3.1.1 package path (lock revised the same day):** a unit qualident's last identifier is the unit name. The flat-then-directory search was dropped before implementation. One directory candidate. A quoted path stays the written file. Shipped in **0.26.12.212**. |
+| 14 October 2026 | **§3.1.1 / §3.2 / §8.3 package path and type call (0.26.12.212):** directory-only unquoted import from the package root; output stem is the source filename; `#include` and the guard use the `.h` basename. `Ident(...)` on a declared type is `Ident::Ident(...)`. Prelude names and the keyword `opaque` are not that call. |
 
 ---
 

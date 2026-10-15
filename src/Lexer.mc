@@ -236,6 +236,7 @@ var keyword_table: array of TKeywordTable = {
 	{ "FORWARD",    TOK_KEYWORD_FORWARD    },
 	{ "FROM",       TOK_KEYWORD_FROM       },
 	{ "FUNCTION",   TOK_KEYWORD_FUNCTION   },
+	{ "HEADER", 	TOK_KEYWORD_HEADER     },
 	{ "IF",         TOK_KEYWORD_IF         },
 	{ "IMPORT",     TOK_KEYWORD_IMPORT     },
 	{ "IN",			TOK_KEYWORD_IN 		   },

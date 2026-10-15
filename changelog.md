@@ -2,6 +2,26 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.26.12.212
+- **Package path** — a `PROGRAM`, `MODULE`, or `HEADER` name may be a qualident. The last identifier is the unit name (`module tmodc.lib.String()` is `String()`). The prefix is the package path. The `end` tag repeats the unit name (`end String`).
+- **Directory import** — an unquoted qualident has one file, `<root>/dots/as/slashes.mh`. No flat `something.else.Something.mh` probe. A quoted path is the written file. A quote that does not end in `.mh` is a C `#include`. The root peels only when the source path is the directory form of the declared qualident. A unit with no prefix uses the directory that contains the source.
+- **Output names** — the default stem is the source filename. The unit's own `#include` and header guard use the `.h` basename. `tmodc/lib/String.mc` writes `String.h`, includes `"String.h"`, and guards `MODC_MODULE_String_H`. The C function stays `String`.
+- **Bootstrap verify** — stage 5 writes `build/bootstrap-verify/<stem>.c` and `.h`, the same basenames as stage 1. A `*.regen.h` name would change the guard and the `#include`.
+- **Type call** — `Ident(...)` on a declared type is `Ident::Ident(...)` when that function is in scope. Struct, union, enum, alias, method type, and `type Handle = opaque` all qualify. Prelude names such as `integer` stay non-callable. The keyword `opaque` is not a type name. C remains `Ident__Ident`. Another unit imports `Ident::Ident`. The lookup does not walk `EXTENDS`.
+- **Tests:** `tests/test_struct_ctor.mc`, `tests/test_type_ctor.mc`, `tests/test3_struct_ctor.mc`, `tests/test3_opaque_ctor.mc`. Package samples live under `tests/tmodc/`.
+- Language Report §3.1.1, §3.2, §8.3. EBNF `module-name = qualident`. Stem **0.26.12**.
+- User promoted **0.26.12.212** after `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Branch **`mod-c_0.26`**.
+
+## Version 0.26.11.208
+- **`HEADER` unit** — `header Name` then a declaration sequence and `END`. No parameter list and no return type. The source is `header Name`, not `header Name()`. `BEGIN` is an error: the unit body is rejected in the parser, and a procedure or function body is rejected in semantic analysis. `EXTERN`, `FORWARD`, and a body-less procedure stay prototypes.
+- **No `.c` file** — `codegen_c` leaves the buffer empty. `generate_from_ast` writes a file only when `out_buffer.used > 0`. `-C` still writes the companion `.h` and, when the unit has an export, the `.mh`. The `.h` has no unit prototype. The `.mh` keeps `@module` and does not emit a unit-entry export, so an importer does not bind a callable entry.
+- **`src/tmodc.mc`** is that unit. `src/tmodc.h` and `src/tmodc.mh` are generated. `node.c` / `node.h` stay hand-written C.
+- **Bootstrap** — before each `-C`, the `.c` path is removed. Stage 5 treats both `.c` files absent as agreement. One side present is still an error. `make promote` copies a `.c` only when it exists, and removes a stale `src/*.c` when the verified output has none.
+- **Tests:** `tests/test2_header.mc` (a `FORWARD` prototype), `tests/test3_header.mc` (a procedure body).
+- Language Report §3.1. EBNF `header-unit`. Stem **0.26.11**.
+- User promoted **0.26.11.208**. Branch **`mod-c_0.26`**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §3.1, `docs/syntax-ebnf.md`. Grok report later.
+
 ## Version 0.26.10.206
 - **`@` binds tighter than `as`** — `@e as T` is `(@e) as T`. The operand of `@` is a postfix. `as` stays tighter than `&` and the arithmetic operators (`exp & 1 as cardinal` is `exp & (1 as cardinal)`). Other prefixes still wrap a cast (`-n as integer`, `^p as T`). `(@e) as T` stays legal. EBNF: `@` leaves `prefix-op`. Parser: `parse_unary` on `@` parses a postfix, then an optional `as`.
 - **Same-line `FOR` temporary** — the end bound is `__for_end_l{line}_c{column}`. Nested `FOR`s on one line no longer share a name (`-Wshadow` on clang and tcc). Each `FOR` still has its own C block. Test `tests/test_for.mc`.

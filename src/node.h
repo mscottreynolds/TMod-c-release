@@ -141,10 +141,14 @@ struct Node {
 	union {
 		// Program (top-level root)
 		struct {
-			TokenKind 	unit_kind;	// TOK_KEYWORD_PROGRAM or TOK_KEYWORD_MODULE
+			TokenKind 	unit_kind;	// TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, or TOK_KEYWORD_HEADER
 
 			const char 	*name;		// id of the program/module
 			size_t		name_len;	// length of the id, no null assumption.
+			// Qualident prefix only ("tmodc.lib"). No trailing dot.
+			// NULL and 0 when the unit name is a single identifier.
+			const char 	*package_path;
+			size_t 		package_path_len;
 
 			// Optional parameters.
 			Node **params;			// array of param nodes (or simple ident+type)
