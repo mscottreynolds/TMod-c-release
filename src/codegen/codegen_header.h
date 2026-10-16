@@ -30,31 +30,31 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "dynbuf.h"
-
-/* === IMPORT === */
 #include "stddef.h"
 
 /* === IMPORT === */
 #include "stdlib.h"
 
 /* === IMPORT === */
-#include "codegen_common.h"
-
-/* === IMPORT === */
-#include "ttype.h"
+#include "stdio.h"
 
 /* === IMPORT === */
 #include "node.h"
 
 /* === IMPORT === */
-#include "Lexer.h"
-
-/* === IMPORT === */
 #include "version.h"
 
 /* === IMPORT === */
-#include "stdio.h"
+#include "../dynbuf.h"
+
+/* === IMPORT === */
+#include "../ttype.h"
+
+/* === IMPORT === */
+#include "../Lexer.h"
+
+/* === IMPORT === */
+#include "codegen_common.h"
 
 /**
  * Emit Header PROCEDURE or FUNCTION declaration.

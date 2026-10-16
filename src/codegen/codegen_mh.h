@@ -23,15 +23,6 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "dynbuf.h"
-
-/* === IMPORT === */
-#include "Lexer.h"
-
-/* === IMPORT === */
-#include "ttype.h"
-
-/* === IMPORT === */
 #include "stddef.h"
 
 /* === IMPORT === */
@@ -48,6 +39,15 @@ typedef float real;
 
 /* === IMPORT === */
 #include "node.h"
+
+/* === IMPORT === */
+#include "../dynbuf.h"
+
+/* === IMPORT === */
+#include "../Lexer.h"
+
+/* === IMPORT === */
+#include "../ttype.h"
 
 /* === IMPORT === */
 #include "codegen_common.h"

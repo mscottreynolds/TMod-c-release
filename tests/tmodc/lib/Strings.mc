@@ -3,11 +3,9 @@ module tmodc.lib.Strings(str: string, length: integer): String
 
 (**
  * Basic wrapper around const strings.
- * example: var s: String = TString("...", len)
+ * example: var s: String = String("...", len)
  * s.value()
  * s.length()
- *
- * This version has the module and methods named TString and the struct just String.
  *)
 
 
@@ -29,6 +27,7 @@ begin
 
     return s
 end String::String
+
 
 export function String::new(s: string): String
 begin

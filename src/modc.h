@@ -56,13 +56,16 @@ typedef float real;
 #include "node.h"
 
 /* === IMPORT === */
-#include "codegen_common.h"
-
-/* === IMPORT === */
 #include "version.h"
 
 /* === IMPORT === */
-#include "codegen.h"
+#include "codegen/codegen.h"
+
+/* === IMPORT === */
+#include "codegen/codegen_mh.h"
+
+/* === IMPORT === */
+#include "codegen/codegen_common.h"
 
 /* === IMPORT === */
 #include "dynbuf.h"
@@ -78,9 +81,6 @@ typedef float real;
 
 /* === IMPORT === */
 #include "utils.h"
-
-/* === IMPORT === */
-#include "codegen_mh.h"
 
 /**
  * Open input file, allocate space, read source, close output file. 

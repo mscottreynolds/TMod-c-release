@@ -30,10 +30,10 @@ typedef float real;
 #include "stddef.h"
 
 /* === IMPORT === */
-#include "dynbuf.h"
+#include "node.h"
 
 /* === IMPORT === */
-#include "node.h"
+#include "../dynbuf.h"
 
 /* === IMPORT === */
 #include "codegen_common.h"

@@ -1,4 +1,4 @@
-module codegen_c(ctx: CodegenContext)
+module codegen.codegen_c(ctx: CodegenContext)
 
 (**
  * TMod-c
@@ -22,20 +22,6 @@ module codegen_c(ctx: CodegenContext)
  * Port to TMod-c finished 10 Oct 2026.
  *)
 
-import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_expr,
-    emit_indent, codegen_common_type_decl, emit_return_type, emit_doc_comment_as_c,
-    codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
-    emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
-    codegen_common_module_prototype, codegen_common_import,
-    from codegen_common
-import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
-    codegen_dbc_emit_invariants_to_loop, codegen_dbc_emit_requires, 
-    codegen_dbc_emit_ensures,
-    from codegen_dbc
-import dynbuf_append_char, dynbuf_appendn, dynbuf_append, 
-    from dynbuf
-import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
-    from Lexer
 import Node, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP,
     NODE_SWITCH, SwitchCase, NODE_BLOCK, NODE_RETURN, NODE_PROGRAM, NODE_BREAK,
     NODE_CONTINUE, NODE_DOC_COMMENT, NODE_PREPROCESSOR, NODE_DEFINE, NODE_EXPR_STMT,
@@ -53,14 +39,26 @@ import snprintf, fprintf, stderr,
     from "stdio.h"
 import exit 
     from "stdlib.h"
-import TType 
-    from ttype
 import VERSION_BASE 
     from "version.h"
 
+import dynbuf_append_char, dynbuf_appendn, dynbuf_append, 
+    from dynbuf
+import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
+    from Lexer
+import TType 
+    from ttype
 
-// import from "string.h"
-// import from utils
+import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_expr,
+    emit_indent, codegen_common_type_decl, emit_return_type, emit_doc_comment_as_c,
+    codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
+    emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
+    codegen_common_module_prototype, codegen_common_import,
+    from codegen.codegen_common
+import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
+    codegen_dbc_emit_invariants_to_loop, codegen_dbc_emit_requires, 
+    codegen_dbc_emit_ensures,
+    from codegen.codegen_dbc
 
 
 (**

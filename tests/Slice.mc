@@ -24,6 +24,26 @@ end
 
 
 (**
+ * Create and return a new slice from existing slice for items starting
+ * at `start`with count of items. Size of individual items remains the same.
+ * Indexes are zero based. 
+ *)
+export function slice::slice(self: slice, start: integer, count: integer): slice
+begin
+    require self.value <> nil and 
+        start >= 0 and start < self.count and 
+        count >= 0 and count <= self.count and
+        (start + count) <= self.count
+
+    var sl: slice
+    sl.size := self.size
+    sl.count := count
+    sl.value := (self.value + start * self.size) as const ^byte
+    return sl
+end
+
+
+(**
  * Creae a new slice from an object.
  * @param value = pointer to some array of records.
  * @param size = size of an individual record in the array.
@@ -112,26 +132,6 @@ begin
     sl.value := s as const ^byte
     sl.size := sizeof(char)
     sl.count := length
-    return sl
-end
-
-
-(**
- * Create and return a new slice for items starting at `start`
- * with count of items. Size of individual items remains the same.
- * Indexes are zero based. 
- *)
-export function slice::slice(self: slice, start: integer, count: integer): slice
-begin
-    require self.value <> nil and 
-        start >= 0 and start < self.count and 
-        count >= 0 and count <= self.count and
-        (start + count) <= self.count
-
-    var sl: slice
-    sl.size := self.size
-    sl.count := count
-    sl.value := (self.value + start * self.size) as const ^byte
     return sl
 end
 

@@ -1,4 +1,4 @@
-module codegen_common()
+module codegen.codegen_common()
 
 (**
  * CodegenCommon.mc
@@ -14,18 +14,6 @@ module codegen_common()
 
 
 import from "tmodc.h"
-
-import ppvoid, pchar 
-    from arena
-import DynBuf, pDynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
-    from dynbuf
-IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_DIV_EQ, 
-    TOK_MOD_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
-    TOK_KEYWORD_DIV, TOK_POWER, TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_MOD, 
-    TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER,
-    from Lexer
-import mh_path_is_mh, mh_format_h_include,
-    from mh_reader    
 import Node, pNode, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_FOR, NODE_WHILE, NODE_REPEAT_UNTIL,
     NODE_LOOP, NODE_DOC_COMMENT, NODE_PROGRAM, NODE_TYPE_DECL, NODE_IMPORT, NODE_IMPORT_ITEM,
     NODE_PARAM, NODE_PARAM_LIST, NODE_UNARY, NODE_STRUCT_DECL, NODE_ENUM_TYPE, NODE_ENUM_ITEM,
@@ -42,6 +30,18 @@ import snprintf,
     from "stdio.h"
 import strncmp, memcmp,
     from "string.h"
+
+import ppvoid, pchar 
+    from arena
+import DynBuf, pDynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
+    from dynbuf
+IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_DIV_EQ, 
+    TOK_MOD_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
+    TOK_KEYWORD_DIV, TOK_POWER, TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_MOD, 
+    TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER,
+    from Lexer
+import mh_path_is_mh, mh_format_h_include,
+    from mh_reader    
 import TSymbol 
     from symbol
 import SYM_KIND_LET, SYM_KIND_PARAM, 

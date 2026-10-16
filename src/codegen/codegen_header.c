@@ -17,15 +17,15 @@ void codegen_header(CodegenContext ctx);
  * Generation of C header files (.h) for the -H option.
  * Only emits the exported surface of a program/module.
  */
-#include "dynbuf.h"
 #include "stddef.h"
 #include "stdlib.h"
-#include "codegen_common.h"
-#include "ttype.h"
-#include "node.h"
-#include "Lexer.h"
-#include "version.h"
 #include "stdio.h"
+#include "node.h"
+#include "version.h"
+#include "../dynbuf.h"
+#include "../ttype.h"
+#include "../Lexer.h"
+#include "codegen_common.h"
 /**
  * Emit Header PROCEDURE or FUNCTION declaration.
  * All treated as a prototype.
@@ -58,12 +58,12 @@ static void codegen_header_emit_exported(const Node* n, CodegenContext ctx)
             emit_indent((ctx).out, (ctx).indent);
             dynbuf_append((ctx).out, "/* === LET/VAR/CONST EXPORT === */\n");
             {
-                const long long __for_end_l75_c7 = (long long)((((*n)).var_decl).count - 1);
-                for (i = 0; (long long)(i) <= __for_end_l75_c7; i++)
+                const long long __for_end_l77_c7 = (long long)((((*n)).var_decl).count - 1);
+                for (i = 0; (long long)(i) <= __for_end_l77_c7; i++)
                 {
                     {
-                        Node* item_l76_c13 = (((*n)).var_decl).items[i];
-                        if (item_l76_c13 == nil)
+                        Node* item_l78_c13 = (((*n)).var_decl).items[i];
+                        if (item_l78_c13 == nil)
                         {
                                                         /* INVARIANT (on loop exit) */
                             continue;
@@ -80,13 +80,13 @@ static void codegen_header_emit_exported(const Node* n, CodegenContext ctx)
                         {
                             dynbuf_append((ctx).out, "const ");
                         }
-                        emit_var_decl((ctx).out, (((*item_l76_c13)).var_item).name, (((*item_l76_c13)).var_item).name_len, (((*item_l76_c13)).var_item).item_type);
+                        emit_var_decl((ctx).out, (((*item_l78_c13)).var_item).name, (((*item_l78_c13)).var_item).name_len, (((*item_l78_c13)).var_item).item_type);
                         if (!(((*n)).var_decl).is_extern)
                         {
-                            if ((((*item_l76_c13)).var_item).initializer != nil)
+                            if ((((*item_l78_c13)).var_item).initializer != nil)
                             {
                                 dynbuf_append((ctx).out, " = ");
-                                codegen_common_expr((((*item_l76_c13)).var_item).initializer, ctx);
+                                codegen_common_expr((((*item_l78_c13)).var_item).initializer, ctx);
                             }
                             else
                             {
@@ -145,8 +145,8 @@ static void emit_header_guard_name(pDynBuf out, const char* header_type, const c
     dynbuf_append(out, header_type);
     dynbuf_append_char(out, '_');
     {
-        const long long __for_end_l162_c5 = (long long)(base_len - 1);
-        for (i = 0; (long long)(i) <= __for_end_l162_c5; i++)
+        const long long __for_end_l164_c5 = (long long)(base_len - 1);
+        for (i = 0; (long long)(i) <= __for_end_l164_c5; i++)
         {
             {
                 c = base[i];
@@ -218,20 +218,20 @@ static void codegen_header_program(const Node* n, CodegenContext ctx)
     {
         size_t i = 0;
         {
-            const long long __for_end_l243_c6 = (long long)((((*n)).program_decl).count - 1);
-            for (i = 0; (long long)(i) <= __for_end_l243_c6; i++)
+            const long long __for_end_l245_c6 = (long long)((((*n)).program_decl).count - 1);
+            for (i = 0; (long long)(i) <= __for_end_l245_c6; i++)
             {
                 {
-                    Node* d_l244_c9 = (((*n)).program_decl).decls[i];
-                    if (((*d_l244_c9)).kind == NODE_IMPORT)
+                    Node* d_l246_c9 = (((*n)).program_decl).decls[i];
+                    if (((*d_l246_c9)).kind == NODE_IMPORT)
                     {
                         dynbuf_append((ctx).out, "/* === IMPORT === */\n");
-                        codegen_common_import(d_l244_c9, ctx);
+                        codegen_common_import(d_l246_c9, ctx);
                         dynbuf_append_char((ctx).out, '\n');
                     }
                     else
                     {
-                        codegen_header_emit_exported(d_l244_c9, ctx);
+                        codegen_header_emit_exported(d_l246_c9, ctx);
                     }
                 }
             }

@@ -63,12 +63,17 @@ declaration-sequence = {  type-decl
 type-decl   = [ "EXPORT" ] type-def ;
 const-decl  = [ "EXPORT" ] const-def ;
 let-decl    = [ "EXPORT" ] let-def ;
-define-decl = [ "EXPORT" ] "DEFINE" identifier rest-of-line ;
 var-decl    = [ "EXPORT" ] [ "EXTERN" ] var-def     (* top level. *)
             | [ "STATIC" ] var-def ;                (* block level *)
 
-(* rest-of-line: C text from the identifier through the terminating newline,
-   including '\' continuations. Not TMod-c tokens. DEFINE is top-level only. *)
+(* Note, as of 0.27 DEFINE will gain the "=" between the identifier and text as in the following: *)
+define-decl     = [ "EXPORT" ] "DEFINE" identifier [ "(" define-params ")" ] "=" [ replacement-list ] ;
+define-params   = "..."
+                | identifier { "," identifier } [ "," "..." ] ;
+
+(* replacement-list: C text after '=' through the newline, including '\'
+   continuations. May be empty. Not TMod-c tokens. The '=' is not emitted.
+   '(' with no space after the identifier selects the function-like arm. *)
 
 (* Multi-item definitions *)
 
@@ -417,7 +422,9 @@ escape-sequence = "\\" | "\'" | "\"" | "\?" | "\a" | "\b" | "\f" | "\n"
 
 character = (* any printable char except " or \ or control chars *) ;
 
-const-expression = expression ; (* Expressions that can be computed at compile time. *)
+const-expression = expression ; (* Expressions that can be computed at compile time; *)
+                                (* an integer literal, an enumeration constant, a character constant, *)
+                                (* or arithmetic on those. *)
 
 sizeof-expession = "SIZEOF" "(" ( type-specifier | designator ) ")" ;
 

@@ -7,6 +7,8 @@ module tmodc.lib.String(str: string, length: integer): TString
  * s.value()
  * s.length()
  *
+ * Alternate version without a TString::TString constructor,
+ * but using the module name instead.
  *)
 
 

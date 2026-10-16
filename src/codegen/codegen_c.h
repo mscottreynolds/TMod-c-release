@@ -40,18 +40,6 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "codegen_common.h"
-
-/* === IMPORT === */
-#include "codegen_dbc.h"
-
-/* === IMPORT === */
-#include "dynbuf.h"
-
-/* === IMPORT === */
-#include "Lexer.h"
-
-/* === IMPORT === */
 #include "node.h"
 
 /* === IMPORT === */
@@ -64,10 +52,22 @@ typedef float real;
 #include "stdlib.h"
 
 /* === IMPORT === */
-#include "ttype.h"
+#include "version.h"
 
 /* === IMPORT === */
-#include "version.h"
+#include "../dynbuf.h"
+
+/* === IMPORT === */
+#include "../Lexer.h"
+
+/* === IMPORT === */
+#include "../ttype.h"
+
+/* === IMPORT === */
+#include "codegen_common.h"
+
+/* === IMPORT === */
+#include "codegen_dbc.h"
 
 /**
  * Generate C source code from the given AST in the CodegenContext.

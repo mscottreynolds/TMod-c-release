@@ -10,33 +10,33 @@ void codegen_mh(CodegenContext ctx);
 /**
  * codegen_mh.mc - Emit modc-mh/1 symbol export files for EXPORT declarations.
  */
-#include "dynbuf.h"
-#include "Lexer.h"
-#include "ttype.h"
 #include "stddef.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "version.h"
 #include "node.h"
+#include "../dynbuf.h"
+#include "../Lexer.h"
+#include "../ttype.h"
 #include "codegen_common.h"
 static bool mh_proc_complete(const Node* n)
 {
     if ((((*n)).proc_decl).is_forward)
     {
         /* return value captured before defers */
-        bool __ret_l35 = false;
-        return __ret_l35;
+        bool __ret_l37 = false;
+        return __ret_l37;
     }
     if ((((*n)).proc_decl).is_extern && (((*n)).proc_decl).params == nil)
     {
         /* return value captured before defers */
-        bool __ret_l38 = false;
-        return __ret_l38;
+        bool __ret_l40 = false;
+        return __ret_l40;
     }
     /* return value captured before defers */
-    bool __ret_l40 = true;
-    return __ret_l40;
+    bool __ret_l42 = true;
+    return __ret_l42;
 }
 
 static bool mh_type_opaque(const Node* n)
@@ -45,8 +45,8 @@ static bool mh_type_opaque(const Node* n)
     if ((((*n)).type_decl).is_extern)
     {
         /* return value captured before defers */
-        bool __ret_l49 = true;
-        return __ret_l49;
+        bool __ret_l51 = true;
+        return __ret_l51;
     }
     ty = (((*n)).type_decl).defined_type;
     if (ty != nil)
@@ -58,13 +58,13 @@ static bool mh_type_opaque(const Node* n)
         if (((*ty)).is_opaque && !((*ty)).is_pointer)
         {
             /* return value captured before defers */
-            bool __ret_l58 = true;
-            return __ret_l58;
+            bool __ret_l60 = true;
+            return __ret_l60;
         }
     }
     /* return value captured before defers */
-    bool __ret_l61 = false;
-    return __ret_l61;
+    bool __ret_l63 = false;
+    return __ret_l63;
 }
 
 typedef const char* pcchar;
@@ -78,47 +78,47 @@ static bool mh_first_formal_type_name(const Node* n, pcchar* out_name, size_t* o
     if (n == nil)
     {
         /* return value captured before defers */
-        bool __ret_l81 = false;
-        return __ret_l81;
+        bool __ret_l83 = false;
+        return __ret_l83;
     }
     pl = (((*n)).proc_decl).params;
     if (pl == nil || ((*pl)).kind != NODE_PARAM_LIST || (((*pl)).param_list).count == 0)
     {
         /* return value captured before defers */
-        bool __ret_l85 = false;
-        return __ret_l85;
+        bool __ret_l87 = false;
+        return __ret_l87;
     }
     self_param = (((*pl)).param_list).params[0];
     if (self_param == nil || ((*self_param)).kind != NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l89 = false;
-        return __ret_l89;
+        bool __ret_l91 = false;
+        return __ret_l91;
     }
     pt = (((*self_param)).param).param_type;
     if (pt == nil)
     {
         /* return value captured before defers */
-        bool __ret_l93 = false;
-        return __ret_l93;
+        bool __ret_l95 = false;
+        return __ret_l95;
     }
     if (((*pt)).is_pointer || ((*pt)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l99 = false;
-        return __ret_l99;
+        bool __ret_l101 = false;
+        return __ret_l101;
     }
     if (((*pt)).name == nil || ((*pt)).name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l102 = false;
-        return __ret_l102;
+        bool __ret_l104 = false;
+        return __ret_l104;
     }
     (*out_name) = ((*pt)).name;
     (*out_len) = ((*pt)).name_len;
     /* return value captured before defers */
-    bool __ret_l106 = true;
-    return __ret_l106;
+    bool __ret_l108 = true;
+    return __ret_l108;
 }
 
 static bool mh_method_is_instance(const Node* n)
@@ -128,24 +128,24 @@ static bool mh_method_is_instance(const Node* n)
     if (n == nil || (((*n)).proc_decl).method_owner == nil || (((*n)).proc_decl).method_owner_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l117 = false;
-        return __ret_l117;
+        bool __ret_l119 = false;
+        return __ret_l119;
     }
     if (!mh_first_formal_type_name(n, &ft_name, &ft_len))
     {
         /* return value captured before defers */
-        bool __ret_l120 = false;
-        return __ret_l120;
+        bool __ret_l122 = false;
+        return __ret_l122;
     }
     if (ft_len != (((*n)).proc_decl).method_owner_len)
     {
         /* return value captured before defers */
-        bool __ret_l123 = false;
-        return __ret_l123;
+        bool __ret_l125 = false;
+        return __ret_l125;
     }
     /* return value captured before defers */
-    bool __ret_l125 = memcmp(ft_name, (((*n)).proc_decl).method_owner, ft_len) == 0;
-    return __ret_l125;
+    bool __ret_l127 = memcmp(ft_name, (((*n)).proc_decl).method_owner, ft_len) == 0;
+    return __ret_l127;
 }
 
 static void mh_append_type_spec(DynBuf* out, const TType* t)
@@ -228,8 +228,8 @@ static void mh_append_signature(DynBuf* out, const Node* params_list, const TTyp
     dynbuf_append_char(out, ' ');
     dynbuf_append_char(out, '(');
     {
-        const long long __for_end_l215_c5 = (long long)(count);
-        for (i = 1; (long long)(i) <= __for_end_l215_c5; i++)
+        const long long __for_end_l217_c5 = (long long)(count);
+        for (i = 1; (long long)(i) <= __for_end_l217_c5; i++)
         {
             {
                 p = (((*params_list)).param_list).params[i - 1];
@@ -283,8 +283,8 @@ static void mh_append_type_signature(DynBuf* out, const Node* mt)
     dynbuf_append_char(out, ' ');
     dynbuf_append_char(out, '(');
     {
-        const long long __for_end_l262_c5 = (long long)(count);
-        for (i = 1; (long long)(i) <= __for_end_l262_c5; i++)
+        const long long __for_end_l264_c5 = (long long)(count);
+        for (i = 1; (long long)(i) <= __for_end_l264_c5; i++)
         {
             {
                 p = (((*pl)).param_list).params[i - 1];
@@ -333,8 +333,8 @@ static void mh_append_unit_signature(DynBuf* out, const Node* n)
     dynbuf_append_char(out, ' ');
     dynbuf_append_char(out, '(');
     {
-        const long long __for_end_l310_c5 = (long long)(count);
-        for (i = 1; (long long)(i) <= __for_end_l310_c5; i++)
+        const long long __for_end_l312_c5 = (long long)(count);
+        for (i = 1; (long long)(i) <= __for_end_l312_c5; i++)
         {
             {
                 p = (((*n)).program_decl).params[i - 1];
@@ -403,8 +403,8 @@ static void mh_append_field_list(DynBuf* out, const Node* st)
     }
     dynbuf_append(out, " (");
     {
-        const long long __for_end_l376_c5 = (long long)((((*st)).struct_decl).field_count);
-        for (i = 1; (long long)(i) <= __for_end_l376_c5; i++)
+        const long long __for_end_l378_c5 = (long long)((((*st)).struct_decl).field_count);
+        for (i = 1; (long long)(i) <= __for_end_l378_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -503,8 +503,8 @@ static void mh_emit_export_enum_members(DynBuf* out, const Node* en)
                 return;
     }
     {
-        const long long __for_end_l461_c5 = (long long)((((*en)).enum_type).count);
-        for (i = 1; (long long)(i) <= __for_end_l461_c5; i++)
+        const long long __for_end_l463_c5 = (long long)((((*en)).enum_type).count);
+        for (i = 1; (long long)(i) <= __for_end_l463_c5; i++)
         {
             {
                 item = (((*en)).enum_type).elements[i - 1];
@@ -571,8 +571,8 @@ static void mh_emit_export_binding(DynBuf* out, const Node* n, const char* kind_
         complete_word = "incomplete";
     }
     {
-        const long long __for_end_l525_c5 = (long long)((((*n)).var_decl).count);
-        for (i = 1; (long long)(i) <= __for_end_l525_c5; i++)
+        const long long __for_end_l527_c5 = (long long)((((*n)).var_decl).count);
+        for (i = 1; (long long)(i) <= __for_end_l527_c5; i++)
         {
             {
                 Node* item = (((*n)).var_decl).items[i - 1];
@@ -666,12 +666,12 @@ bool codegen_mh_has_exports(const Node* root)
     if (root == nil || ((*root)).kind != NODE_PROGRAM)
     {
         /* return value captured before defers */
-        bool __ret_l600 = false;
-        return __ret_l600;
+        bool __ret_l602 = false;
+        return __ret_l602;
     }
     {
-        const long long __for_end_l603_c5 = (long long)((((*root)).program_decl).count);
-        for (i = 1; (long long)(i) <= __for_end_l603_c5; i++)
+        const long long __for_end_l605_c5 = (long long)((((*root)).program_decl).count);
+        for (i = 1; (long long)(i) <= __for_end_l605_c5; i++)
         {
             {
                 Node* d = (((*root)).program_decl).decls[i - 1];
@@ -680,8 +680,8 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).proc_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l607 = true;
-                        return __ret_l607;
+                        bool __ret_l609 = true;
+                        return __ret_l609;
                     }
                 }
                 else if (((*d)).kind == NODE_TYPE_DECL)
@@ -689,8 +689,8 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).type_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l611 = true;
-                        return __ret_l611;
+                        bool __ret_l613 = true;
+                        return __ret_l613;
                     }
                 }
                 else if (((*d)).kind == NODE_VAR_DECL)
@@ -698,8 +698,8 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).var_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l615 = true;
-                        return __ret_l615;
+                        bool __ret_l617 = true;
+                        return __ret_l617;
                     }
                 }
                 else if (((*d)).kind == NODE_CONST_DECL)
@@ -707,8 +707,8 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).const_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l619 = true;
-                        return __ret_l619;
+                        bool __ret_l621 = true;
+                        return __ret_l621;
                     }
                 }
                 else if (((*d)).kind == NODE_LET_DECL)
@@ -716,8 +716,8 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).let_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l623 = true;
-                        return __ret_l623;
+                        bool __ret_l625 = true;
+                        return __ret_l625;
                     }
                 }
                 else if (((*d)).kind == NODE_DEFINE)
@@ -725,16 +725,16 @@ bool codegen_mh_has_exports(const Node* root)
                     if ((((*d)).define_stmt).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l627 = true;
-                        return __ret_l627;
+                        bool __ret_l629 = true;
+                        return __ret_l629;
                     }
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l632 = false;
-    return __ret_l632;
+    bool __ret_l634 = false;
+    return __ret_l634;
 }
 
 /**
@@ -760,8 +760,8 @@ void codegen_mh(CodegenContext ctx)
     dynbuf_append_char(out, '\n');
     mh_emit_line(out, "@format 1");
     {
-        const long long __for_end_l658_c5 = (long long)((((*n)).program_decl).count);
-        for (i = 1; (long long)(i) <= __for_end_l658_c5; i++)
+        const long long __for_end_l660_c5 = (long long)((((*n)).program_decl).count);
+        for (i = 1; (long long)(i) <= __for_end_l660_c5; i++)
         {
             {
                 mh_emit_exported_decl(out, (((*n)).program_decl).decls[i - 1]);

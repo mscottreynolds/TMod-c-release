@@ -27,15 +27,15 @@
 #include "parser_common.h"
 #include "parser_main.h"
 #include "node.h"
-#include "codegen_common.h"
 #include "version.h"
-#include "codegen.h"
+#include "codegen/codegen.h"
+#include "codegen/codegen_mh.h"
+#include "codegen/codegen_common.h"
 #include "dynbuf.h"
 #include "arena.h"
 #include "symtab.h"
 #include "semantic.h"
 #include "utils.h"
-#include "codegen_mh.h"
 typedef char* pchar;
 typedef FILE* pFILE;
 typedef Node* pNode;
@@ -70,20 +70,20 @@ static bool ends_with(string s, string suffix)
     if (s == nil || suffix == nil)
     {
         /* return value captured before defers */
-        bool __ret_l99 = false;
-        return __ret_l99;
+        bool __ret_l101 = false;
+        return __ret_l101;
     }
-    size_t slen_l101_c13 = strlen(s);
-    size_t xlen_l102_c13 = strlen(suffix);
-    if (slen_l101_c13 < xlen_l102_c13)
+    size_t slen_l103_c13 = strlen(s);
+    size_t xlen_l104_c13 = strlen(suffix);
+    if (slen_l103_c13 < xlen_l104_c13)
     {
         /* return value captured before defers */
-        bool __ret_l104 = false;
-        return __ret_l104;
+        bool __ret_l106 = false;
+        return __ret_l106;
     }
     /* return value captured before defers */
-    bool __ret_l106 = memcmp(s + (slen_l101_c13 - xlen_l102_c13), suffix, xlen_l102_c13) == 0;
-    return __ret_l106;
+    bool __ret_l108 = memcmp(s + (slen_l103_c13 - xlen_l104_c13), suffix, xlen_l104_c13) == 0;
+    return __ret_l108;
 }
 
 static pchar path_file_stem(string path, size_t* out_len)
@@ -99,8 +99,8 @@ static pchar path_file_stem(string path, size_t* out_len)
     if (path == nil || path[0] == '\0')
     {
         /* return value captured before defers */
-        pchar __ret_l125 = nil;
-        return __ret_l125;
+        pchar __ret_l127 = nil;
+        return __ret_l127;
     }
     slen = strlen(path);
     i = slen;
@@ -133,16 +133,16 @@ static pchar path_file_stem(string path, size_t* out_len)
     if (stem_end <= start)
     {
         /* return value captured before defers */
-        pchar __ret_l148 = nil;
-        return __ret_l148;
+        pchar __ret_l150 = nil;
+        return __ret_l150;
     }
     if (out_len != nil)
     {
         (*out_len) = stem_end - start;
     }
     /* return value captured before defers */
-    pchar __ret_l153 = utils_strndup(path + start, stem_end - start);
-    return __ret_l153;
+    pchar __ret_l155 = utils_strndup(path + start, stem_end - start);
+    return __ret_l155;
 }
 
 static pchar path_replace_ext(string path, string new_ext)
@@ -154,8 +154,8 @@ static pchar path_replace_ext(string path, string new_ext)
     if (path == nil || new_ext == nil || path[0] == '\0')
     {
         /* return value captured before defers */
-        pchar __ret_l166 = nil;
-        return __ret_l166;
+        pchar __ret_l168 = nil;
+        return __ret_l168;
     }
     slen = strlen(path);
     stem_len = slen;
@@ -182,39 +182,39 @@ static pchar path_replace_ext(string path, string new_ext)
     dynbuf_appendn(&buf, path, stem_len);
     dynbuf_append(&buf, new_ext);
     /* return value captured before defers */
-    pchar __ret_l187 = utils_strndup((buf).data, (buf).used);
+    pchar __ret_l189 = utils_strndup((buf).data, (buf).used);
     /* DEFER cleanup (unwinding to function) */
     /* DEFER end */
     dynbuf_free(&buf);
-    return __ret_l187;
+    return __ret_l189;
 }
 
 static bool is_mc_source_path(string s)
 {
     /* return value captured before defers */
-    bool __ret_l193 = ends_with(s, ".mc") && s[0] != '-';
-    return __ret_l193;
+    bool __ret_l195 = ends_with(s, ".mc") && s[0] != '-';
+    return __ret_l195;
 }
 
 static bool is_c_output_path(string s)
 {
     /* return value captured before defers */
-    bool __ret_l199 = ends_with(s, ".c") && s[0] != '-';
-    return __ret_l199;
+    bool __ret_l201 = ends_with(s, ".c") && s[0] != '-';
+    return __ret_l201;
 }
 
 static bool is_h_output_path(string s)
 {
     /* return value captured before defers */
-    bool __ret_l205 = ends_with(s, ".h") && s[0] != '-';
-    return __ret_l205;
+    bool __ret_l207 = ends_with(s, ".h") && s[0] != '-';
+    return __ret_l207;
 }
 
 static bool is_mh_output_path(string s)
 {
     /* return value captured before defers */
-    bool __ret_l211 = ends_with(s, ".mh") && s[0] != '-';
-    return __ret_l211;
+    bool __ret_l213 = ends_with(s, ".mh") && s[0] != '-';
+    return __ret_l213;
 }
 
 static bool is_optional_output_arg(string next, bool for_header, bool for_mh)
@@ -222,16 +222,16 @@ static bool is_optional_output_arg(string next, bool for_header, bool for_mh)
     if (next == nil || next[0] == '\0' || next[0] == '.' || next[0] == '-')
     {
         /* return value captured before defers */
-        bool __ret_l222 = false;
-        return __ret_l222;
+        bool __ret_l224 = false;
+        return __ret_l224;
     }
     if (for_mh)
     {
         if (is_mh_output_path(next))
         {
             /* return value captured before defers */
-            bool __ret_l226 = true;
-            return __ret_l226;
+            bool __ret_l228 = true;
+            return __ret_l228;
         }
     }
     else if (for_header)
@@ -239,25 +239,25 @@ static bool is_optional_output_arg(string next, bool for_header, bool for_mh)
         if (is_h_output_path(next))
         {
             /* return value captured before defers */
-            bool __ret_l230 = true;
-            return __ret_l230;
+            bool __ret_l232 = true;
+            return __ret_l232;
         }
     }
     else if (is_c_output_path(next))
     {
         /* return value captured before defers */
-        bool __ret_l233 = true;
-        return __ret_l233;
+        bool __ret_l235 = true;
+        return __ret_l235;
     }
     if (is_mc_source_path(next))
     {
         /* return value captured before defers */
-        bool __ret_l236 = false;
-        return __ret_l236;
+        bool __ret_l238 = false;
+        return __ret_l238;
     }
     /* return value captured before defers */
-    bool __ret_l238 = true;
-    return __ret_l238;
+    bool __ret_l240 = true;
+    return __ret_l240;
 }
 
 static pchar path_dirname(string path)
@@ -269,8 +269,8 @@ static pchar path_dirname(string path)
     if (path == nil)
     {
         /* return value captured before defers */
-        pchar __ret_l254 = nil;
-        return __ret_l254;
+        pchar __ret_l256 = nil;
+        return __ret_l256;
     }
     while (n < MAX_PATH && path[n] != '\0')
     {
@@ -285,28 +285,28 @@ static pchar path_dirname(string path)
     if (last < 0)
     {
         /* return value captured before defers */
-        pchar __ret_l266 = utils_strndup(".", 1);
-        return __ret_l266;
+        pchar __ret_l268 = utils_strndup(".", 1);
+        return __ret_l268;
     }
     if (last == 0)
     {
         /* return value captured before defers */
-        pchar __ret_l271 = utils_strndup("/", 1);
-        return __ret_l271;
+        pchar __ret_l273 = utils_strndup("/", 1);
+        return __ret_l273;
     }
     path_len = (size_t)last;
     dir = malloc(path_len + 1);
     if (dir == nil)
     {
         /* return value captured before defers */
-        pchar __ret_l277 = nil;
-        return __ret_l277;
+        pchar __ret_l279 = nil;
+        return __ret_l279;
     }
     memcpy(dir, path, path_len);
     dir[path_len] = '\0';
     /* return value captured before defers */
-    pchar __ret_l281 = dir;
-    return __ret_l281;
+    pchar __ret_l283 = dir;
+    return __ret_l283;
 }
 
 static pchar build_output_file_path(string dir, string base, size_t base_len, string ext)
@@ -317,8 +317,8 @@ static pchar build_output_file_path(string dir, string base, size_t base_len, st
     if (base == nil || base_len == 0 || ext == nil)
     {
         /* return value captured before defers */
-        pchar __ret_l292 = nil;
-        return __ret_l292;
+        pchar __ret_l294 = nil;
+        return __ret_l294;
     }
     dynbuf_init(&buf);
     /* DEFER begin */
@@ -338,11 +338,11 @@ static pchar build_output_file_path(string dir, string base, size_t base_len, st
     dynbuf_appendn(&buf, base, base_len);
     dynbuf_append(&buf, ext);
     /* return value captured before defers */
-    pchar __ret_l312 = utils_strndup((buf).data, (buf).used);
+    pchar __ret_l314 = utils_strndup((buf).data, (buf).used);
     /* DEFER cleanup (unwinding to function) */
     /* DEFER end */
     dynbuf_free(&buf);
-    return __ret_l312;
+    return __ret_l314;
 }
 
 static pchar resolve_output_path(string input_file, string unit_name, size_t unit_name_len, string output_dir_opt, string output_base_opt, string ext)
@@ -374,17 +374,17 @@ static pchar resolve_output_path(string input_file, string unit_name, size_t uni
         {
             free(stem_owned);
             /* return value captured before defers */
-            pchar __ret_l341 = nil;
-            return __ret_l341;
+            pchar __ret_l343 = nil;
+            return __ret_l343;
         }
         dir = dir_owned;
     }
-    pchar result_l346_c15 = build_output_file_path(dir, base, base_len, ext);
+    pchar result_l348_c15 = build_output_file_path(dir, base, base_len, ext);
     free(stem_owned);
     free(dir_owned);
     /* return value captured before defers */
-    pchar __ret_l349 = result_l346_c15;
-    return __ret_l349;
+    pchar __ret_l351 = result_l348_c15;
+    return __ret_l351;
 }
 
 static TCommandLine parse_command_line(int argc, array_of_pchar argv)
@@ -533,36 +533,36 @@ static TCommandLine parse_command_line(int argc, array_of_pchar argv)
         }
     }
     /* return value captured before defers */
-    TCommandLine __ret_l489 = results;
-    return __ret_l489;
+    TCommandLine __ret_l491 = results;
+    return __ret_l491;
 }
 
 static size_t get_file_size(pFILE fp)
 {
-    long file_pos_l500_c17 = ftell(fp);
-    if (file_pos_l500_c17 < 0)
+    long file_pos_l502_c17 = ftell(fp);
+    if (file_pos_l502_c17 < 0)
     {
         /* return value captured before defers */
-        size_t __ret_l502 = 0;
-        return __ret_l502;
+        size_t __ret_l504 = 0;
+        return __ret_l504;
     }
     if (fseek(fp, 0, SEEK_END) != 0)
     {
         /* return value captured before defers */
-        size_t __ret_l506 = 0;
-        return __ret_l506;
+        size_t __ret_l508 = 0;
+        return __ret_l508;
     }
-    long file_end_l508_c17 = ftell(fp);
-    fseek(fp, file_pos_l500_c17, SEEK_SET);
-    if (file_end_l508_c17 < 0)
+    long file_end_l510_c17 = ftell(fp);
+    fseek(fp, file_pos_l502_c17, SEEK_SET);
+    if (file_end_l510_c17 < 0)
     {
         /* return value captured before defers */
-        size_t __ret_l513 = 0;
-        return __ret_l513;
+        size_t __ret_l515 = 0;
+        return __ret_l515;
     }
     /* return value captured before defers */
-    size_t __ret_l515 = (size_t)file_end_l508_c17;
-    return __ret_l515;
+    size_t __ret_l517 = (size_t)file_end_l510_c17;
+    return __ret_l517;
 }
 
 /**
@@ -574,38 +574,38 @@ static size_t get_file_size(pFILE fp)
 static pchar allocate_source_file(pchar input_file)
 {
     pchar source = nil;
-    pFILE fp_l529_c11 = fopen(input_file, "r");
-    if (fp_l529_c11 == nil)
+    pFILE fp_l531_c11 = fopen(input_file, "r");
+    if (fp_l531_c11 == nil)
     {
         perror("ERROR: modc.allocate_source_file: Cannot open input file");
     }
     else
     {
         /* DEFER begin */
-        size_t fsize_l534_c18 = get_file_size(fp_l529_c11);
-        if (fsize_l534_c18 == 0 && ftell(fp_l529_c11) != 0)
+        size_t fsize_l536_c18 = get_file_size(fp_l531_c11);
+        if (fsize_l536_c18 == 0 && ftell(fp_l531_c11) != 0)
         {
             perror("ERROR: modc.allocate_source_file: Cannot determine file size");
         }
         else
         {
-            source = malloc(fsize_l534_c18 + 1);
+            source = malloc(fsize_l536_c18 + 1);
             if (source == nil)
             {
                 perror("ERROR: modc.allocate_source_file: Memory allocation failed");
             }
             else
             {
-                fread(source, 1, fsize_l534_c18, fp_l529_c11);
-                source[fsize_l534_c18] = '\0';
+                fread(source, 1, fsize_l536_c18, fp_l531_c11);
+                source[fsize_l536_c18] = '\0';
             }
         }
         /* DEFER end */
-        fclose(fp_l529_c11);
+        fclose(fp_l531_c11);
     }
     /* return value captured before defers */
-    pchar __ret_l550 = source;
-    return __ret_l550;
+    pchar __ret_l552 = source;
+    return __ret_l552;
 }
 
 /**
@@ -631,16 +631,16 @@ static int generate_from_ast(InitialContext context, pchar file_name, bool quiet
     }
     else if ((out_buffer).used > 0)
     {
-        pFILE out_file_l585_c21 = fopen(file_name, "w");
-        if (out_file_l585_c21 == nil)
+        pFILE out_file_l587_c21 = fopen(file_name, "w");
+        if (out_file_l587_c21 == nil)
         {
             perror("ERROR: modc.generate_from_ast: Cannot open out_file");
             return_code += 1;
         }
         else
         {
-            fputs((out_buffer).data, out_file_l585_c21);
-            fclose(out_file_l585_c21);
+            fputs((out_buffer).data, out_file_l587_c21);
+            fclose(out_file_l587_c21);
             if (!quiet)
             {
                 printf("Code generation complete: %s\n", file_name);
@@ -648,11 +648,11 @@ static int generate_from_ast(InitialContext context, pchar file_name, bool quiet
         }
     }
     /* return value captured before defers */
-    int __ret_l598 = return_code;
+    int __ret_l600 = return_code;
     /* DEFER cleanup (unwinding to function) */
     /* DEFER end */
     dynbuf_free(&out_buffer);
-    return __ret_l598;
+    return __ret_l600;
 }
 
 /**
@@ -674,6 +674,10 @@ static int process_one_unit(TCommandLine options, pchar input_file)
         TParser__init(&p, &arena, source, nil);
         (p).show_tokens = (options).show_tokens;
         (p).debug_enabled = (options).debug_enabled;
+        if (!(options).be_quiet)
+        {
+            printf("Processing: %s\n", input_file);
+        }
         ast = TParser__parse(&p);
         if (ast == nil)
         {
@@ -694,7 +698,7 @@ static int process_one_unit(TCommandLine options, pchar input_file)
                 string unit_name = nil;
                 size_t unit_len = 0;
                 pchar header_base = nil;
-                semantic_analyze(&arena, ast, (options).mc_input_file);
+                semantic_analyze(&arena, ast, input_file);
                 unit_name = ((*(ast)).program_decl).name;
                 unit_len = ((*(ast)).program_decl).name_len;
                 (context).ast = ast;
@@ -703,10 +707,10 @@ static int process_one_unit(TCommandLine options, pchar input_file)
                 (context).dbc_off = (options).dbc_off;
                 (context).header_base = nil;
                 (context).header_base_len = 0;
-                (context).source_path = (options).mc_input_file;
+                (context).source_path = input_file;
                 if ((options).generate_c && c_file == nil)
                 {
-                    c_auto = resolve_output_path((options).mc_input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".c");
+                    c_auto = resolve_output_path(input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".c");
                     c_file = c_auto;
                 }
                 if ((options).generate_c && h_file == nil)
@@ -719,12 +723,12 @@ static int process_one_unit(TCommandLine options, pchar input_file)
                 }
                 if ((options).generate_h && h_file == nil)
                 {
-                    h_auto = resolve_output_path((options).mc_input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".h");
+                    h_auto = resolve_output_path(input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".h");
                     h_file = h_auto;
                 }
                 if (((options).generate_mh || ((options).generate_c && codegen_mh_has_exports(ast))) && mh_file == nil)
                 {
-                    mh_auto = resolve_output_path((options).mc_input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".mh");
+                    mh_auto = resolve_output_path(input_file, unit_name, unit_len, (options).output_dir, (options).output_base, ".mh");
                     mh_file = mh_auto;
                 }
                 if (h_file != nil)
@@ -790,7 +794,7 @@ static int process_one_unit(TCommandLine options, pchar input_file)
             }
             else if ((options).show_ast)
             {
-                semantic_analyze(&arena, ast, (options).mc_input_file);
+                semantic_analyze(&arena, ast, input_file);
                 node_print(ast, 0);
                 printf("Total tokens: %zu\n", (p).token_count);
             }
@@ -806,8 +810,8 @@ static int process_one_unit(TCommandLine options, pchar input_file)
         free(source);
     }
     /* return value captured before defers */
-    int __ret_l757 = return_code;
-    return __ret_l757;
+    int __ret_l762 = return_code;
+    return __ret_l762;
 }
 
 /**
@@ -848,16 +852,16 @@ int modc(int argc, char** argv)
         fprintf(stderr, "BUILD_NUMBER: %d\n", BUILD_NUMBER);
         fprintf(stderr, "INSTALLED: %s\n", argv[0]);
         /* return value captured before defers */
-        int __ret_l801 = 1;
-        return __ret_l801;
+        int __ret_l806 = 1;
+        return __ret_l806;
     }
     if ((options).mc_input_count <= 0)
     {
         fprintf(stderr, "Usage: tmodc [options] file.mc ...\n");
         fprintf(stderr, "Try '%s --help' for more information.\n", argv[0]);
         /* return value captured before defers */
-        int __ret_l807 = 1;
-        return __ret_l807;
+        int __ret_l812 = 1;
+        return __ret_l812;
     }
     if ((options).mc_input_count > 1)
     {
@@ -865,15 +869,15 @@ int modc(int argc, char** argv)
         {
             fprintf(stderr, "ERROR: several inputs: do not pass -C/-H/-M file paths; use defaults or -d\n");
             /* return value captured before defers */
-            int __ret_l814 = 1;
-            return __ret_l814;
+            int __ret_l819 = 1;
+            return __ret_l819;
         }
         if ((options).output_base != nil)
         {
             fprintf(stderr, "ERROR: several inputs: -b is not allowed\n");
             /* return value captured before defers */
-            int __ret_l818 = 1;
-            return __ret_l818;
+            int __ret_l823 = 1;
+            return __ret_l823;
         }
     }
     i = 0;
@@ -884,15 +888,15 @@ int modc(int argc, char** argv)
             if (return_code != 0)
             {
                 /* return value captured before defers */
-                int __ret_l826 = return_code;
-                return __ret_l826;
+                int __ret_l831 = return_code;
+                return __ret_l831;
             }
             i++;
         }
     }
     /* return value captured before defers */
-    int __ret_l831 = return_code;
-    return __ret_l831;
+    int __ret_l836 = return_code;
+    return __ret_l836;
 }
 
 int main(int argc, char** argv)

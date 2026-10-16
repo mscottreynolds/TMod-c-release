@@ -36,12 +36,6 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "dynbuf.h"
-
-/* === IMPORT === */
-#include "codegen_mh.h"
-
-/* === IMPORT === */
 #include "stddef.h"
 
 /* === IMPORT === */
@@ -54,13 +48,19 @@ typedef float real;
 #include "node.h"
 
 /* === IMPORT === */
-#include "codegen_common.h"
+#include "../dynbuf.h"
 
 /* === IMPORT === */
 #include "codegen_c.h"
 
 /* === IMPORT === */
+#include "codegen_common.h"
+
+/* === IMPORT === */
 #include "codegen_header.h"
+
+/* === IMPORT === */
+#include "codegen_mh.h"
 
 /* === TYPE EXPORT === */
 typedef struct InitialContext InitialContext;

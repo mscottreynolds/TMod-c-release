@@ -85,9 +85,13 @@ extern type Winsize = struct winsize
 
 
 const KILO_VERSION: string = "0.0.2"
-const KILO_TAB_STOP = 8
-const KILO_QUIT_TIMES = 3
-const STATUS_MSG_MAX = 256
+
+// Use enum for the following constant expressions
+type KILO_DEFAULTS = enum
+	KILO_QUIT_TIMES = 3,
+	KILO_TAB_STOP = 8,
+	STATUS_MSG_MAX = 256,
+end
 
 define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -1349,8 +1353,8 @@ end EditorConfig::moveCursor
 
 procedure EditorConfig::processKeypress(ref E: EditorConfig)
 begin
-	// static var quit_times: integer = KILO_QUIT_TIMES
-	static var quit_times: integer = 3
+	static var quit_times: integer = KILO_QUIT_TIMES
+	// static var quit_times: integer = 0
 	var c: integer = readKey()
 
 	switch c of

@@ -2,6 +2,14 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.26.12.213
+- **`src/` tree** — `make`, `selfhost`, `bootstrap`, and `promote` keep the path under `src/`. `src/codegen/foo.c` compiles to `build/c/codegen/foo.o`. Each directory that holds a `.h` is an `-I` root. The self-host mirror is searched before `-Isrc`.
+- **`codegen` package** — the six codegen units moved to `src/codegen/` as `module codegen.<unit>`. The package root peels to `src/`. `from arena` opens `src/arena.mh`. The `.mc`, `.c`, `.h`, and `.mh` moved together.
+- **Several inputs** — semantic analysis, `context.source_path`, and output paths use the file being compiled. They were using the first `.mc` on the command line, so a later prefixed unit looked for `.mh` files beside that first file.
+- **Docs:** Language Report §4.2 constant expressions (a `const` object is not an ISO C constant expression). **`DEFINE` with `=`** planned for **0.27**, not implemented. **0.26.5.188** still parses `DEFINE identifier rest-of-line`.
+- Stem stays **0.26.12**. User promoted **0.26.12.213**. Last planned build on branch **`mod-c_0.26`**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §3.2 / §4.1.1 / §4.2 / §11, `docs/syntax-ebnf.md`, `docs/grok_report-20261015-1939.md`.
+
 ## Version 0.26.12.212
 - **Package path** — a `PROGRAM`, `MODULE`, or `HEADER` name may be a qualident. The last identifier is the unit name (`module tmodc.lib.String()` is `String()`). The prefix is the package path. The `end` tag repeats the unit name (`end String`).
 - **Directory import** — an unquoted qualident has one file, `<root>/dots/as/slashes.mh`. No flat `something.else.Something.mh` probe. A quoted path is the written file. A quote that does not end in `.mh` is a C `#include`. The root peels only when the source path is the directory form of the declared qualident. A unit with no prefix uses the directory that contains the source.

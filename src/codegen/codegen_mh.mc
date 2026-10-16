@@ -1,15 +1,9 @@
-module codegen_mh(ctx: CodegenContext)
+module codegen.codegen_mh(ctx: CodegenContext)
 
 (**
  * codegen_mh.mc - Emit modc-mh/1 symbol export files for EXPORT declarations.
  *)
 
-import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
-	from dynbuf
-import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
-	from Lexer
-import TType 
-	from ttype
 import size_t 
 	from "stddef.h"
 import stderr, fprintf, snprintf, 
@@ -25,8 +19,16 @@ import Node, NODE_PROGRAM, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,
 	NODE_LET_DECL, NODE_PARAM_LIST, NODE_PARAM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
 	NODE_METHOD_TYPE, NODE_DEFINE,
 	from "node.h"
+
+import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
+	from dynbuf
+import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
+	from Lexer
+import TType 
+	from ttype
+
 import CodegenContext 
-	from codegen_common
+	from codegen.codegen_common
 
 
 function mh_proc_complete(n: const ^Node): bool

@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 14 October 2026  
+**Last updated:** 15 October 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -278,7 +278,7 @@ export function mini_answer complete () : integer
 export procedure Point__print complete instance Point (Point)
 ```
 
-**Deferred:** project-root module search paths, `IMPORT *`. **Mutual TMod-c `IMPORT`:** later, after Makefile subdirectory compilation (item 15). Today cycles can compile because C headers include each other and `.mh` comes from a previous emit.
+**Deferred:** `IMPORT *`. **Mutual TMod-c `IMPORT`:** later. Makefile subdirectory compilation landed in **0.26.12.213** (`src/codegen/` is package `codegen`). Today cycles can compile because C headers include each other and `.mh` comes from a previous emit.
 
 ### 3.3 `.mh` completeness vs source `OPAQUE`
 
@@ -309,7 +309,7 @@ var p: Point
 define CTRL_KEY(k) ((k) & 0x1f)
 ```
 
-### 4.1.1 `DEFINE` *Implemented (0.26.5.188)*
+### 4.1.1 `DEFINE` *Implemented (0.26.5.188); `=` form planned (0.27)*
 
 `DEFINE` introduces a **C preprocessor macro** as a TMod-c name in this unit. The body is **C text**, not a TMod-c expression.
 
@@ -338,6 +338,41 @@ export define PUBLIC_FLAG 1
 
 `(* C: #define CTRL_KEY(k) ((k) & 0x1f) — space after #define, then the source span from the identifier. *)`
 
+**Planned (0.27).** [`syntax-ebnf.md`](syntax-ebnf.md) spells `DEFINE` with `=`. The compiler still accepts the 0.26.5.188 form above.
+
+```
+define-decl     = [ "EXPORT" ] "DEFINE" identifier [ "(" define-params ")" ] "=" [ replacement-list ] ;
+define-params   = "..."
+                | identifier { "," identifier } [ "," "..." ] ;
+```
+
+- The `=` is TMod-c syntax. Generated C is `#define`, and that `=` is omitted.
+- A `(` with no space after the identifier selects the function-like arm. `define-params` are C macro names, and `...`. They carry no types.
+- `replacement-list` is C text from after `=` through the newline, including `\` continuations. It may be empty. It is not tokenized as TMod-c. `#`, `##`, and a later `=` stay in that text.
+- Binding, `EXPORT`, the `.mh` line `export define Name complete`, and a raw `#define` / `#if` line are unchanged.
+
+**Examples (0.27):**
+
+```mod-c
+define CTRL_KEY(k) = ((k) & 0x1f)
+define ANSWER = 42
+define SUM = 1 + \
+	2
+export define PUBLIC_FLAG = 1
+export define SDS_HDR_VAR(T, s) = struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
+```
+
+```c
+#define CTRL_KEY(k) ((k) & 0x1f)
+#define ANSWER 42
+#define SUM 1 + \
+	2
+#define PUBLIC_FLAG 1
+#define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
+```
+
+Existing `DEFINE` lines gain `=` before the C text when this lands.
+
 ### 4.2 `CONST`, `LET`, and `VAR` *Design locked; LET rebind implemented (0.26.5.181); C `const` dropped (0.26.5.183)*
 
 | Form | Role | Binding |
@@ -362,6 +397,8 @@ export define PUBLIC_FLAG 1
 
 **Block placement (intent):** `VAR` and **`CONST`** at the **beginning of the block**. `LET` may appear when the value becomes known. `CONST` is a `const-expression` — it is **not** allowed mid-block like `LET`.
 
+**`const-expression`.** An expression that can be computed at compile time: an integer literal, an enumeration constant, a character constant, or arithmetic on those. That is the comment on `const-expression` in [`syntax-ebnf.md`](syntax-ebnf.md). The grammar uses one for a `CONST` initializer, a fixed array bound, an enumerator value, a `case` label, `FOR` `BY`, and a loop `BOUND`.
+
 **Examples:**
 
 ```mod-c
@@ -380,6 +417,39 @@ i := 0                (* VAR *)
 ```
 
 `(* C: CONST currently lowers to static const objects. Preprocessor constants are DEFINE (0.26.5.188), not a fold of declaration-CONST (item 19 demoted). LET / VAR are ordinary locals (0.26.5.183). *)`
+
+**ISO C constant expressions (C11 §6.6).** A constant expression is evaluated at translation time. An integer constant expression has integer type. Its operands are integer constants, enumeration constants, character constants, `sizeof` and `_Alignof` expressions whose results are integer constants, and floating constants that are the immediate operands of casts. A cast in an integer constant expression converts an arithmetic type to an integer type. In an initializer, a constant expression may also be an arithmetic constant expression, a null pointer constant, or an address constant. An address constant is a pointer to a function, or to an object of static storage duration, written with `&`, with a cast of an integer constant to a pointer type, or with an array or function designator. Forming it does not read an object's value. A static initializer is a constant expression or a string literal (C11 §6.7.9). An implementation may accept further forms (C11 §6.6 paragraph 10).
+
+A `const` object is read-only. Naming it reads the object, so the name is not a constant expression.
+
+These are constant expressions:
+
+```c
+3
+2 * 256 - 1
+'q'
+sizeof(int)
+(int)3.0
+```
+
+```c
+enum { Limit = 256 };
+int a[2 * Limit - 1];            /* enumeration constant */
+static int *p = &table;          /* address constant; table has static storage */
+#define TIMES 3
+static int quit_times = TIMES;   /* integer constant after preprocessing */
+```
+
+These are not constant expressions:
+
+```c
+const int times = 3;
+static int quit_times = times;   /* reads a const object */
+n + 1                            /* n names an object */
+f()                              /* function call */
+```
+
+A declaration `CONST` is a `const-expression` in TMod-c. The lowering note above emits it as a `static const` object, which is the second group. A `DEFINE` (§4.1.1) whose replacement list is an integer constant is in the first group after preprocessing.
 
 ### 4.3 Grouped trailing types
 
@@ -1334,7 +1404,7 @@ Everyday portable names answer **“what exactly is this?”** — not C’s ran
 
 **Unit binding:** at most one bind per unit via `TYPE` or named `.mh` import. Unbound defaults as above. `import integer as i64` does not bind `integer`. Include-only and foreign `.h` imports do not count.
 
-**Width forms:** exact C11 `intN_t` / `uintN_t` / `float` / `double`. `.mh` type-spec may write `integer 32`. **Alias RHS** in the export table: `export type integer complete integer 64` (optional; old lines without a tail stay valid). **Packs:** `tests/fixtures/lp64` and `ilp32` (lean `.h`; stand-in for `tmodc.lp64` until item 15). **Build-time defaults** (unbound `cint` vs `lp64`) are parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`.
+**Width forms:** exact C11 `intN_t` / `uintN_t` / `float` / `double`. `.mh` type-spec may write `integer 32`. **Alias RHS** in the export table: `export type integer complete integer 64` (optional; old lines without a tail stay valid). **Packs:** `tests/fixtures/lp64` and `ilp32` (lean `.h`; stand-in for `tmodc.lp64`). Directory compilation landed in **0.26.12.213**. **Build-time defaults** (unbound `cint` vs `lp64`) are parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`.
 
 **Not C rank:** bare `integer` always has a known unit binding or a documented default.
 
@@ -1398,6 +1468,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
 - **Slice formals (planned, 0.27):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays and `^T` do not gain a parameter. See §5.4.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
+- **`DEFINE` with `=` (planned, 0.27):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from the emitted `#define`. The 0.26.5.188 form stays until then. See §4.1.1.
 
 **Example** — source:
 
@@ -1506,6 +1577,9 @@ Do not maintain a second full EBNF elsewhere.
 | 13 October 2026 | **§3.1 `HEADER` unit (0.26.11.208):** `header Name` … `end`. No parameters, no return type, no `BEGIN`. Prototypes only. No `.c` file. `-C` still writes `.h` and `.mh`. No unit-entry export. |
 | 13 October 2026 | **§3.1.1 package path (lock revised the same day):** a unit qualident's last identifier is the unit name. The flat-then-directory search was dropped before implementation. One directory candidate. A quoted path stays the written file. Shipped in **0.26.12.212**. |
 | 14 October 2026 | **§3.1.1 / §3.2 / §8.3 package path and type call (0.26.12.212):** directory-only unquoted import from the package root; output stem is the source filename; `#include` and the guard use the `.h` basename. `Ident(...)` on a declared type is `Ident::Ident(...)`. Prelude names and the keyword `opaque` are not that call. |
+| 15 October 2026 | **§4.2 `const-expression`:** compile-time forms match the EBNF comment (integer literal, enumeration constant, character constant, or arithmetic on those). C11 §6.6 examples of what is and is not a constant expression. A `const` object is read-only; naming it is not a constant expression. |
+| 15 October 2026 | **§4.1.1 / §11 `DEFINE` with `=` (planned, 0.27):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is TMod-c syntax and is omitted from `#define`. Parameters are C macro names, plus `...`. The replacement list stays C text. The 0.26.5.188 form still parses. `#define` pass-through stays unbound. |
+| 15 October 2026 | **§3.2 subdirectory build (0.26.12.213):** `src/` may contain packages. `src/codegen/` is package `codegen`. Mutual `IMPORT` stays later. `IMPORT *` stays deferred. |
 
 ---
 

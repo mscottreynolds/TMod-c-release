@@ -23,15 +23,15 @@ void codegen(void);
  *  .target = TARGET_C/TARGET_HEADER    // REQUIRED: Output code target. 
  *                                      // Currently only TARGET_C and TARGET_HEADER supported.
  */
-#include "dynbuf.h"
-#include "codegen_mh.h"
 #include "stddef.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "node.h"
-#include "codegen_common.h"
+#include "../dynbuf.h"
 #include "codegen_c.h"
+#include "codegen_common.h"
 #include "codegen_header.h"
+#include "codegen_mh.h"
 /**
  * Codegen main dispatcher from the given AST using the selected target.
  * The output is written into the provided DynBuf (which must be initialized).

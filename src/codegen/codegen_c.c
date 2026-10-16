@@ -28,16 +28,16 @@ void codegen_c(CodegenContext ctx);
  * Port to TMod-c started 6 Oct 2026.
  * Port to TMod-c finished 10 Oct 2026.
  */
-#include "codegen_common.h"
-#include "codegen_dbc.h"
-#include "dynbuf.h"
-#include "Lexer.h"
 #include "node.h"
 #include "stddef.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "ttype.h"
 #include "version.h"
+#include "../dynbuf.h"
+#include "../Lexer.h"
+#include "../ttype.h"
+#include "codegen_common.h"
+#include "codegen_dbc.h"
 /**
  * Generate C source code from the given AST in the CodegenContext.
  * The output is written into the provided DynBuf (which must be initialized),
@@ -362,8 +362,8 @@ static void codegen_c_switch_stmt(const Node* n, CodegenContext ctx)
         size_t i = {0};
         (arm_ctx).indent = (ctx).indent + 1;
         {
-            const long long __for_end_l441_c12 = (long long)(((*(n)).switch_stmt).case_count - 1);
-            for (i = 0; (long long)(i) <= __for_end_l441_c12; i++)
+            const long long __for_end_l439_c12 = (long long)(((*(n)).switch_stmt).case_count - 1);
+            for (i = 0; (long long)(i) <= __for_end_l439_c12; i++)
             {
                 {
                     SwitchCase* c = ((*(n)).switch_stmt).cases[i];
@@ -374,8 +374,8 @@ static void codegen_c_switch_stmt(const Node* n, CodegenContext ctx)
                         continue;
                     }
                     {
-                        const long long __for_end_l449_c16 = (long long)((*(c)).label_count - 1);
-                        for (j = 0; (long long)(j) <= __for_end_l449_c16; j++)
+                        const long long __for_end_l447_c16 = (long long)((*(c)).label_count - 1);
+                        for (j = 0; (long long)(j) <= __for_end_l447_c16; j++)
                         {
                             {
                                 emit_indent((ctx).out, (arm_ctx).indent);
@@ -428,26 +428,26 @@ static size_t codegen_c_block_stmt_index(const Node* block, const Node* stmt)
     if (block == nil || (*(block)).kind != NODE_BLOCK || stmt == nil)
     {
         /* return value captured before defers */
-        size_t __ret_l511 = (size_t)(-1);
-        return __ret_l511;
+        size_t __ret_l509 = (size_t)(-1);
+        return __ret_l509;
     }
     {
-        const long long __for_end_l514_c8 = (long long)(((*(block)).block).count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l514_c8; i++)
+        const long long __for_end_l512_c8 = (long long)(((*(block)).block).count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l512_c8; i++)
         {
             {
                 if (((*(block)).block).stmts[i] == stmt)
                 {
                     /* return value captured before defers */
-                    size_t __ret_l516 = i;
-                    return __ret_l516;
+                    size_t __ret_l514 = i;
+                    return __ret_l514;
                 }
             }
         }
     }
     /* return value captured before defers */
-    size_t __ret_l519 = (size_t)(-1);
-    return __ret_l519;
+    size_t __ret_l517 = (size_t)(-1);
+    return __ret_l517;
 }
 
 static bool codegen_c_block_has_reached_defer(const Node* block, size_t cutoff)
@@ -457,12 +457,12 @@ static bool codegen_c_block_has_reached_defer(const Node* block, size_t cutoff)
     if (block == nil || (*(block)).kind != NODE_BLOCK)
     {
         /* return value captured before defers */
-        bool __ret_l530 = false;
-        return __ret_l530;
+        bool __ret_l528 = false;
+        return __ret_l528;
     }
     {
-        const long long __for_end_l533_c8 = (long long)(((*(block)).block).defer_count - 1);
-        for (i = 0; (long long)(i) <= __for_end_l533_c8; i++)
+        const long long __for_end_l531_c8 = (long long)(((*(block)).block).defer_count - 1);
+        for (i = 0; (long long)(i) <= __for_end_l531_c8; i++)
         {
             {
                 const Node* d = ((*(block)).block).defers[i];
@@ -475,15 +475,15 @@ static bool codegen_c_block_has_reached_defer(const Node* block, size_t cutoff)
                 if (at != (size_t)(-1) && at < cutoff)
                 {
                     /* return value captured before defers */
-                    bool __ret_l540 = true;
-                    return __ret_l540;
+                    bool __ret_l538 = true;
+                    return __ret_l538;
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l543 = false;
-    return __ret_l543;
+    bool __ret_l541 = false;
+    return __ret_l541;
 }
 
 /**
@@ -502,8 +502,8 @@ static void codegen_c_emit_defers(const Node* block_node, CodegenContext ctx)
     }
     cutoff = (ctx).stmt_index;
     {
-        const long long __for_end_l566_c8 = (long long)(1);
-        for (i = ((*(block_node)).block).defer_count; (long long)(i) >= __for_end_l566_c8; i--)
+        const long long __for_end_l564_c8 = (long long)(1);
+        for (i = ((*(block_node)).block).defer_count; (long long)(i) >= __for_end_l564_c8; i--)
         {
             {
                 const Node* d = ((*(block_node)).block).defers[i - 1];
@@ -771,8 +771,8 @@ static void codegen_c_stmt(const Node* n, CodegenContext ctx)
         {
             size_t i = {0};
             {
-                const long long __for_end_l810_c16 = (long long)(((*(n)).var_decl).count - 1);
-                for (i = 0; (long long)(i) <= __for_end_l810_c16; i++)
+                const long long __for_end_l808_c16 = (long long)(((*(n)).var_decl).count - 1);
+                for (i = 0; (long long)(i) <= __for_end_l808_c16; i++)
                 {
                     {
                         const Node* item = ((*(n)).var_decl).items[i];
@@ -914,8 +914,8 @@ static void codegen_c_block(const Node* n, CodegenContext ctx)
         (child_ctx).indent = (ctx).indent + 1;
         codegen_dbc_emit_requires(n, child_ctx);
         {
-            const long long __for_end_l917_c12 = (long long)(((*(n)).block).count - 1);
-            for (i = 0; (long long)(i) <= __for_end_l917_c12; i++)
+            const long long __for_end_l915_c12 = (long long)(((*(n)).block).count - 1);
+            for (i = 0; (long long)(i) <= __for_end_l915_c12; i++)
             {
                 {
                     (child_ctx).stmt_index = i;
@@ -1084,8 +1084,8 @@ static void codegen_c_program(const Node* n, CodegenContext ctx)
             dynbuf_append((ctx).out, "/********** Top Level Declarations ********/\n\n");
         }
         {
-            const long long __for_end_l1101_c12 = (long long)(((*(n)).program_decl).count - 1);
-            for (i = 0; (long long)(i) <= __for_end_l1101_c12; i++)
+            const long long __for_end_l1099_c12 = (long long)(((*(n)).program_decl).count - 1);
+            for (i = 0; (long long)(i) <= __for_end_l1099_c12; i++)
             {
                 {
                     const Node* d = ((*(n)).program_decl).decls[i];

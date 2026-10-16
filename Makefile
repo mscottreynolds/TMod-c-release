@@ -21,8 +21,15 @@ TOOLS_DIR   = tools
 BUILD_FILE   := $(SRC_DIR)/build.number
 BUILD_NUMBER := $$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
-SOURCES = $(wildcard $(SRC_DIR)/*.c)
-OBJS    = $(patsubst $(SRC_DIR)/%c,$(C_BUILD_DIR)/%o,$(SOURCES))
+# src/ and any later subdirectory (src/codegen/…). find, not wildcard:
+# wildcard does not walk past one directory.
+SOURCES := $(sort $(shell find $(SRC_DIR) -name '*.c' -print))
+OBJS    := $(patsubst $(SRC_DIR)/%.c,$(C_BUILD_DIR)/%.o,$(SOURCES))
+# Basename includes ("node.h", "codegen_common.h") are found in the
+# directory of the .c file or on -I. Each directory that holds a header
+# is an include root, so a unit still at src/ can include a header that
+# has moved under src/codegen/.
+SRC_HEADER_DIRS := $(patsubst %/,%,$(sort $(dir $(shell find $(SRC_DIR) -name '*.h' -print))))
 
 # Host C compiler: gcc (default), clang, or tcc.
 # 	make
@@ -40,7 +47,7 @@ else
 CC_FAMILY := gcc
 endif
 
-CFLAGS_INCLUDES = -I$(SRC_DIR) -I$(INCLUDE_DIR) -I$(LIB_DIR)
+CFLAGS_INCLUDES = $(addprefix -I,$(SRC_HEADER_DIRS)) -I$(INCLUDE_DIR) -I$(LIB_DIR)
 
 ifeq ($(CC_FAMILY),tcc)
 # From Makefile.tcc: no -pedantic-errors / -Wconversion; has -Wswitch-enum
@@ -78,8 +85,9 @@ TEST2_MC_FILES := $(wildcard $(TEST_DIR)/test2_*.mc)
 # All matching type 3 test files.
 TEST3_MC_FILES := $(wildcard $(TEST_DIR)/test3_*.mc)
 
-# All Mod-C source files (*.mc) in src/ (for self-host testing)
-SRC_MC_FILES := $(wildcard $(SRC_DIR)/*.mc)
+# Every .mc under src/, including a later src/codegen/. Self-host uses the
+# path under src/ so two files cannot collapse to the same basename.
+SRC_MC_FILES := $(sort $(shell find $(SRC_DIR) -name '*.mc' -print))
 
 # Selfhost destination directory for building files.
 SH_BUILD_DIR := $(BUILD_DIR)/selfhost
@@ -178,8 +186,9 @@ $(BIN_DIR): $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Compile source files from src/ to build/c
+# src/codegen/foo.c → build/c/codegen/foo.o. The stem may contain slashes.
 $(C_BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(C_BUILD_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Create build directory of needed
@@ -483,8 +492,8 @@ help:
 	@echo "  debug              Build with debug symbols and sanitizers"
 	@echo "  clean              Remove build artifacts and generated test files"
 	@echo "  distclean          Clean + remove dist directory"
-	@echo "  selfhost           Regenerate .c for all src/*.mc (self-host test)"
-	@echo "  bootstrap          Full bootstrap with verification (all src/*.mc)"
+	@echo "  selfhost           Regenerate .c for every src/**/*.mc (self-host test)"
+	@echo "  bootstrap          Full bootstrap with verification (every src/**/*.mc)"
 	@echo "  promote            Promote verified to source (after successful bootstrap)"
 	@echo "  dist               Make distribution"
 	@echo "  install            Install to:  $(INSTALL_DIR)"
@@ -509,128 +518,155 @@ reset: clean
 # ======================================================
 
 # Stage 1 and 2: Generate new source into build, compile temporary compiler.
+# The tree under src/ is mirrored. A later src/codegen/codegen_c.mc lands at
+# build/selfhost/codegen/codegen_c.c, not a flat codegen_c.c.
 selfhost: $(TARGET)
-	mkdir -p $(SH_BUILD_DIR)
-	@echo "=== Stage 1: Regenerating compiler sources (all src/*.mc) ==="
-	@cp -p $(SRC_DIR)/*.h $(SH_BUILD_DIR) && cp -p $(SRC_DIR)/*.c $(SH_BUILD_DIR)
-	@for mc in $(SRC_MC_FILES); do 								\
-		base=$$(basename $$mc .mc);								\
-		c_out=$(SH_BUILD_DIR)/$$base.c;							\
-		h_out=$(SH_BUILD_DIR)/$$base.h;							\
-		echo "Processing $$mc -> $$c_out and $$h_out"; 			\
-		rm -f "$$c_out";										\
-		./$(TARGET) $$mc -C $$c_out -H $$h_out || exit 1;		\
+	@mkdir -p $(SH_BUILD_DIR)
+	@echo "=== Stage 1: Regenerating compiler sources (src tree) ==="
+	@for f in $$(find $(SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
+		rel=$${f#$(SRC_DIR)/};											\
+		dest="$(SH_BUILD_DIR)/$$rel";									\
+		mkdir -p "$$(dirname "$$dest")";								\
+		cp -p "$$f" "$$dest";											\
+	done
+	@for mc in $(SRC_MC_FILES); do										\
+		rel=$${mc#$(SRC_DIR)/};											\
+		stem=$${rel%.mc};												\
+		c_out="$(SH_BUILD_DIR)/$$stem.c";								\
+		h_out="$(SH_BUILD_DIR)/$$stem.h";								\
+		echo "Processing $$mc -> $$c_out and $$h_out";					\
+		mkdir -p "$$(dirname "$$c_out")";								\
+		rm -f "$$c_out";												\
+		./$(TARGET) "$$mc" -C "$$c_out" -H "$$h_out" || exit 1;			\
 	done
 	@echo "=== Stage 2: Building temporary compiler ==="
-	@for c in $(SH_BUILD_DIR)/*.c; do 							\
-		base=$$(basename $$c .c);								\
-		o_out=$(SH_BUILD_DIR)/$$base.o;							\
-		$(CC) $(CFLAGS) -I $(SH_BUILD_DIR) -c $$c -o $$o_out;	\
-	done
-	$(CC) $(SH_BUILD_DIR)/*.o -o $(BIN_DIR)/modc.selfhost
+	@inc="";															\
+	for d in $$(find $(SH_BUILD_DIR) -type d -print | sort); do			\
+		inc="$$inc -I$$d";												\
+	done;																\
+	for c in $$(find $(SH_BUILD_DIR) -name '*.c' -print | sort); do		\
+		o="$${c%.c}.o";													\
+		$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1;				\
+	done;																\
+	objs=$$(find $(SH_BUILD_DIR) -name '*.o' -print | sort);			\
+	$(CC) $$objs -o $(BIN_DIR)/modc.selfhost
 	@echo "=== Self-hosting stage 2 complete. Temporary compiler: $(BIN_DIR)/modc.selfhost ==="
 
 # Stage 3, 4, and 5. Full bootstrap with verification (2 stage)
 bootstrap: selfhost
-	mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
+	@mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
 	@echo "=== Stage 3: Regenerating with new compiler ==="
-	@cp -p $(SRC_DIR)/*.h $(BS_BUILD_DIR) && cp -p $(SRC_DIR)/*.c $(BS_BUILD_DIR)
-	@for mc in $(SRC_MC_FILES); do 											\
-		base=$$(basename $$mc .mc);											\
-		c_out=$(BS_BUILD_DIR)/$$base.c;										\
-		h_out=$(BS_BUILD_DIR)/$$base.h;										\
-		echo "Processing $$mc -> $$c_out and $$h_out"; 						\
-		rm -f "$$c_out";													\
-		./$(BIN_DIR)/modc.selfhost $$mc -C $$c_out -H $$h_out || exit 1; 	\
+	@for f in $$(find $(SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
+		rel=$${f#$(SRC_DIR)/};											\
+		dest="$(BS_BUILD_DIR)/$$rel";									\
+		mkdir -p "$$(dirname "$$dest")";								\
+		cp -p "$$f" "$$dest";											\
+	done
+	@for mc in $(SRC_MC_FILES); do										\
+		rel=$${mc#$(SRC_DIR)/};											\
+		stem=$${rel%.mc};												\
+		c_out="$(BS_BUILD_DIR)/$$stem.c";								\
+		h_out="$(BS_BUILD_DIR)/$$stem.h";								\
+		echo "Processing $$mc -> $$c_out and $$h_out";					\
+		mkdir -p "$$(dirname "$$c_out")";								\
+		rm -f "$$c_out";												\
+		./$(BIN_DIR)/modc.selfhost "$$mc" -C "$$c_out" -H "$$h_out" || exit 1; \
 	done
 	@echo "=== Stage 4: Building second-generation compiler ==="
-	@for c in $(BS_BUILD_DIR)/*.c; do 										\
-		base=$$(basename $$c .c);											\
-		o_out=$(BS_BUILD_DIR)/$$base.o;										\
-		$(CC) $(CFLAGS) -I $(BS_BUILD_DIR) -c $$c -o $$o_out;				\
-	done
-	$(CC) $(BS_BUILD_DIR)/*.o -o $(BIN_DIR)/modc.bootstrap
+	@inc="";															\
+	for d in $$(find $(BS_BUILD_DIR) -type d -print | sort); do			\
+		inc="$$inc -I$$d";												\
+	done;																\
+	for c in $$(find $(BS_BUILD_DIR) -name '*.c' -print | sort); do		\
+		o="$${c%.c}.o";													\
+		$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1;				\
+	done;																\
+	objs=$$(find $(BS_BUILD_DIR) -name '*.o' -print | sort);			\
+	$(CC) $$objs -o $(BIN_DIR)/modc.bootstrap
 	@echo "=== Stage 5: Verifying identical output ==="
-	@success=true;																\
-	for mc in $(SRC_MC_FILES); do												\
-		base=$$(basename $$mc .mc);												\
-		c_regen=$(VF_BUILD_DIR)/$$base.c;									\
-		h_regen=$(VF_BUILD_DIR)/$$base.h;									\
-		rm -f "$$c_regen";														\
-		./$(BIN_DIR)/modc.bootstrap $$mc -C $$c_regen -H $$h_regen || exit 1;	\
-		c_selfhost=$(SH_BUILD_DIR)/$$base.c;									\
-		if [ -f "$$c_selfhost" ] && [ -f "$$c_regen" ]; then					\
-			if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then			\
-				echo "=== ERROR: $$c_selfhost and $$c_regen differ ==="; 		\
-				success=false;													\
-			else																\
-				echo "=== $$c_selfhost, $$c_regen: identical ===";				\
-			fi;																	\
-		elif [ ! -f "$$c_selfhost" ] && [ ! -f "$$c_regen" ]; then				\
-			echo "=== $$base.c absent on both sides ===";						\
-		else 																	\
-			echo "=== ERROR: missing $$c_selfhost or $$c_regen ===";			\
-			success=false;														\
-		fi;																		\
-		h_selfhost=$(SH_BUILD_DIR)/$$base.h;									\
-		if [ -f "$$h_selfhost" ] && [ -f "$$h_regen" ]; then					\
-			if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then			\
-				echo "=== ERROR: $$h_selfhost and $$h_regen differ ==="; 		\
-				success=false;													\
-			else																\
-				echo "=== $$h_selfhost, $$h_regen: identical ===";				\
-			fi;																	\
-		else 																	\
-			echo "=== ERROR: missing $$h_selfhost or $$h_regen ===";			\
-			success=false;														\
-		fi;																		\
-	done;																		\
-	if $$success; then 															\
-		echo "=== SUCCESS: Full bootstrap verified ===" ; 						\
-		echo "=== (identical output for all sources) ===";						\
-		echo "=== Run 'make promote' to update $(SRC_MC_FILES) ===" ; 			\
-	else 																		\
-		echo "=== ERROR: Bootstrap failed - some generated files differ ===" ; 	\
-		exit 1; 																\
-	fi
-
-# Promote verified output to source (only run after successful bootstrap)
-promote:
-	@echo "=== Stage 6: Reverifying and Promoting files ==="	
 	@success=true;														\
 	for mc in $(SRC_MC_FILES); do										\
-		base=$$(basename $$mc .mc);										\
-		c_regen=$(VF_BUILD_DIR)/$$base.c;								\
-		h_regen=$(VF_BUILD_DIR)/$$base.h;								\
-		c_selfhost=$(SH_BUILD_DIR)/$$base.c;							\
-		h_selfhost=$(SH_BUILD_DIR)/$$base.h;							\
-		if [ -f "$$c_selfhost" ] || [ -f "$$c_regen" ]; then			\
+		rel=$${mc#$(SRC_DIR)/};											\
+		stem=$${rel%.mc};												\
+		c_regen="$(VF_BUILD_DIR)/$$stem.c";								\
+		h_regen="$(VF_BUILD_DIR)/$$stem.h";								\
+		mkdir -p "$$(dirname "$$c_regen")";								\
+		rm -f "$$c_regen";												\
+		./$(BIN_DIR)/modc.bootstrap "$$mc" -C "$$c_regen" -H "$$h_regen" || exit 1; \
+		c_selfhost="$(SH_BUILD_DIR)/$$stem.c";							\
+		if [ -f "$$c_selfhost" ] && [ -f "$$c_regen" ]; then				\
 			if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then	\
-				echo "=== ERROR: $$c_selfhost and $$c_regen differ ===";	\
+				echo "=== ERROR: $$c_selfhost and $$c_regen differ ==="; \
+				success=false;											\
+			else														\
+				echo "=== $$c_selfhost, $$c_regen: identical ===";		\
+			fi;															\
+		elif [ ! -f "$$c_selfhost" ] && [ ! -f "$$c_regen" ]; then		\
+			echo "=== $$stem.c absent on both sides ===";				\
+		else															\
+			echo "=== ERROR: missing $$c_selfhost or $$c_regen ===";	\
+			success=false;												\
+		fi;																\
+		h_selfhost="$(SH_BUILD_DIR)/$$stem.h";							\
+		if [ -f "$$h_selfhost" ] && [ -f "$$h_regen" ]; then				\
+			if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then	\
+				echo "=== ERROR: $$h_selfhost and $$h_regen differ ==="; \
+				success=false;											\
+			else														\
+				echo "=== $$h_selfhost, $$h_regen: identical ===";		\
+			fi;															\
+		else															\
+			echo "=== ERROR: missing $$h_selfhost or $$h_regen ===";	\
+			success=false;												\
+		fi;																\
+	done;																\
+	if $$success; then													\
+		echo "=== SUCCESS: Full bootstrap verified ===" ;				\
+		echo "=== (identical output for all sources) ===";				\
+		echo "=== Run 'make promote' to update the src tree ===" ;		\
+	else																\
+		echo "=== ERROR: Bootstrap failed - some generated files differ ===" ; \
+		exit 1;															\
+	fi
+
+# Promote verified output to source (only run after successful bootstrap).
+# Each file returns to its path under src/, including a subdirectory.
+promote:
+	@echo "=== Stage 6: Reverifying and Promoting files ==="
+	@success=true;														\
+	for mc in $(SRC_MC_FILES); do										\
+		rel=$${mc#$(SRC_DIR)/};											\
+		stem=$${rel%.mc};												\
+		c_regen="$(VF_BUILD_DIR)/$$stem.c";								\
+		h_regen="$(VF_BUILD_DIR)/$$stem.h";								\
+		c_selfhost="$(SH_BUILD_DIR)/$$stem.c";							\
+		h_selfhost="$(SH_BUILD_DIR)/$$stem.h";							\
+		if [ -f "$$c_selfhost" ] || [ -f "$$c_regen" ]; then				\
+			if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then	\
+				echo "=== ERROR: $$c_selfhost and $$c_regen differ ==="; \
 				success=false;											\
 			fi;															\
 		fi;																\
 		if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then		\
-			success=false;												\
-		fi;																\
-		if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then		\
-			echo "=== ERROR: $$h_selfhost and $$h_regen differ ==="; 	\
+			echo "=== ERROR: $$h_selfhost and $$h_regen differ ===";	\
 			success=false;												\
 		fi;																\
 	done;																\
-	if $$success; then 													\
+	if $$success; then													\
 		for mc in $(SRC_MC_FILES); do									\
-			base=$$(basename $$mc .mc);									\
-			c_new=$(SH_BUILD_DIR)/$$base.c;								\
-			h_new=$(SH_BUILD_DIR)/$$base.h;								\
-			c_src=$(SRC_DIR)/$$base.c;									\
-			h_src=$(SRC_DIR)/$$base.h;									\
-			if [ -f "$$c_new" ]; then 									\
-				cp -fv $$c_new $$c_src;									\
+			rel=$${mc#$(SRC_DIR)/};										\
+			stem=$${rel%.mc};											\
+			c_new="$(SH_BUILD_DIR)/$$stem.c";							\
+			h_new="$(SH_BUILD_DIR)/$$stem.h";							\
+			c_src="$(SRC_DIR)/$$stem.c";								\
+			h_src="$(SRC_DIR)/$$stem.h";								\
+			mkdir -p "$$(dirname "$$c_src")";							\
+			if [ -f "$$c_new" ]; then									\
+				cp -fv "$$c_new" "$$c_src";								\
 			elif [ -f "$$c_src" ]; then									\
-				rm -fv $$c_src;											\
+				rm -fv "$$c_src";										\
 			fi;															\
-			cp -fv $$h_new $$h_src;										\
+			cp -fv "$$h_new" "$$h_src";									\
 		done;															\
 	else																\
 		echo "ERROR: Recomparison failed. Refusing to promote.";		\

@@ -15,8 +15,8 @@ void codegen_dbc(void);
  * codegen_dbc.c - Desing By Contract routines.	
  */
 #include "stddef.h"
-#include "dynbuf.h"
 #include "node.h"
+#include "../dynbuf.h"
 #include "codegen_common.h"
 /**
  * Generate REQUIRE clauses
@@ -29,11 +29,11 @@ void codegen_dbc_emit_requires(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l39_c5 = (long long)((((*n)).block).require_count);
-        for (i = 1; (long long)(i) <= __for_end_l39_c5; i++)
+        const long long __for_end_l41_c5 = (long long)((((*n)).block).require_count);
+        for (i = 1; (long long)(i) <= __for_end_l41_c5; i++)
         {
             {
-                pNode e_l40_c8 = (((*n)).block).requires[i - 1];
+                pNode e_l42_c8 = (((*n)).block).requires[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -41,7 +41,7 @@ void codegen_dbc_emit_requires(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l40_c8, ctx);
+                codegen_common_expr(e_l42_c8, ctx);
                 dynbuf_append((ctx).out, "); /* precondition */\n");
             }
         }
@@ -59,11 +59,11 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l65_c5 = (long long)((((*n)).block).ensure_count);
-        for (i = 1; (long long)(i) <= __for_end_l65_c5; i++)
+        const long long __for_end_l67_c5 = (long long)((((*n)).block).ensure_count);
+        for (i = 1; (long long)(i) <= __for_end_l67_c5; i++)
         {
             {
-                pNode e_l66_c8 = (((*n)).block).ensures[i - 1];
+                pNode e_l68_c8 = (((*n)).block).ensures[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -71,7 +71,7 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l66_c8, ctx);
+                codegen_common_expr(e_l68_c8, ctx);
                 dynbuf_append((ctx).out, "); /* postcodition */\n");
             }
         }
@@ -84,7 +84,7 @@ void codegen_dbc_emit_ensures(const Node* n, CodegenContext ctx)
 void codegen_dbc_emit_ensures_to_func(CodegenContext ctx)
 {
     CodegenContext current = ctx;
-    const Node* target_func_l85_c17 = (ctx).enclosing_func;
+    const Node* target_func_l87_c17 = (ctx).enclosing_func;
     if ((ctx).dbc_off)
     {
                 return;
@@ -100,7 +100,7 @@ void codegen_dbc_emit_ensures_to_func(CodegenContext ctx)
                     codegen_dbc_emit_ensures((current).parent_node, current);
                 }
             }
-            if ((current).enclosing_func != nil && (current).parent_node == target_func_l85_c17)
+            if ((current).enclosing_func != nil && (current).parent_node == target_func_l87_c17)
             {
                                 /* INVARIANT (on loop exit) */
                 break;
@@ -148,11 +148,11 @@ void codegen_dbc_emit_invariants(const Node* n, CodegenContext ctx)
                 return;
     }
     {
-        const long long __for_end_l140_c5 = (long long)(count);
-        for (i = 1; (long long)(i) <= __for_end_l140_c5; i++)
+        const long long __for_end_l142_c5 = (long long)(count);
+        for (i = 1; (long long)(i) <= __for_end_l142_c5; i++)
         {
             {
-                pNode e_l141_c8 = invs[i - 1];
+                pNode e_l143_c8 = invs[i - 1];
                 if ((ctx).debug_enabled)
                 {
                     emit_indent((ctx).out, (ctx).indent);
@@ -160,7 +160,7 @@ void codegen_dbc_emit_invariants(const Node* n, CodegenContext ctx)
                 }
                 emit_indent((ctx).out, (ctx).indent);
                 dynbuf_append((ctx).out, "assert(");
-                codegen_common_expr(e_l141_c8, ctx);
+                codegen_common_expr(e_l143_c8, ctx);
                 dynbuf_append((ctx).out, "); /* invariant */\n");
             }
         }

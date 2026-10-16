@@ -19,18 +19,18 @@ void codegen_common(void);
  * 28 August 2026 - Conversion form .c to .mc started
  */
 #include "tmodc.h"
-#include "arena.h"
-#include "dynbuf.h"
-#include "Lexer.h"
-#include "mh_reader.h"
 #include "node.h"
 #include "stddef.h"
 #include "stdio.h"
 #include "string.h"
-#include "symbol.h"
-#include "symkind.h"
-#include "ttype.h"
-#include "utils.h"
+#include "../arena.h"
+#include "../dynbuf.h"
+#include "../Lexer.h"
+#include "../mh_reader.h"
+#include "../symbol.h"
+#include "../symkind.h"
+#include "../ttype.h"
+#include "../utils.h"
 /** ===================================
  *  Codegen Context
  *  ===================================

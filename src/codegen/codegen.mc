@@ -1,4 +1,4 @@
-module codegen()
+module codegen.codegen()
 (**
  * Mod-c
  * By M. Scott Reynolds
@@ -17,10 +17,6 @@ module codegen()
  *)
 
 
-import DynBuf 
-    from dynbuf
-import codegen_mh 
-    from codegen_mh
 import size_t 
     from "stddef.h"
 import stderr, fprintf 
@@ -29,15 +25,19 @@ import exit
     from "stdlib.h"
 import Node 
     from "node.h"
+
+import DynBuf 
+    from dynbuf
+
+import codegen_c,
+    from codegen.codegen_c
 import CodegenTarget, CodegenContext, TARGET_C, TARGET_HEADER, 
     TARGET_MH, TARGET_VM, TARGET_WASM, TARGET_JSON,
-    from codegen_common
-import codegen_c,
-    from codegen_c
-// import codegen_c 
-//     from "codegen_c.h"
+    from codegen.codegen_common
 import codegen_header 
-    from codegen_header
+    from codegen.codegen_header
+import codegen_mh 
+    from codegen.codegen_mh
 
 
 // type CodegenTarget = enum TARGET_C, TARGET_HEADER, TARGET_VM, TARGET_WASM, TARGET_JSO end

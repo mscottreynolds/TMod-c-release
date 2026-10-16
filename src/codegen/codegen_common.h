@@ -33,18 +33,6 @@ typedef float real;
 #include "tmodc.h"
 
 /* === IMPORT === */
-#include "arena.h"
-
-/* === IMPORT === */
-#include "dynbuf.h"
-
-/* === IMPORT === */
-#include "Lexer.h"
-
-/* === IMPORT === */
-#include "mh_reader.h"
-
-/* === IMPORT === */
 #include "node.h"
 
 /* === IMPORT === */
@@ -57,16 +45,28 @@ typedef float real;
 #include "string.h"
 
 /* === IMPORT === */
-#include "symbol.h"
+#include "../arena.h"
 
 /* === IMPORT === */
-#include "symkind.h"
+#include "../dynbuf.h"
 
 /* === IMPORT === */
-#include "ttype.h"
+#include "../Lexer.h"
 
 /* === IMPORT === */
-#include "utils.h"
+#include "../mh_reader.h"
+
+/* === IMPORT === */
+#include "../symbol.h"
+
+/* === IMPORT === */
+#include "../symkind.h"
+
+/* === IMPORT === */
+#include "../ttype.h"
+
+/* === IMPORT === */
+#include "../utils.h"
 
 /** ===================================
  *  Codegen Context

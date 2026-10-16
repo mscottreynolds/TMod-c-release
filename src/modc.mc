@@ -31,14 +31,18 @@ import TParser::init, TParser::parse
     from parser_main
 import NODE_PROGRAM, node_print, Node, 
     from "node.h"
+import VERSION, VERSION_BASE, BUILD_NUMBER 
+    from "version.h"
+
+import InitialContext, codegen_generate, 
+    from codegen.codegen
+import codegen_mh_has_exports 
+    from codegen.codegen_mh
 import 
     CodegenTarget, TARGET_C, TARGET_HEADER, TARGET_MH, TARGET_VM, 
     TARGET_WASM, TARGET_JSON
-    from codegen_common
-import VERSION, VERSION_BASE, BUILD_NUMBER 
-    from "version.h"
-import InitialContext, codegen_generate, 
-    from codegen
+    from codegen.codegen_common
+
 import DynBuf, dynbuf_init, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
     dynbuf_free, 
     from dynbuf
@@ -50,8 +54,6 @@ import semantic_analyze
     from semantic
 import utils_strndup 
     from utils
-import codegen_mh_has_exports 
-    from codegen_mh
 
 
 type pchar = ^char
@@ -628,6 +630,9 @@ begin
         p.debug_enabled := options.debug_enabled
 
         // Build the Abstract Syntax Tree
+        if not options.be_quiet then
+            printf("Processing: %s\n", input_file)
+        end
         ast := TParser::parse(p)
 
         if ast == nil then
@@ -650,7 +655,7 @@ begin
                 var header_base: pchar = nil
 
                 // Perform semantic analysis
-                semantic_analyze(@arena, ast, options.mc_input_file)
+                semantic_analyze(@arena, ast, input_file)
 
                 unit_name := ast.program_decl.name
                 unit_len := ast.program_decl.name_len
@@ -662,11 +667,11 @@ begin
                 context.dbc_off := options.dbc_off
                 context.header_base := nil
                 context.header_base_len := 0
-                context.source_path := options.mc_input_file
+                context.source_path := input_file
 
                 // Setup output file paths
                 if options.generate_c and c_file == nil then
-                    c_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
+                    c_auto := resolve_output_path(input_file, unit_name, unit_len,
                         options.output_dir, options.output_base, ".c")
                     c_file := c_auto
                 end
@@ -677,13 +682,13 @@ begin
                     end
                 end
                 if options.generate_h and h_file == nil then
-                    h_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
+                    h_auto := resolve_output_path(input_file, unit_name, unit_len,
                         options.output_dir, options.output_base, ".h")
                     h_file := h_auto
                 end
                 if (options.generate_mh or (options.generate_c and codegen_mh_has_exports(ast))) and
                         mh_file == nil then
-                    mh_auto := resolve_output_path(options.mc_input_file, unit_name, unit_len,
+                    mh_auto := resolve_output_path(input_file, unit_name, unit_len,
                         options.output_dir, options.output_base, ".mh")
                     mh_file := mh_auto
                 end
@@ -740,14 +745,14 @@ begin
                 end
             elsif options.show_ast then
                 // Perform semantic analysis and display AST
-                // printf("0000:0000 %s: ", options.mc_input_file)
+                // printf("0000:0000 %s: ", input_file)
                 // printf("Abstract Syntax Tree with Semantic Analysis\n")
-                semantic_analyze(@arena, ast, options.mc_input_file)
+                semantic_analyze(@arena, ast, input_file)
                 node_print(ast, 0)
                 printf("Total tokens: %zu\n", p.token_count)
             else
                 // Default, show AST without semantic_analysis
-                // printf("0000:0000 %s: ", options.mc_input_file)
+                // printf("0000:0000 %s: ", input_file)
                 // printf("Abstract Syntax Tree\n")
                 node_print(ast, 0)
                 printf("Total tokens: %zu\n", p.token_count)
