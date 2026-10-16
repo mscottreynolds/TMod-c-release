@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.26.12
+VERSION 	:= 0.27.1
 
 BIN_DIR   	= bin
 SRC_DIR   	= src

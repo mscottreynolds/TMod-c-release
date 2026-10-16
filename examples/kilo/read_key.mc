@@ -43,7 +43,7 @@ extern type TWinsize = struct winsize
 (* =========== Defines =========== *)
 
 
-define CTRL_KEY(k) ((k) & 0x1f)
+define CTRL_KEY(k) = ((k) & 0x1f)
 
 type EditorKey = enum
 	ARROW_LEFT = 1000,

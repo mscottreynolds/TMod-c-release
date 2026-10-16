@@ -78,12 +78,12 @@ import uint8_t, uint16_t, uint32_t, uint64_t
  * the include of your alternate allocator if needed (not needed in order
  * to use the default libc allocator). *)
 
-define s_malloc malloc
-define s_realloc realloc
-define s_free free
+define s_malloc = malloc
+define s_realloc = realloc
+define s_free = free
 (* ==== end sdaalloc.h ==== *)
 
-export define SDS_MAX_PREALLOC (1024*1024)
+export define SDS_MAX_PREALLOC = (1024*1024)
 
 (* FIXME: 
 
@@ -165,18 +165,18 @@ export type sdshdr64 = packed struct
     buf: array[] of char
 end
 
-export define SDS_TYPE_5  0
-export define SDS_TYPE_8  1
-export define SDS_TYPE_16 2
-export define SDS_TYPE_32 3
-export define SDS_TYPE_64 4
-export define SDS_TYPE_MASK 7
-export define SDS_TYPE_BITS 3
-export define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
-export define SDS_HDR(T, s) ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
-export define SDS_TYPE_5_LEN(f) ((f)>>SDS_TYPE_BITS)
+export define SDS_TYPE_5 = 0
+export define SDS_TYPE_8 = 1
+export define SDS_TYPE_16 = 2
+export define SDS_TYPE_32 = 3
+export define SDS_TYPE_64 = 4
+export define SDS_TYPE_MASK = 7
+export define SDS_TYPE_BITS = 3
+export define SDS_HDR_VAR(T, s) = struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
+export define SDS_HDR(T, s) = ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
+export define SDS_TYPE_5_LEN(f) = ((f)>>SDS_TYPE_BITS)
 
-export define SDS_HDR_SH(T, s) (void*)((s)-(sizeof(struct sdshdr##T)))
+export define SDS_HDR_SH(T, s) = (void*)((s)-(sizeof(struct sdshdr##T)))
 
 
 (* ==== Previously inlined C functions that were in sds.h ==== *)
@@ -2243,7 +2243,7 @@ end sds_free
 #if defined(SDS_TEST_MAIN)
 import test_cond, test_report, from "testhelp.h"
 
-define UNUSED(x) (void)(x)
+define UNUSED(x) = (void)(x)
 
 function sdsTest(): int
 begin
@@ -2481,3 +2481,5 @@ end main
 
 begin
 end Tsds
+
+(* msr/msr *)

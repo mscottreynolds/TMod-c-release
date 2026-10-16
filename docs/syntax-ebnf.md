@@ -66,7 +66,7 @@ let-decl    = [ "EXPORT" ] let-def ;
 var-decl    = [ "EXPORT" ] [ "EXTERN" ] var-def     (* top level. *)
             | [ "STATIC" ] var-def ;                (* block level *)
 
-(* Note, as of 0.27 DEFINE will gain the "=" between the identifier and text as in the following: *)
+(* DEFINE requires '='. It is TMod-c punctuation and is not emitted. *)
 define-decl     = [ "EXPORT" ] "DEFINE" identifier [ "(" define-params ")" ] "=" [ replacement-list ] ;
 define-params   = "..."
                 | identifier { "," identifier } [ "," "..." ] ;

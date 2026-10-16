@@ -2,6 +2,15 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.1.216
+- **`DEFINE` with `=`** — `define Name = replacement` and `define Name(params) = replacement`. The `=` is required TMod-c punctuation and is omitted from `#define`. A `(` with no space after the name selects the function-like arm. The replacement stays C text (`\`, `#`, `##`, and a later `=`). It may be empty. A missing space before the replacement is inserted, so `define ANSWER=42` emits `#define ANSWER 42`.
+- A raw `#define` line stays pass-through and unbound. `#define INIT = 0` keeps the `=`. The 0.26.5.188 rest-of-line form is a parse error.
+- **Tests:** `tests/test_define.mc` (spacing around `=`, empty body, `##`, variadic, raw `#define INIT = 0`). `tests/test3_define.mc` (missing name). `tests/test3_define_eq.mc` (missing `=`).
+- **Examples:** `examples/kilo/kilo.mc`, `examples/kilo/read_key.mc`, `examples/sds/Tsds.mc`.
+- Language Report §4.1.1 and §11. EBNF `define-decl` (user). Stem **0.27.1**.
+- User promoted **0.27.1.216**. `Makefile` `VERSION` is **0.27.1**. Branch **`TMod-c_0.27`**. Development tree is **TMod-c-dev**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §4.1.1 / §11, `docs/grok_report-20261016-1455.md`. `docs/syntax-ebnf.md` was already updated by the user.
+
 ## Version 0.26.12.213
 - **`src/` tree** — `make`, `selfhost`, `bootstrap`, and `promote` keep the path under `src/`. `src/codegen/foo.c` compiles to `build/c/codegen/foo.o`. Each directory that holds a `.h` is an `-I` root. The self-host mirror is searched before `-Isrc`.
 - **`codegen` package** — the six codegen units moved to `src/codegen/` as `module codegen.<unit>`. The package root peels to `src/`. `from arena` opens `src/arena.mh`. The `.mc`, `.c`, `.h`, and `.mh` moved together.

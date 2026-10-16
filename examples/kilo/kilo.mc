@@ -93,7 +93,7 @@ type KILO_DEFAULTS = enum
 	STATUS_MSG_MAX = 256,
 end
 
-define CTRL_KEY(k) ((k) & 0x1f)
+define CTRL_KEY(k) = ((k) & 0x1f)
 
 type EditorKey = enum
 	BACKSPACE = 127,
@@ -119,8 +119,8 @@ type EditorHighlight = enum
 	HL_MATCH,
 end
 
-define HL_HIGHLIGHT_NUMBERS (1<<0)
-define HL_HIGHLIGHT_STRINGS (1<<1)
+define HL_HIGHLIGHT_NUMBERS = (1<<0)
+define HL_HIGHLIGHT_STRINGS = (1<<1)
 
 type pchar = ^char
 type ppchar = const ^pchar
@@ -220,7 +220,7 @@ var HLDB: array of EditorSyntax = {
 	},
 }
 
-define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
+define HLDB_ENTRIES = (sizeof(HLDB) / sizeof(HLDB[0]))
 
 
 (* =========== Prototypes =========== *)

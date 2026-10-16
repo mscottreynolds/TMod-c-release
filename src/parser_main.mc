@@ -367,15 +367,30 @@ end TParser::parse_doc_comment
 
 
 (*
- * Parse DEFINE identifier RestOfLine.
- * Body is C; do not tokenize it as TMod-c.
+ * Parse DEFINE name [ "(" params ")" ] "=" replacement.
+ * The '=' is TMod-c punctuation and is omitted from the emitted #define.
+ * The parameter span and the replacement are C text, not TMod-c.
  *)
 function TParser::parse_define(ref p: TParser, exported: bool): pNode
 begin
     var def_tok: TToken = p.current
     var ident_tok: TToken
+    var rparen_tok: TToken
+    var eq_tok: TToken
     var span: TToken
     var n: pNode = nil
+    var func_like: bool = false
+    var depth: integer = 0
+    var head_ptr: const ^char = nil
+    var head_len: size_t = 0
+    var repl_ptr: const ^char = nil
+    var need_space: bool = false
+    var total: size_t = 0
+    var buf: ^char = nil
+    var dest: ^char = nil
+    var rc: char = 0
+    var sp: char = ' '
+
 
     (p.match(TOK_KEYWORD_DEFINE))
     while p.check_comment() do
@@ -385,13 +400,80 @@ begin
         p.error_at("TParser::parse_define: expected identifier after DEFINE", true)
     end
     ident_tok := p.current
-    span := TLexer::capture_line_from(p.lexer, ident_tok.start,
-        ident_tok.line, ident_tok.column)
+    // span := TLexer::capture_line_from(p.lexer, ident_tok.start,
+    //     ident_tok.line, ident_tok.column)
+    if ident_tok.length> 0 and (ident_tok.start + ident_tok.length)^ == '(' then
+        func_like := true
+    end
+    p.advance()
+
+    head_ptr := ident_tok.start
+    head_len := ident_tok.length
+    if func_like then
+        if not p.check(TOK_LPAREN) then
+            p.error_at("TParser::parse_define: expected '(' after DEFINE name", true)
+        end
+        depth := 1
+        p.advance()
+        while depth > 0 do
+            if p.check(TOK_EOF) or p.check(TOK_NEWLINE) then
+                p.error_at("TParser::parse_define: expected ')' after parmaters", true)
+            end
+            if p.check(TOK_LPAREN) then
+                depth := depth + 1
+            elsif p.check(TOK_RPAREN) then
+                depth := depth - 1
+            end
+            if depth == 0 then
+                break
+            end
+            p.advance()
+        end
+        rparen_tok := p.current
+        head_len := ((rparen_tok.start + rparen_tok.length) - ident_tok.start) as size_t
+        p.advance()
+    end
+
+    while p.check_comment() do
+        p.advance()
+    end
+    if not p.check(TOK_EQ) then
+        p.error_at("TParser::parse_define: expected '=' after DEFINE name", true)
+    end
+    eq_tok := p.current
+    repl_ptr := eq_tok.start + eq_tok.length
+    span := TLexer::capture_line_from(p.lexer, repl_ptr, eq_tok.line,
+        eq_tok.column + (eq_tok.length as int))
+
+    if span.length > 0 then
+        rc := span.start^
+        if rc <> ' ' and rc <> '\t' and rc <> '\n' and rc <> '\r' and
+                rc <> '\f' and rc <> '\v' then
+            need_space := true
+        end
+    end
+    total := head_len + span.length
+    if need_space then
+        total := total + 1
+    end
+    buf := arena_alloc(p.arena, total) as ^char
+    memcpy(buf, head_ptr, head_len)
+    dest := buf + head_len
+    if need_space then
+        memcpy(dest, @sp, 1)
+        dest := dest + 1
+    end
+    if span.length > 0 then
+        memcpy(dest, span.start, span.length)
+    end
+
     n := node_create(p.arena, NODE_DEFINE, def_tok)
     n^.define_stmt.name := ident_tok.start
     n^.define_stmt.name_len := ident_tok.length
-    n^.define_stmt.text := span.start
-    n^.define_stmt.length := span.length
+    // n^.define_stmt.text := span.start
+    // n^.define_stmt.length := span.length
+    n^.define_stmt.text := buf
+    n^.define_stmt.length := total
     n^.define_stmt.is_exported := exported
     p.advance()
     return n
@@ -1594,3 +1676,5 @@ end TParser::parse
 
 begin
 end parser_main
+
+(* msr/gk/msr *)

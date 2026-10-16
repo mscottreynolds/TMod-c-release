@@ -306,39 +306,12 @@ const N = 100
 let title: string = "demo"
 var i: integer
 var p: Point
-define CTRL_KEY(k) ((k) & 0x1f)
+define CTRL_KEY(k) = ((k) & 0x1f)
 ```
 
-### 4.1.1 `DEFINE` *Implemented (0.26.5.188); `=` form planned (0.27)*
+### 4.1.1 `DEFINE` *Implemented (0.26.5.188); `=` required (0.27.1.216)*
 
-`DEFINE` introduces a **C preprocessor macro** as a TMod-c name in this unit. The body is **C text**, not a TMod-c expression.
-
-```
-define-decl = [ "EXPORT" ] "DEFINE" identifier rest-of-line .
-```
-
-- **Top-level only.** Illegal inside `BEGIN`/`END`.
-- Parse the identifier. Do not classify object-like vs function-like; do not parse the body. Rest of line (plus `\` continuations) is copied after `#define `.
-- The name is bound like an untyped **`IMPORT`**: it exists; the C preprocessor owns the meaning. `case CTRL_KEY('q'):` is a legal TMod-c name (C makes it an integer constant expression after preprocess).
-- No `EXPORT` → generated **`.c`** only.
-- `EXPORT` → also the generated **`.h`**, and `export define Name complete` in the `.mh` table so another unit can `IMPORT` it from `"thisunit.mh"` (the importer already `#include`s the paired `.h`; no self-include of `"thisunit.h"`).
-- Feature-test macros (`_GNU_SOURCE`) stay on the **Makefile** (`-D`). A `DEFINE` in the `.mc` is still too late if it lands after the unit `.h` / system headers.
-
-A raw `#define` / `#if` line in the `.mc` remains pass-through and **does not** enter the symbol table. If the name is required, write `DEFINE`.
-
-**Examples:**
-
-```mod-c
-define CTRL_KEY(k) ((k) & 0x1f)
-define ANSWER 42
-define SUM 1 + \
-	2
-export define PUBLIC_FLAG 1
-```
-
-`(* C: #define CTRL_KEY(k) ((k) & 0x1f) — space after #define, then the source span from the identifier. *)`
-
-**Planned (0.27).** [`syntax-ebnf.md`](syntax-ebnf.md) spells `DEFINE` with `=`. The compiler still accepts the 0.26.5.188 form above.
+`DEFINE` introduces a **C preprocessor macro** as a TMod-c name in this unit. The body is **C text**, not a TMod-c expression. The formal production is in [`syntax-ebnf.md`](syntax-ebnf.md).
 
 ```
 define-decl     = [ "EXPORT" ] "DEFINE" identifier [ "(" define-params ")" ] "=" [ replacement-list ] ;
@@ -346,12 +319,19 @@ define-params   = "..."
                 | identifier { "," identifier } [ "," "..." ] ;
 ```
 
-- The `=` is TMod-c syntax. Generated C is `#define`, and that `=` is omitted.
-- A `(` with no space after the identifier selects the function-like arm. `define-params` are C macro names, and `...`. They carry no types.
-- `replacement-list` is C text from after `=` through the newline, including `\` continuations. It may be empty. It is not tokenized as TMod-c. `#`, `##`, and a later `=` stay in that text.
-- Binding, `EXPORT`, the `.mh` line `export define Name complete`, and a raw `#define` / `#if` line are unchanged.
+- **Top-level only.** Illegal inside `BEGIN`/`END`.
+- The `=` is required TMod-c punctuation. Generated C is `#define`, and that `=` is omitted. The 0.26.5.188 rest-of-line form (`DEFINE identifier rest-of-line`) is a parse error.
+- A `(` with no space after the identifier selects the function-like arm. The source span from the name through the matching `)` is copied. `define-params` are C macro names, and `...`. They carry no types and are not procedure formals.
+- `replacement-list` is C text from after `=` through the newline, including `\` continuations. It may be empty. It is not tokenized as TMod-c. `#`, `##`, and a later `=` stay in that text. `define INIT = = 0` emits `#define INIT = 0`.
+- Spaces around `=` are insignificant, except that a `(` with no space after the name selects the function-like arm. If the replacement is non-empty and does not already start with whitespace, one space is inserted, so `define ANSWER=42` emits `#define ANSWER 42`. Spaces the author wrote are kept.
+- The name is bound like an untyped **`IMPORT`**: it exists; the C preprocessor owns the meaning. `case CTRL_KEY('q'):` is a legal TMod-c name (C makes it an integer constant expression after preprocess).
+- No `EXPORT` → generated **`.c`** only.
+- `EXPORT` → also the generated **`.h`**, and `export define Name complete` in the `.mh` table so another unit can `IMPORT` it from `"thisunit.mh"` (the importer already `#include`s the paired `.h`; no self-include of `"thisunit.h"`). The `.mh` record does not carry the body.
+- Feature-test macros (`_GNU_SOURCE`) stay on the **Makefile** (`-D`). A `DEFINE` in the `.mc` is still too late if it lands after the unit `.h` / system headers.
 
-**Examples (0.27):**
+A raw `#define` / `#if` line in the `.mc` remains pass-through and **does not** enter the symbol table. `#define INIT = 0` keeps the `=`. If the name is required, write `DEFINE`.
+
+**Examples:**
 
 ```mod-c
 define CTRL_KEY(k) = ((k) & 0x1f)
@@ -370,8 +350,6 @@ export define SDS_HDR_VAR(T, s) = struct sdshdr##T *sh = (void*)((s)-(sizeof(str
 #define PUBLIC_FLAG 1
 #define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
 ```
-
-Existing `DEFINE` lines gain `=` before the C text when this lands.
 
 ### 4.2 `CONST`, `LET`, and `VAR` *Design locked; LET rebind implemented (0.26.5.181); C `const` dropped (0.26.5.183)*
 
@@ -1468,7 +1446,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
 - **Slice formals (planned, 0.27):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays and `^T` do not gain a parameter. See §5.4.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
-- **`DEFINE` with `=` (planned, 0.27):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from the emitted `#define`. The 0.26.5.188 form stays until then. See §4.1.1.
+- **`DEFINE` with `=` (0.27.1.216):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is required and is omitted from the emitted `#define`. The 0.26.5.188 rest-of-line form is a parse error. A raw `#define` stays unbound. See §4.1.1.
 
 **Example** — source:
 
@@ -1580,6 +1558,7 @@ Do not maintain a second full EBNF elsewhere.
 | 15 October 2026 | **§4.2 `const-expression`:** compile-time forms match the EBNF comment (integer literal, enumeration constant, character constant, or arithmetic on those). C11 §6.6 examples of what is and is not a constant expression. A `const` object is read-only; naming it is not a constant expression. |
 | 15 October 2026 | **§4.1.1 / §11 `DEFINE` with `=` (planned, 0.27):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is TMod-c syntax and is omitted from `#define`. Parameters are C macro names, plus `...`. The replacement list stays C text. The 0.26.5.188 form still parses. `#define` pass-through stays unbound. |
 | 15 October 2026 | **§3.2 subdirectory build (0.26.12.213):** `src/` may contain packages. `src/codegen/` is package `codegen`. Mutual `IMPORT` stays later. `IMPORT *` stays deferred. |
+| 16 October 2026 | **§4.1.1 / §11 `DEFINE` with `=` (0.27.1.216):** `=` is required and is omitted from `#define`. A `(` with no space after the name selects the function-like arm. A missing space before a non-whitespace replacement is inserted. The 0.26.5.188 rest-of-line form no longer parses. A raw `#define` stays unbound. |
 
 ---
 

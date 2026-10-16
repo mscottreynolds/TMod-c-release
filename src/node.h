@@ -177,11 +177,12 @@ struct Node {
 			size_t		length;
 		} preprocessor;
 
-		// [EXPORT] DEFINE identifier RestOfLine (body is C, not TMod-c)
+		// [EXPORT] DEFINE name ["(" params ")"] "=" replacement.
+		// text is the #define tail: name, optional params, replacement. '=' omitted.
 		struct {
 			const char *name;		// identifier only
 			size_t 		name_len;
-			const char *text;		// identifer + reset of the line (source span)
+			const char *text;		// name, optional params, and C replacement
 			size_t 		length;
 			bool 		is_exported;
 		} define_stmt;

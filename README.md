@@ -91,6 +91,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.1.216** (16 October 2026): `DEFINE` requires `=`. `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from `#define`. A raw `#define` stays unbound. The 0.26.5.188 rest-of-line form is a parse error. Branch **`TMod-c_0.27`**. Promoted **0.27.1.216**. The user reported that gcc, clang, and tcc each pass
 - **0.26.12.213** (15 October 2026): `src/` tree build. Codegen units are `module codegen.…` in `src/codegen/`. Several `.mc` inputs use each file's own path for `.mh` lookup and output names. Last planned build on `mod-c_0.26`. Promoted **0.26.12.213**
 - **0.26.12.212** (14 October 2026): package path and type call. A unit name may be a qualident; the last identifier is the unit. An unquoted import is `<root>/dots/as/slashes.mh`. `Ident(...)` on a declared type calls `Ident::Ident`. Prelude names and the keyword `opaque` do not. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc. Promoted **0.26.12.212**
 - **0.26.11.208** (13 October 2026): `HEADER` unit. `header Name` … `end`. No parameters, no return type, no `BEGIN`. Prototypes only. No `.c` file. `-C` still writes `.h` and `.mh`. No unit-entry export. `src/tmodc.mc` generates `tmodc.h` and `tmodc.mh`. Bootstrap treats a missing `.c` pair as agreement. Promoted **0.26.11.208**
@@ -120,7 +121,7 @@ Current focus:
 - **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
 - **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
 - **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- **0.26 closes at 213.** No soft language item left on this stem. **Subdirectory build** (**0.26.12.213**), **package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. **0.27** (planned, not implemented): slice formals, and `DEFINE` with `=`. Remaining hand-written compiler C is `node.c` / `node.h`. `tmodc.h` is generated from `src/tmodc.mc` (**0.26.11.208**)
+- **0.26 closes at 213.** No soft language item left on this stem. **Subdirectory build** (**0.26.12.213**), **package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. **`DEFINE` with `=`** is done (**0.27.1.216**). **0.27** still planned: slice formals. Remaining hand-written compiler C is `node.c` / `node.h`. `tmodc.h` is generated from `src/tmodc.mc` (**0.26.11.208**)
 - Later: cyclic TMod-c `IMPORT` policy. The directory build landed in **0.26.12.213**. The language rule is still later. Self-host of remaining compiler units continues in the background
 
 Credits & Acknowledgments
@@ -164,7 +165,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.26.12 hello.mc -C hello.c
+./bin/modc.0.27.1 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```
