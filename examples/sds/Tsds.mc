@@ -1878,7 +1878,7 @@ end sdsfreesplitres
 (**
  * Wrapper for sdsfreesplitres.
  *)
-export procedure sds::freeSplitRes(tokens: sds[], count: int)
+export procedure sds::freeSplitRes(tokens: ^sds, count: int)
 begin
     sdsfreesplitres(tokens, count)
 end sds::freeSplitRes

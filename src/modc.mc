@@ -1,4 +1,4 @@
-program modc(argc: int, argv: ^char[]): int  // TODO: actually output "array_of_pchar" to main(...)
+program modc(args: ^char[]): int
 (**
  * TMod-c 0.26.5.176
  * By M. Scott Reynolds
@@ -25,10 +25,12 @@ import exit, free, malloc,
     from "stdlib.h"
 import memcmp, memcpy, strcmp, strlen, 
     from "string.h"
+
 import TParser 
-    from parser_common
+    from parser.parser_common
 import TParser::init, TParser::parse 
-    from parser_main
+    from parser.parser_main
+
 import NODE_PROGRAM, node_print, Node, 
     from "node.h"
 import VERSION, VERSION_BASE, BUILD_NUMBER 
@@ -36,12 +38,13 @@ import VERSION, VERSION_BASE, BUILD_NUMBER
 
 import InitialContext, codegen_generate, 
     from codegen.codegen
-import codegen_mh_has_exports 
-    from codegen.codegen_mh
 import 
     CodegenTarget, TARGET_C, TARGET_HEADER, TARGET_MH, TARGET_VM, 
     TARGET_WASM, TARGET_JSON
     from codegen.codegen_common
+
+import semantic_analyze 
+    from semantic.semantic
 
 import DynBuf, dynbuf_init, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
     dynbuf_free, 
@@ -50,8 +53,6 @@ import Arena, arena_init, arena_free,
     from arena
 import TSymbolTable 
     from symtab
-import semantic_analyze 
-    from semantic
 import utils_strndup 
     from utils
 
@@ -360,10 +361,11 @@ end resolve_output_path
  *
  * Returns TCommandLine with values or prints usage and exits.
  *)
- function parse_command_line(argc: int, argv: array_of_pchar): TCommandLine
+ function parse_command_line(args: ^char[]): TCommandLine
  begin
     var results: TCommandLine
     var i: int = 1
+    var argc: int = countof(args)
 
     results.show_tokens := false
     results.show_info := false
@@ -386,9 +388,9 @@ end resolve_output_path
 
     if argc > 1 then
         while i < argc do
-            var arg: pchar = argv[i]
+            var arg: pchar = args[i]
 
-            if strcmp(argv[i], "-h") == 0 or strcmp(argv[i], "--help") == 0 then
+            if strcmp(args[i], "-h") == 0 or strcmp(args[i], "--help") == 0 then
                 fprintf(stderr, "TMod-c %s (%d)\n", VERSION_BASE, BUILD_NUMBER)
                 fprintf(stderr, "Usage: tmodc [options] file.mc ...\n")
                 fprintf(stderr, "Options:\n")
@@ -438,31 +440,31 @@ end resolve_output_path
 
             elsif strcmp(arg, "-C") == 0 then     // C output
                 results.generate_c := true
-                if i + 1 < argc and is_optional_output_arg(argv[i + 1], false, false) then
+                if i + 1 < argc and is_optional_output_arg(args[i + 1], false, false) then
                     inc(i)
-                    results.c_output_path := argv[i]
+                    results.c_output_path := args[i]
                 end
 
             elsif strcmp(arg, "-H") == 0 then     // Definition Header output
                 results.generate_h := true
-                if i + 1 < argc and is_optional_output_arg(argv[i + 1], true, false) then
+                if i + 1 < argc and is_optional_output_arg(args[i + 1], true, false) then
                     inc(i)
-                    results.h_output_path := argv[i]
+                    results.h_output_path := args[i]
                 end
 
             elsif strcmp(arg, "-M") == 0 then       // modc-mh/1 export table
                 results.generate_mh := true
-                if i + 1 < argc and is_optional_output_arg(argv[i + 1], false, true) then
+                if i + 1 < argc and is_optional_output_arg(args[i + 1], false, true) then
                     inc(i)
-                    results.mh_output_path := argv[i]
+                    results.mh_output_path := args[i]
                 end
             elsif strcmp(arg, "-d") == 0 and i + 1 < argc then
                 inc(i)
-                results.output_dir := argv[i]
+                results.output_dir := args[i]
 
             elsif strcmp(arg, "-b") == 0 and i + 1 < argc then
                 inc(i)
-                results.output_base := argv[i]
+                results.output_base := args[i]
 
             elsif arg[0] == '-' then
                 // Check invalid options before setting input/output file
@@ -686,8 +688,7 @@ begin
                         options.output_dir, options.output_base, ".h")
                     h_file := h_auto
                 end
-                if (options.generate_mh or (options.generate_c and codegen_mh_has_exports(ast))) and
-                        mh_file == nil then
+                if options.generate_mh and mh_file == nil then
                     mh_auto := resolve_output_path(input_file, unit_name, unit_len,
                         options.output_dir, options.output_base, ".mh")
                     mh_file := mh_auto
@@ -720,8 +721,7 @@ begin
                     end
                 end
 
-                // Generate .mh export table
-                if options.generate_mh or (options.generate_c and codegen_mh_has_exports(ast)) then
+                if options.generate_mh then
                     if mh_file == nil then
                         fprintf(stderr, "ERROR: could not determine .mh output path\n")
                         return_code += 1
@@ -775,7 +775,7 @@ begin
     var return_code: int = 0
     var i: integer = 0
 
-    options := parse_command_line(argc, argv)
+    options := parse_command_line(args)
 
     // Display options selected.
     if options.show_info then
@@ -802,13 +802,15 @@ begin
         fprintf(stderr, "TMod-c %s (%d)\n", VERSION_BASE, BUILD_NUMBER)
         fprintf(stderr, "VERSION_BASE: %s\n", VERSION_BASE)
         fprintf(stderr, "BUILD_NUMBER: %d\n", BUILD_NUMBER)
-        fprintf(stderr, "INSTALLED: %s\n", argv[0])
+        if countof(args) > 0 then
+            fprintf(stderr, "INSTALLED: %s\n", args[0])
+        end
         return 1
     end
 
     if options.mc_input_count <= 0 then
         fprintf(stderr, "Usage: tmodc [options] file.mc ...\n")
-        fprintf(stderr, "Try '%s --help' for more information.\n", argv[0])
+        fprintf(stderr, "Try '%s --help' for more information.\n", args[0])
         return 1
     end
 
@@ -835,3 +837,5 @@ begin
 
     return return_code
 end modc
+
+(* msr/gk/msr *)

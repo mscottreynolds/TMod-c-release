@@ -1,9 +1,10 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.27.1
+VERSION 	:= 0.27.2
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
+C_SRC_DIR	= src/c
 LIB_DIR		= lib
 INCLUDE_DIR = include
 BUILD_DIR 	= build
@@ -21,15 +22,15 @@ TOOLS_DIR   = tools
 BUILD_FILE   := $(SRC_DIR)/build.number
 BUILD_NUMBER := $$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
-# src/ and any later subdirectory (src/codegen/…). find, not wildcard:
-# wildcard does not walk past one directory.
-SOURCES := $(sort $(shell find $(SRC_DIR) -name '*.c' -print))
-OBJS    := $(patsubst $(SRC_DIR)/%.c,$(C_BUILD_DIR)/%.o,$(SOURCES))
-# Basename includes ("node.h", "codegen_common.h") are found in the
-# directory of the .c file or on -I. Each directory that holds a header
-# is an include root, so a unit still at src/ can include a header that
-# has moved under src/codegen/.
-SRC_HEADER_DIRS := $(patsubst %/,%,$(sort $(dir $(shell find $(SRC_DIR) -name '*.h' -print))))
+# Generated and hand-written C live under src/c, mirroring the .mc tree.
+# src/parser/foo.mc lowers to src/c/parser/foo.c, so #include "../arena.h"
+# and #include "parser/parser_common.h" still resolve. find, not wildcard.
+SOURCES := $(sort $(shell find $(C_SRC_DIR) -name '*.c' -print))
+OBJS    := $(patsubst $(C_SRC_DIR)/%.c,$(C_BUILD_DIR)/%.o,$(SOURCES))
+# Each directory that holds a header is an include root. src/c/ itself
+# is one, so #include "node.h" and #include "version.h" resolve from a 
+# package directory.
+SRC_HEADER_DIRS := $(patsubst %/,%,$(sort $(dir $(shell find $(C_SRC_DIR) -name '*.h' -print))))
 
 # Host C compiler: gcc (default), clang, or tcc.
 # 	make
@@ -138,7 +139,7 @@ tmodc: $(TARGET)
 all: tmodc string-lib examples
 	@echo "All done."
 
-# Increment BUILD_NUMBER and update src/version.h
+# Increment BUILD_NUMBER and update src/c/version.h
 version:
 	@build=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0);			\
 	build=$$((build + 1)); 										\
@@ -148,7 +149,7 @@ version:
 		"#define VERSION \"$(VERSION).$$build\"" 				\
 		"#define VERSION_BASE \"$(VERSION)\""					\
 		"#define BUILD_NUMBER $$build"							\
-		> $(SRC_DIR)/version.h
+		> $(C_SRC_DIR)/version.h
 	@echo VERSION=$(VERSION)
 	@echo BUILD_NUMBER=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
@@ -156,6 +157,7 @@ info:
 	@echo VERSION=$(VERSION)
 	@echo BUILD_NUMBER=$(BUILD_NUMBER)
 	@echo BIN_DIR=$(BIN_DIR)
+	@echo C_SRC_DIR=$(C_SRC_DIR)
 	@echo SRC_DIR=$(SRC_DIR)
 	@echo BUILD_DIR=$(BUILD_DIR)
 	@echo C_BUILD_DIR=$(C_BUILD_DIR)
@@ -186,8 +188,8 @@ $(BIN_DIR): $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# src/codegen/foo.c → build/c/codegen/foo.o. The stem may contain slashes.
-$(C_BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(C_BUILD_DIR)
+# src/c/codegen/foo.c -> build/c/codegen/foo.o. The stem may contain slashes.
+$(C_BUILD_DIR)/%.o: $(C_SRC_DIR)/%.c | $(C_BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -484,7 +486,7 @@ clean-all: examples-clean string-lib-clean clean
 
 help:
 	@echo "Available targets:"
-	@echo "  version            Increment the BUILD_NUMBER and update $(SRC_DIR)/version.h"
+	@echo "  version            Increment the BUILD_NUMBER and update $(C_SRC_DIR)/version.h"
 	@echo "  all                Build the modc.$(VERSION) binary"
 	@echo "  test               Run all preprocessor, compile, and run tests (test_*)"
 	@echo "  test2              Run just preprocessor tests (test2_*)"
@@ -517,14 +519,16 @@ reset: clean
 # Safe self-hosting targets
 # ======================================================
 
+
+
 # Stage 1 and 2: Generate new source into build, compile temporary compiler.
-# The tree under src/ is mirrored. A later src/codegen/codegen_c.mc lands at
-# build/selfhost/codegen/codegen_c.c, not a flat codegen_c.c.
+# Stage 1 copies src/c into build/seflhost with the src/c/ prefix stripped,
+# then writes each src/**/*.mc to build/selfhost/<stem>.c.
 selfhost: $(TARGET)
 	@mkdir -p $(SH_BUILD_DIR)
 	@echo "=== Stage 1: Regenerating compiler sources (src tree) ==="
-	@for f in $$(find $(SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
-		rel=$${f#$(SRC_DIR)/};											\
+	@for f in $$(find $(C_SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort ); do \
+		rel=$${f#$(C_SRC_DIR)/};										\
 		dest="$(SH_BUILD_DIR)/$$rel";									\
 		mkdir -p "$$(dirname "$$dest")";								\
 		cp -p "$$f" "$$dest";											\
@@ -556,8 +560,8 @@ selfhost: $(TARGET)
 bootstrap: selfhost
 	@mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
 	@echo "=== Stage 3: Regenerating with new compiler ==="
-	@for f in $$(find $(SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
-		rel=$${f#$(SRC_DIR)/};											\
+	@for f in $$(find $(C_SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
+		rel=$${f#$(C_SRC_DIR)/};										\
 		dest="$(BS_BUILD_DIR)/$$rel";									\
 		mkdir -p "$$(dirname "$$dest")";								\
 		cp -p "$$f" "$$dest";											\
@@ -621,16 +625,18 @@ bootstrap: selfhost
 		fi;																\
 	done;																\
 	if $$success; then													\
-		echo "=== SUCCESS: Full bootstrap verified ===" ;				\
-		echo "=== (identical output for all sources) ===";				\
-		echo "=== Run 'make promote' to update the src tree ===" ;		\
+		echo "=== SUCCESS: Full bootstrap verified                ===";	\
+		echo "=== (identical output for all sources)              ===";	\
+		echo "=== Run 'make promote' to update the src/c/<stem>.c ===";	\
+		echo "=== and src/c/<stem>.h tree                         ===";	\
 	else																\
 		echo "=== ERROR: Bootstrap failed - some generated files differ ===" ; \
 		exit 1;															\
 	fi
 
 # Promote verified output to source (only run after successful bootstrap).
-# Each file returns to its path under src/, including a subdirectory.
+# Each file returns to its path under src/c/<stem>.c and src/c/<stem>.h,
+# including a subdirectory.
 promote:
 	@echo "=== Stage 6: Reverifying and Promoting files ==="
 	@success=true;														\
@@ -641,7 +647,7 @@ promote:
 		h_regen="$(VF_BUILD_DIR)/$$stem.h";								\
 		c_selfhost="$(SH_BUILD_DIR)/$$stem.c";							\
 		h_selfhost="$(SH_BUILD_DIR)/$$stem.h";							\
-		if [ -f "$$c_selfhost" ] || [ -f "$$c_regen" ]; then				\
+		if [ -f "$$c_selfhost" ] || [ -f "$$c_regen" ]; then			\
 			if ! diff -u "$$c_selfhost" "$$c_regen" >/dev/null; then	\
 				echo "=== ERROR: $$c_selfhost and $$c_regen differ ==="; \
 				success=false;											\
@@ -658,8 +664,8 @@ promote:
 			stem=$${rel%.mc};											\
 			c_new="$(SH_BUILD_DIR)/$$stem.c";							\
 			h_new="$(SH_BUILD_DIR)/$$stem.h";							\
-			c_src="$(SRC_DIR)/$$stem.c";								\
-			h_src="$(SRC_DIR)/$$stem.h";								\
+			c_src="$(C_SRC_DIR)/$$stem.c";								\
+			h_src="$(C_SRC_DIR)/$$stem.h";								\
 			mkdir -p "$$(dirname "$$c_src")";							\
 			if [ -f "$$c_new" ]; then									\
 				cp -fv "$$c_new" "$$c_src";								\

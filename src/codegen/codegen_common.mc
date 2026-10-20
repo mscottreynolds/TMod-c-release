@@ -39,9 +39,9 @@ IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_
     TOK_MOD_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
     TOK_KEYWORD_DIV, TOK_POWER, TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_MOD, 
     TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER,
-    from Lexer
+    from lexer.Lexer
 import mh_path_is_mh, mh_format_h_include,
-    from mh_reader    
+    from mh.mh_reader    
 import TSymbol 
     from symbol
 import SYM_KIND_LET, SYM_KIND_PARAM, 
@@ -133,8 +133,9 @@ export procedure emit_type_specifier(out: pDynBuf, t: const ^TType, name: const 
         is_param: bool, is_var: bool, is_ref: bool, is_const: bool) forward
 
 type pNode = ^Node
-// TODO: if '^Node[]' then tmodc outputs '?' in the .mh file.
 export procedure emit_param_list(out: pDynBuf, params: ^pNode, count: size_t, is_parameter: bool, has_ellipsis: bool) forward
+
+export function codegen_type_is_open_slice(t: const ^TType): bool forward
 
 export procedure emit_var_decl(out: pDynBuf, name: const ^char, name_len: size_t, t: const ^TType) forward
 
@@ -525,6 +526,78 @@ end codegen_param_array_view
 
 
 (**
+ * Open-array slice. array_size 0, and not a pointer-to-array.
+ * ^array[] of T stays one C parameter. ^char[] does not.
+ *)
+export function codegen_type_is_open_slice(t: const ^TType): bool
+begin
+    var view: const ^TType = nil
+
+    view := codegen_param_array_view(t)
+    if view == nil or view.is_pointer or view.array_size <> 0 then
+        return false
+    end
+    return true
+end codegen_type_is_open_slice
+
+
+(*
+ * Bare slice-formal identifier, through parens. Nil otherwise.
+ *)
+function codegen_bare_slice_ident(d: const ^Node): const ^Node
+begin
+    var dn: const ^Node = d
+    var decl: const ^Node = nil
+
+    while dn <> nil and dn.kind == NODE_PAREN do
+        dn := dn.paren.expr
+    end
+    if dn == nil or dn.kind <> NODE_IDENT then
+        return nil
+    end
+    if dn.resolved_sym == nil or dn.resolved_sym^.kind <> SYM_KIND_PARAM then
+        return nil
+    end
+    decl := dn.resolved_sym^.decl
+    if decl == nil or decl.kind <> NODE_PARAM then
+        return nil
+    end
+    if not codegen_type_is_open_slice(decl.param.param_type) then
+        return nil
+    end
+    return dn
+end codegen_bare_slice_ident
+
+(*
+ * Hidden slice length after an actual. code > 0 is the folded bound.
+ * code < 0 passes the actual formal's _length name. The leading comma
+ * is included.
+ *)
+procedure codegen_emit_slice_stamp(actual: const ^Node, code: int, ctx: CodegenContext)
+begin
+    var buf: array[64] of char
+    var id: const ^Node = nil
+
+    if code == 0 then
+        return
+    end
+    dynbuf_append(ctx.out, ", ")
+    if code < 0 then
+        id := codegen_bare_slice_ident(actual)
+        if id <> nil and id.token.start <> nil and id.token.length > 0 then
+            dynbuf_appendn(ctx.out, id.token.start, id.token.length)
+            dynbuf_append(ctx.out, "_length")
+        else
+            dynbuf_append(ctx.out, "0")
+        end
+        return
+    end
+    snprintf(buf, sizeof(buf), "((integer)%d)", code)
+    dynbuf_append(ctx.out, buf)
+end codegen_emit_slice_stamp
+
+
+(**
  * Emit type specifier (for typedef, function returns, parameters, etc.)
  * Supports: normal types, open arrays T[], fixed arrays T[N]. If type is an array
  * it needs the name of an identifier associated with the type as array information
@@ -666,6 +739,12 @@ begin
                 param.param.is_var,
                 param.param.is_ref,
                 param.param.is_const)
+            if is_parameter and param.param.name <> nil and
+                    codegen_type_is_open_slice(param.param.param_type) then
+                dynbuf_append(out, ", integer ")
+                dynbuf_appendn(out, param.param.name, param.param.name_len)
+                dynbuf_append(out, "_length")
+            end
         end
         if has_ellipsis then
             dynbuf_append(out, ", ...")
@@ -1367,6 +1446,10 @@ begin
                 codegen_emit_call_arg_deref(codegen_call_formal_receiver(n),
                     n.call.receiver_expr, n.call.auto_deref,
                     n.call.base_depth, ctx)
+                if n.call.receiver_slice <> 0 then
+                    codegen_emit_slice_stamp(n.call.receiver_expr,
+                        n.call.receiver_slice, ctx)
+                end
             end
             for i := 0 to n.call.argc-1 do
                 if i > 0 or (n.call.callee_expr == nil and n.call.receiver_expr <> nil) then
@@ -1379,6 +1462,9 @@ begin
                     (i == 0 and n.call.receiver_expr == nil and
                         n.call.callee_expr == nil) ? n.call.base_depth : 0,
                     ctx)
+                if n.call.slice_arg <> nil and n.call.slice_arg[i] <> 0 then
+                    codegen_emit_slice_stamp(n.call.args[i], n.call.slice_arg[i], ctx)
+                end
             end
 
             dynbuf_append(ctx.out, ")")
@@ -1732,8 +1818,15 @@ begin
     // Unfolded designator: C11 has no _Countof.
     begin
         var d: const ^Node
+        var id: const ^Node = nil
 
         d := n.sizeof_expr.target.designator
+        id := codegen_bare_slice_ident(d)
+        if id <> nil and id.token.start <> nil and id.token.length > 0 then
+            dynbuf_appendn(ctx.out, id.token.start, id.token.length)
+            dynbuf_append(ctx.out, "_length")
+            return
+        end
         dynbuf_append(ctx.out, "((integer)(sizeof(")
         codegen_common_expr(d, ctx)
         dynbuf_append(ctx.out, ") / sizeof((")
@@ -1891,3 +1984,6 @@ end codegen_common_import
 
 begin
 end CodegenCommon
+
+
+(* msr/gk/msr *)

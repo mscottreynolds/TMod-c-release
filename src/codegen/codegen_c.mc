@@ -42,18 +42,18 @@ import exit
 import VERSION_BASE 
     from "version.h"
 
-import dynbuf_append_char, dynbuf_appendn, dynbuf_append, 
+import dynbuf_append_char, dynbuf_appendn, dynbuf_append,
     from dynbuf
 import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
-    from Lexer
-import TType 
+    from lexer.Lexer
+import TType
     from ttype
 
 import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_expr,
     emit_indent, codegen_common_type_decl, emit_return_type, emit_doc_comment_as_c,
     codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
     emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
-    codegen_common_module_prototype, codegen_common_import,
+    codegen_common_module_prototype, codegen_common_import, codegen_type_is_open_slice,
     from codegen.codegen_common
 import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
     codegen_dbc_emit_invariants_to_loop, codegen_dbc_emit_requires, 
@@ -285,6 +285,15 @@ begin
 
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "for (")
+    if n.for_stmt.declares then
+        if n.for_stmt.index_type <> nil then
+            emit_type_specifier(ctx.out, n.for_stmt.index_type,
+                nil, 0, false, false, false, false)
+            dynbuf_append_char(ctx.out, ' ')
+        else
+            dynbuf_append(ctx.out, "integer ")
+        end
+    end
     dynbuf_appendn(ctx.out, n.for_stmt.var_name, n.for_stmt.var_len)
     dynbuf_append(ctx.out, " = ")
     codegen_common_expr(n.for_stmt.start_, ctx)
@@ -941,6 +950,46 @@ begin
 end codegen_c_block
 
 
+(*
+ * Call the program from hosted main.
+ * An open-array formal is passed as argv plus argc as its length.
+ * The first other formal is argc. The second is argv.
+ *)
+procedure codegen_c_emit_program_call(n: const ^Node, ctx: CodegenContext)
+begin
+    var i: size_t = 0
+    var host: size_t = 0
+    var any: bool = false
+    var param: const ^Node = nil
+
+    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    dynbuf_append_char(ctx.out, '(')
+    if n.program_decl.param_count == 0 or n.program_decl.params == nil then
+        dynbuf_append(ctx.out, ");\n")
+        return
+    end
+    for i := 0 to n.program_decl.param_count - 1 do
+        param := n.program_decl.params[i]
+        if any then
+            dynbuf_append(ctx.out, ", ")
+        end
+        any := true
+        if param <> nil and codegen_type_is_open_slice(param.param.param_type) then
+            dynbuf_append(ctx.out, "argv, argc")
+        elsif host == 0 then
+            dynbuf_append(ctx.out, "argc")
+            host := host + 1
+        elsif host == 1 then
+            dynbuf_append(ctx.out, "argv")
+            host := host + 1
+        else
+            dynbuf_append(ctx.out, "0")
+        end
+    end
+    dynbuf_append(ctx.out, ");\n")
+end codegen_c_emit_program_call
+
+
 (**
  * Generate a separate main(...) wraper for NODE_PROGRAM
  *)
@@ -978,26 +1027,24 @@ begin
     // Now generate the main(...) wrapper.
     dynbuf_append(ctx.out, "int main")
 
-    // Use the same parameter list for main as supplied by the program header.
-    emit_param_list(ctx.out, n.program_decl.params, n.program_decl.param_count,
-        true, false)
-
-    dynbuf_append_char(ctx.out, '\n')
+    if n.program_decl.param_count == 0 then
+        dynbuf_append(ctx.out, "(void)\n")
+    else
+        dynbuf_append(ctx.out, "(int argc, char **argv)\n")
+    end
     dynbuf_append(ctx.out, "{\n")
     emit_indent(ctx.out, ctx.indent + 1)
+    if n.program_decl.param_count > 0 then
+        dynbuf_append(ctx.out, "(void)argc;\n")
+        emit_indent(ctx.out, ctx.indent + 1)
+        dynbuf_append(ctx.out, "(void)argv;\n")
+        emit_indent(ctx.out, ctx.indent + 1)
+    end
     if n.program_decl.return_type <> nil then
         // Assuming program returns same type as main(...)
         dynbuf_append(ctx.out, "return ")
     end
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
-    dynbuf_append_char(ctx.out, '(')
-    if n.program_decl.param_count > 0 then
-        dynbuf_append(ctx.out, "argc")
-    end
-    if n.program_decl.param_count > 1 then
-        dynbuf_append(ctx.out, ", argv")
-    end
-    dynbuf_append(ctx.out, ");\n")
+    codegen_c_emit_program_call(n, ctx)
     if n.program_decl.return_type == nil then
         // default return value from main.
         emit_indent(ctx.out, 1)
@@ -1142,3 +1189,5 @@ begin
     // call codegen_c_module for MODULE.
     codegen_c_program(ctx.ast, ctx)
 end codegen_c
+
+(* msr/gk/msr *)

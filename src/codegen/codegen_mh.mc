@@ -23,7 +23,7 @@ import Node, NODE_PROGRAM, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,
 import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
 	from dynbuf
 import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
-	from Lexer
+	from lexer.Lexer
 import TType 
 	from ttype
 
@@ -129,25 +129,17 @@ end mh_method_is_instance
 
 
 (*
- * Append type-spec for .mh: [const] [^] Name
- * Prefer the surface type name (aliases like long_long). Do not peel
- * resolved_type: that can turn one ident into multi-word C ("long long"),
- * which the .mh type-spec grammar cannot parse as a single ident at this time.
+ * Leave type-spec: [const] [^] Name [width] | opaque.
+ * Prefer the surface name. Do not peel resolved_type here: that can turn
+ * one identinto multi-word C ("long long").
  *)
-procedure mh_append_type_spec(out: ^DynBuf, t: const ^TType)
+procedure mh_append_leaf_type_spec(out: ^DynBuf, ty: const ^TType)
 begin
-	var ty: const ^TType = t
 
 	if out == nil or ty == nil then
 		return
 	end
-	// if ty^.resolved_type <> nil then
-	// 	ty := ty^.resolved_type
-	// end
-	// Only peel resolution when this node has no name of its own.
-	if (ty^.name == nil or ty^.name_len == 0) and ty^.resolved_type <> nil then
-		ty := ty^.resolved_type
-	end
+
 	if ty^.is_const then
 		dynbuf_append(out, "const ")
 	end
@@ -166,6 +158,93 @@ begin
 	else
 		dynbuf_append(out, "?")
 	end
+end mh_append_leaf_type_spec
+
+
+(* [N] or []. array_size 0 is an open array. *)
+procedure mh_append_array_suffix(out: ^DynBuf, ty: const ^TType)
+begin
+	var sbuf: array[32] of char
+
+	if ty^.size_expr <> nil then
+		fprintf(stderr, "FATAL ERROR: codegen_mh: array bound is not folded\n")
+		exit(1)
+	end
+	if ty^.array_size > 0 then
+		snprintf(@sbuf[0], 32, "[%zu]", ty^.array_size)
+		dynbuf_append(out, @sbuf[0])
+	else
+		dynbuf_append(out, "[]")
+	end
+end mh_append_array_suffix
+
+
+(*
+ * Suffix for when the element is a named or opaque leaf and const matches.
+ * ^Node[] and Node[] use it. ^array[] of T, a const mismatch, and a nested
+ * array use the keyword form.
+ *)
+function mh_array_suffix_form(ty: const ^TType): bool
+begin
+	var el: const ^TType = nil
+
+	if ty == nil or not ty^.is_array or ty^.is_pointer then
+		return false
+	end
+	el := ty^.element_type
+	if el == nil or el^.is_array then
+		return false
+	end
+	if ty^.is_const <> el^.is_const then
+		return false
+	end
+	if el^.is_opaque then
+		return true
+	end
+	if el^.name <> nil and el^.name_len > 0 then
+		return true
+	end
+	return false
+end mh_array_suffix_form
+
+
+(*
+ * [const] [^] Name [width] [array-suffix]
+ * | [const] [^] array [array-suffix] of type-spec
+ * Peel a nameless node onto resolved_type. An array peels only onto an array.
+ * so the [] is kept. A named alias stays the name.
+ *)
+recursive procedure mh_append_type_spec(out: ^DynBuf, t: const ^TType)
+begin
+	var ty: const ^TType = t
+
+	if out == nil or ty == nil then
+		return
+	end
+	if (ty^.name == nil or ty^.name_len == 0) and ty^.resolved_type <> nil then
+		if not ty^.is_array or ty^.resolved_type^.is_array then
+			ty := ty^.resolved_type
+		end
+	end
+	if ty^.is_array and ty^.element_type <> nil then
+		if mh_array_suffix_form(ty) then
+			mh_append_leaf_type_spec(out, ty^.element_type)
+			mh_append_array_suffix(out, ty)
+		else
+			if ty^.is_const then
+				dynbuf_append(out, "const ")
+			end
+			if ty^.is_pointer then
+				dynbuf_append_char(out, '^')
+			end
+			dynbuf_append(out, "array")
+			mh_append_array_suffix(out, ty)
+			dynbuf_append(out, " of ")
+			mh_append_type_spec(out, ty^.element_type)
+		end
+		return
+	end
+	mh_append_leaf_type_spec(out, ty)
 end mh_append_type_spec
 
 
@@ -343,7 +422,7 @@ end mh_append_ident
 
 (*
  * Append struct/union field tail: struct|union [extends Name] (f: T {, ...})
- * Same physical line as export type. Type-spec is [const] [^] Name (6a).
+ * Same physical line as export type. Type-spec may include an array (6b).
  *)
 procedure mh_append_field_list(out: ^DynBuf, st: const ^Node)
 begin
@@ -665,3 +744,5 @@ begin
 	end
 end codegen_mh
 
+
+(* msr/gk/msr *)

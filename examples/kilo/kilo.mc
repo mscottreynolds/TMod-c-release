@@ -1,4 +1,4 @@
-program kilo(argc: integer, argv: ^char[]): integer
+program kilo(args: ^char[]): integer
 (**
  * From "Build Your Own Text Editor" at:
  * 		https://viewsourcecode.org/snaptoken/kilo/
@@ -1450,11 +1450,12 @@ end initEditor
 
 begin
 	var E: EditorConfig
+	var argc: int = countof(args)
 
 	enableRawMode()
 	initEditor(E)
 	if argc >= 2 then
-		E.open(argv[1])
+		E.open(args[1])
 	end
 
 	E.setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find")

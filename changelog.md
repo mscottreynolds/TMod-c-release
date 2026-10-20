@@ -2,6 +2,47 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.2.222
+- **C tree** — generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `src/parser/parser_main.mc` lowers to `src/c/parser/parser_main.c`. `.mh` stays beside the `.mc`. Hand-written `node.c` / `node.h` and Makefile-written `version.h` are under `src/c/`.
+- `-M` is the only flag that writes an `.mh`. `-C` writes the `.c` and the companion `.h`. With no `-d` and no explicit `-M` path, the `.mh` is written beside the `.mc`. `-d` uses the basename only, so a package unit needs an explicit `-C` and `-H`.
+- `make`, `selfhost`, `bootstrap`, and `promote` compile and copy through `src/c`. Objects stay `build/c/<rel>.o`. `make version` writes `src/c/version.h`. `src/build.number` stays in `src/`.
+- A `HEADER` unit still has no `.c`. Promote removes a stale `.c` under `src/c/` when the verified output has none.
+- The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc. Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`main`**. Build **222**. `TMod-c_0.27` is still at **0.27.1.216**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, `TODO-items-for-0.27.md`, `AGENTS.md`, Language Report §3.1 / §3.1.1, `sqlite3/SQLite3-wrapper-for-TMod-c.md`, `docs/grok_report-20261020-222.md`, and an append in `docs/project_bible.md`.
+
+## Version 0.27.2.221
+- **Dual `FOR`** — `for i := start` still assigns a variable already in scope. `for i = start` and `for i: integer = start` declare an `integer` whose scope ends at `end`. The index may shadow an outer variable. After `end`, that outer variable is unchanged.
+- An omitted type is `integer`. The written type is `integer` or `int`. `cardinal` is rejected as the index type (`semantic_check_for_local: FOR index type must be integer`). A `cardinal` bound expression is still accepted. `for i: integer :=` is a parse error.
+- The body must not assign, `INC`, or `DEC` the control name. That rule covers both forms.
+- The end temporary stays `const long long __for_end_l{line}_c{column}` (item **18**). `BY` is still a numeric literal. `BY 0` is rewritten to step 1.
+- **Tests:** `tests/test_for.mc` (outer `shadow` stays 40, `for k =`, `for k: integer =`, plus the existing `:=` and same-line nested loops). `tests/test3_for_assign.mc` (`i := 2` inside `for i =`). `tests/test3_for_cardinal.mc`. `tests/test3_for_mix.mc` (`for i: integer :=`).
+- The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.2.221**. Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`TMod-c_0.27`**. Build **221**.
+- Language Report §7.1 and §11. EBNF `for-statement`. Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261019-221.md`.
+
+## Version 0.27.1.219
+- **Slice formals** — an open-array parameter lowers to the pointer plus a hidden `integer` immediately after it. The C name is `{name}_length`. It is not a TMod-c identifier. A parameter that already has that spelling is a semantic error.
+- Open means `array_size == 0` and the array is not a pointer: `char[]`, `array[] of char`, a one-step alias (`type Buf = char[]`), and `^char[]`. Each open formal gets its own count, before the next source formal and before `...`.
+- Not a slice: fixed `array[N]` / `T[N]`; `^T` including `^pchar`; pointer-to-array `^array[] of T` / `^array[N] of T`; a field `buf: array[] of char` (flexible array member).
+- Calls insert the count. A fixed-array actual passes `((integer)N)`. A slice-formal actual passes that formal's `_length`. A `VAR` / `REF` actual written `@array` counts the operand. `^char`, `string`, a scalar, or a local open array is `semantic_resolve_call: open_array actual has no element count`. No `strlen`.
+- `countof` on a slice formal is `integer` and is not a constant. It emits `{name}_length`. `array[countof(s)]` stays illegal. Fixed-array `countof` is unchanged.
+- Hosted `main` stays `int main(int argc, char **argv)`. `program kilo(args: ^char[])` is called as `kilo(argv, argc)`. `program Demo(argc, argv: ^char[])` is called as `Demo(argc, argv, argc)`. `countof` on that program slice is `argc` (includes `args[0]`, excludes the `NULL` at `argv[argc]`). A module `function main` with `argv: ^char[]` grows `argv_length` that the operating system does not pass. Use `^pchar` there.
+- A call through a function pointer or a callable field does not insert the length yet. `.mh` already spells `[]` (**0.27.1.217**). No new export flag. Parser unchanged.
+- **Programs:** `src/modc.mc` and `examples/kilo/kilo.mc` are `program …(args: ^char[])`. `countof(args)` is the argument count. `examples/sds/Tsds.mc` writes `sds::freeSplitRes(tokens: ^sds, count: int)` so that formal stays one pointer. `tests/test_mh_array.mc` uses `argv: ^pchar` on its module `main`. `examples/ComputePi.mc` still uses `(argc, argv: ^char[])`.
+- **Tests:** `tests/test_slice.mc`, `tests/test_slice_argv.mc`, `tests/test3_slice_ptr.mc`. `tests/test2_var_ref.mc` (`PrintArray(@data, 5)`) stamps the folded bound.
+- The user reported that self-host succeeds and that gcc, clang, and tcc each pass. Stem **0.27.1**. `Makefile` `VERSION` is **0.27.1**. Branch **`TMod-c_0.27`**. Build **219**.
+- Language Report §3.1, §5.3, §5.4, §10.2, and §11. Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/parameter-passing.md`, `docs/grok_report-20261019-1430.md`.
+
+## Version 0.27.1.218
+- Moved Lexer.mc to lexer/ (lexer.Lexer.mc). Moved mh_* to mh/. Moved declaration, statement, expression, parser_* to parser/. Moved semantic.mc to semantic/.
+## Version 0.27.1.217
+- **`.mh` array type-specs** — an anonymous array on an export round-trips. `@format` stays 1. A line with no array suffix still parses. An older compiler rejects a new array line.
+- Suffix form when the element is a named or `opaque` leaf, the array is not a pointer, and the const flags match: `Node[]`, `^Node[]`, `const ^char[]`, `integer 32[4]`, `^opaque[]`. Open is `[]`. A folded bound is `[N]`.
+- Keyword form otherwise: `const array[] of Node`, `array[] of const Node`, `^array[] of Node`, `array[] of integer[4]`. A named formal (`s: Buf`) still emits the name.
+- A `CONST` formal of `array[] of Node` prints the same text as a formal of type `const array[] of Node`. The slice shapes do not hit that hole.
+- **Tests:** `tests/test_mh_array.mc`, `tests/test2_mh_array.mc` (`countof(r.cells) == 4`). The user reported the round-trip compiles after regenerating `src/codegen/codegen_mh.mc`.
+- Language Report §3.2 and §5.4. EBNF comment on `array-suffix`. Stem **0.27.1**. `Makefile` `VERSION` is **0.27.1**. Branch **`TMod-c_0.27`**.
+- Docs this round: `CURRENT.md`, `changelog.md`, `README.md`, Language Report §3.2 / §5.4 / §11, `TODO-items-for-0.27.md`, `docs/syntax-ebnf.md`. Session report next time. Slice formals (the hidden length) stay open.
+
 ## Version 0.27.1.216
 - **`DEFINE` with `=`** — `define Name = replacement` and `define Name(params) = replacement`. The `=` is required TMod-c punctuation and is omitted from `#define`. A `(` with no space after the name selects the function-like arm. The replacement stays C text (`\`, `#`, `##`, and a later `=`). It may be empty. A missing space before the replacement is inserted, so `define ANSWER=42` emits `#define ANSWER 42`.
 - A raw `#define` line stays pass-through and unbound. `#define INIT = 0` keeps the `=`. The 0.26.5.188 rest-of-line form is a parse error.
@@ -81,7 +122,7 @@
 
 ## Version 0.26.9.199
 - **Self-host: `codegen_common.c` → `codegen_common.mc`** — shared emitter (C prelude, types, parameters, struct / union / enum / method, expressions, `sizeof`, `countof`, `inc` / `dec`, imports). `src/codegen_common.c`, `.h`, and `.mh` are generated by Mod-c 0.26.9. `emit_array_type`, `emit_type_specifier`, and `codegen_common_expr` are `RECURSIVE`. File-local helpers stay unexported.
-- **`emit_param_list`** — C `Node **` is `params: ^pNode` after unit-local `type pNode = ^Node`. `^Node[]` compiles in the `.mc` and is written as `?` in the `.mh` (writer spells `[const] [^] Name` only). Workaround stands until array type-specs round-trip. See `CURRENT.md` future plan.
+- **`emit_param_list`** — C `Node **` is `params: ^pNode` after unit-local `type pNode = ^Node`. `^Node[]` compiles in the `.mc` and is written as `?` in the `.mh` (writer spells `[const] [^] Name` only). Workaround stands until array type-specs round-trip. Spelled in **0.27.1.217**. See `CURRENT.md` future plan.
 - **Still hand-written C:** `src/codegen_c.c` (full-program statements); `src/node.c` / `src/node.h` (AST). `src/tmodc.h` stays the hand ABI header.
 - Language Report / EBNF unchanged. Version stem stays **0.26.9**.
 - Tests green on **gcc**, **clang**, and **tcc**. Build **199**. Branch **`mod-c_0.26`**. Promoted **0.26.9.199**.

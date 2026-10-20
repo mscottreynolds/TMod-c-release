@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 14 October 2026
+**Last updated:** 19 October 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -123,6 +123,11 @@ type-specifier = [ "CONST" ] type-name [ array-suffix ]
 
 array-suffix = "[" [ const-expression ] "]"     (* fixed size *)
              | "[" "]" ;                        (* open array T[] *)
+    (* .mh type-spec (0.27.1.217, @format 1) writes this suffix on a named
+       or opaque leaf: Node[], ^Node[], integer 32[4]. A pointer on the
+       array, a nested array, or a const mismatch uses the keyword form
+       array[] of … / ^array[] of …. A line with no suffix still parses.
+       An older compiler rejects a new array line. *)
 
 type-name = type-identifier { type-identifier }   (* "int", "long long", etc. *)
           | width-type ;
@@ -271,7 +276,8 @@ repeat-statement =
     "UNTIL" expression ;
 
 for-statement =
-    "FOR" identifier ":=" expression ( "TO" | "DOWNTO" ) expression [ "BY" const-expression ] "DO" 
+    "FOR" identifier ( ":=" | [ ":" type-specifier ] "=" ) expression
+        ( "TO" | "DOWNTO" ) expression [ "BY" const-expression ] "DO"
         { invariant-clause }
         statement-sequence 
     "END" ; 

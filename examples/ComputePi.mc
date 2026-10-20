@@ -1,4 +1,4 @@
-program ComputePi(argc: integer, argv: ^char[]): integer
+program ComputePi(args: ^char[]): integer
 
 (** TMod-C
  This program computes Pi by the formula:
@@ -33,11 +33,14 @@ program ComputePi(argc: integer, argv: ^char[]): integer
 *)
 
 
-import size_t from "stddef.h"
+import size_t 
+    from "stddef.h"
 import FILE, stderr, stdout, fprintf, printf, snprintf, fopen,
     fclose, from "stdio.h"
-import memcpy, strcmp from "string.h"
-import calloc, exit, free, strtol from "stdlib.h"
+import 
+    memcpy, strcmp from "string.h"
+import 
+    calloc, exit, free, strtol from "stdlib.h"
 
 
 type pchar = ^char
@@ -237,24 +240,25 @@ end computePi
  *  -o outfile = ouput to file
  * @returns TCommandLine with values found.
  *)
-function parse_command_line(argc: int, argv: array_of_pchar): TCommandLine
+function parse_command_line(args: ^char[]): TCommandLine
 begin
-    require argc > 0 and argv <> nil
+    require args <> nil and countof(args) > 0
 
     var cl: TCommandLine = { false, false, DEFAULT_DIGITS, nil } // = { .help=false, .format_out=false, .max_digits=DEFAULT_DIGITS, .output_file=nil}
     var i: integer
+    var argc: int = countof(args)
 
     i := 1
     while i < argc do
-        if strcmp(argv[i], "-h") == 0 or strcmp(argv[i], "--help") == 0 then
+        if strcmp(args[i], "-h") == 0 or strcmp(args[i], "--help") == 0 then
             cl.help := true
-        elsif strcmp(argv[i], "-f") == 0 or strcmp(argv[i], "--format") == 0 then
+        elsif strcmp(args[i], "-f") == 0 or strcmp(args[i], "--format") == 0 then
             cl.format_output := true
-        elsif strcmp(argv[i], "-o") == 0 and i+1 < argc then
-            cl.output_file := argv[i+1]
+        elsif strcmp(args[i], "-o") == 0 and i+1 < argc then
+            cl.output_file := args[i+1]
             inc(i)
         else
-            cl.max_digits := strtol(argv[i], nil, 10)
+            cl.max_digits := strtol(args[i], nil, 10)
         end
         inc(i)
     end
@@ -281,19 +285,13 @@ begin
 end display_help
 
 
-// export function main(argc: integer, argv: array_of_pchar): integer
-// begin
-//     return ComputePi(argc, argv)
-// end
-
-
 (** Main entry point *)
 begin
     var out: pchar
     var i: integer
     var fp: pFILE = nil
 
-    let options: TCommandLine = parse_command_line(argc, argv)
+    let options: TCommandLine = parse_command_line(args)
     if options.help == true or
             options.max_digits < MIN_DIGITS or
             options.max_digits > MAX_DIGITS then

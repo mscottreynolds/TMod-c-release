@@ -177,12 +177,22 @@ See Language Report §8.2.
 
 ---
 
+## Open-array formals (0.27.1.219)
+
+An open-array formal (`T[]`, `array[] of T`, `^char[]`, or a one-step alias of those) is a slice. C is the element pointer plus a hidden `integer` `{name}_length` immediately after it. `countof` on that formal reads the length and is not a constant. The source call does not write the count. A fixed array passes its bound. A slice formal passes its length. A `VAR` or `REF` actual written `@array` counts the operand.
+
+`^T` (including `^pchar`), a fixed `T[N]`, and `^array[] of T` stay one C parameter. A flexible array member has no hidden length. A module `function main` should take `argv: ^pchar`. A program takes `args: ^char[]`, and hosted `main` passes `argc` as the length.
+
+See Language Report §5.4.
+
+---
+
 ## Implementation notes (0.25.0)
 
 - Semantic: `semantic_forbid_param_mode_write` on ASSIGN / INC / DEC (after resolve).
 - Codegen: `codegen_common.c` — formal `*`, pointee load `(*p)`, call-site auto-`&` for by-ref value formals.
 - **Breaking:** mutating a non-`VAR` formal as scratch is illegal; use a local.
-- Soft spot: named open-array **typedef** as `REF`/`VAR` formal may get awkward C until aliases expose `is_array`; prefer writing open-array type-specifiers directly.
+- Named open-array alias as `REF` / `VAR` decays like a written open array (**0.26.10.204**). The slice length is **0.27.1.219**. The method owner stays the written name.
 - **Not planned:** lowering bare formals as full `REF` (would forbid or rewrite expression actuals).
 
 ---

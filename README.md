@@ -78,10 +78,13 @@ Features (Early Design Goals)
 - Type names must resolve: every non-builtin type is a declaration, `IMPORT`, or `EXTERN` (0.26.1)
 - Newline-aware statement termination with implied continuation inside delimiters
 - Header (`.mh`) vs implementation (`.mc`) file distinction
-- `HEADER` unit (0.26.11.208): declarations and `END` only. No parameters, no `BEGIN`, no `.c` file. `-C` still writes `.h` and `.mh`
+- `HEADER` unit (0.26.11.208): declarations and `END` only. No parameters, no `BEGIN`, no `.c` file. `-C` writes the `.h`. An `.mh` is written only with `-M` (0.27.2.222)
 - Subdirectory build (0.26.12.213): sources may live under `src/`. `src/codegen/` is package `codegen`. Several `.mc` inputs each keep their own source path
+- Compiler C tree (0.27.2.222): generated and hand-written `.c` / `.h` live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`
 - Package path (0.26.12.212): `module tmodc.lib.String()` is the unit `String` in `tmodc/lib/String.mc`. An unquoted import is one directory path from that unit's package root
 - Type call (0.26.12.212): `Ident(...)` on a declared type is `Ident::Ident(...)`. The keyword `opaque` is not a type name
+- Open-array formals (0.27.1.219): `T[]`, `array[] of T`, and `^char[]` lower to a pointer plus a hidden `integer` length. `countof` on that formal reads it. Fixed `T[N]`, `^T`, and `^array[] of T` stay one parameter
+- Counted `FOR` (0.27.2.221): `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer` that may shadow an outer name. `cardinal` is not an index type
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -91,6 +94,11 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.2.222** (20 October 2026): generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`. `-M` is required to write an `.mh`. `make version` writes `src/c/version.h`. Branch **`main`**. Stem **0.27.2**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
+- **0.27.2.221** (19 October 2026): dual `FOR`. `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. Existing `for i :=` loops stay. Branch **`TMod-c_0.27`**. Stem **0.27.2**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
+- **0.27.1.219** (19 October 2026): slice formals. An open-array parameter (`T[]`, `array[] of T`, `^char[]`, a one-step alias) lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it. Hosted `main` stays `(int argc, char **argv)`. `program modc(args: ^char[])` and `program kilo(args: ^char[])` are called as `name(argv, argc)`. Fixed arrays, `^T`, and `^array[] of T` stay one parameter. A module `main` uses `^pchar`. Branch **`TMod-c_0.27`**. The user reported that self-host succeeds and that gcc, clang, and tcc each pass
+- **0.27.1.218**: lexer, mh, parser, and semantic units moved into package directories (`src/lexer/`, `src/mh/`, `src/parser/`, `src/semantic/`)
+- **0.27.1.217** (16 October 2026): `.mh` array type-specs. An exported `^Node[]`, `T[]`, `integer[4]`, or `^array[] of T` round-trips. `@format` stays 1. A line with no array suffix still parses. Branch **`TMod-c_0.27`**. The user reported the `test_mh_array` / `test2_mh_array` round-trip compiles
 - **0.27.1.216** (16 October 2026): `DEFINE` requires `=`. `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from `#define`. A raw `#define` stays unbound. The 0.26.5.188 rest-of-line form is a parse error. Branch **`TMod-c_0.27`**. Promoted **0.27.1.216**. The user reported that gcc, clang, and tcc each pass
 - **0.26.12.213** (15 October 2026): `src/` tree build. Codegen units are `module codegen.…` in `src/codegen/`. Several `.mc` inputs use each file's own path for `.mh` lookup and output names. Last planned build on `mod-c_0.26`. Promoted **0.26.12.213**
 - **0.26.12.212** (14 October 2026): package path and type call. A unit name may be a qualident; the last identifier is the unit. An unquoted import is `<root>/dots/as/slashes.mh`. `Ident(...)` on a declared type calls `Ident::Ident`. Prelude names and the keyword `opaque` do not. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc. Promoted **0.26.12.212**
@@ -121,7 +129,7 @@ Current focus:
 - **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
 - **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
 - **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- **0.26 closes at 213.** No soft language item left on this stem. **Subdirectory build** (**0.26.12.213**), **package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. **`DEFINE` with `=`** is done (**0.27.1.216**). **0.27** still planned: slice formals. Remaining hand-written compiler C is `node.c` / `node.h`. `tmodc.h` is generated from `src/tmodc.mc` (**0.26.11.208**)
+- **0.26 closes at 213.** No soft language item left on this stem. **Subdirectory build** (**0.26.12.213**), **package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** (the `FOR` end temporary stays `long long`) and item **17** (struct forward / deferred `p*` typedefs) stay open. **`DEFINE` with `=`** is done (**0.27.1.216**). **`.mh` array type-specs** are done (**0.27.1.217**). Package directories are done (**0.27.1.218**). **Slice formals** are done (**0.27.1.219**). **Dual `FOR`** is done (**0.27.2.221**). Remaining hand-written compiler C is `node.c` / `node.h`. `tmodc.h` is generated from `src/tmodc.mc` (**0.26.11.208**)
 - Later: cyclic TMod-c `IMPORT` policy. The directory build landed in **0.26.12.213**. The language rule is still later. Self-host of remaining compiler units continues in the background
 
 Credits & Acknowledgments
@@ -165,7 +173,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.27.1 hello.mc -C hello.c
+./bin/modc.0.27.2 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```

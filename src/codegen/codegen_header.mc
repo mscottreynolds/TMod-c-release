@@ -29,7 +29,7 @@ import pDynBuf, dynbuf_append_char, dynbuf_append, dynbuf_appendn
 import type_is_portable_rebindable 
 	from ttype
 import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
-	from Lexer
+	from lexer.Lexer
 
 import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c, 
 	codegen_common_expr, codegen_common_type_decl, codegen_common_import, 
@@ -286,3 +286,6 @@ begin
 	// This is where the real work will go.
 	codegen_header_program(ctx.ast, ctx)
 end codegen_header
+
+
+(* msr/gk/msr *)

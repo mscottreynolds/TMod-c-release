@@ -16,6 +16,9 @@ var i, j: integer
 
 begin
 	var nested: integer = 0
+	var shadow: integer = 40
+	var acc: integer = 0
+	var typed: integer = 0
 
 	for i := 1 to limit() do
 		printf("i = %d\n", i)
@@ -34,4 +37,33 @@ begin
 		exit(1)
 	end
 	printf("FOR nested test passed.\n")
+
+	for shadow = 1 to 3 do
+		acc := acc + shadow
+	end
+	if shadow <> 40 then
+		fprintf(stderr, "FAIL: for i = wrote the outer variable\n")
+		exit(1)
+	end
+	if acc <> 6 then
+		fprintf(stderr, "FAIL: for i = sum %d, expected 6\n", acc)
+		exit(1)
+	end
+
+	for k = 1 to 4 do
+		acc := acc + k
+	end
+	if acc <> 16 then
+		fprintf(stderr, "FAIL: for k = sum %d, expected 16\n", acc)
+		exit(1)
+	end
+
+	for k: integer = 1 to 2 do
+		typed := typed + 1
+	end
+	if typed <> 2 then
+		fprintf(stderr, "FAIL: for k: integer = count %d, expected 2\n", typed)
+		exit(1)
+	end
+	printf("FOR local index test passed.\n")
 end

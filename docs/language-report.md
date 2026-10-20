@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.26.x** (see `CURRENT.md` for implementation status).  
-**Last updated:** 15 October 2026  
+**Version alignment:** Compiler **0.27.2** (see `CURRENT.md` for implementation status).  
+**Last updated:** 19 October 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -164,11 +164,16 @@ s := a +
 
 A compilation unit is a **`PROGRAM`**, a **`MODULE`**, or a **`HEADER`**. A program or a module has a declaration sequence and a body. A header has a declaration sequence and `END`, and no `BEGIN`. Exact productions: `program-unit`, `module-unit`, `header-unit` in the syntax document.
 
-A **program** is the application entry. A **module** is a compilable collection of declarations (and an optional body) meant to be imported. A **header** is that declaration list with no entry function. It takes no parameters and has no return type. The source is `header Name`, not `header Name()`. `-C` still writes the `.h` and, when there is an export, the `.mh`. It does not write a `.c` file.
+A **program** is the application entry. A **module** is a compilable collection of declarations (and an optional body) meant to be imported. A **header** is that declaration list with no entry function. It takes no parameters and has no return type. The source is `header Name`, not `header Name()`. `-C` writes the `.h` and does not write a `.c` file. An `.mh` is written only with `-M` (0.27.2.222).
 
 **Examples:**
 
 ```mod-c
+program kilo(args: ^char[]): integer
+begin
+	var argc: integer = countof(args)
+end kilo
+
 program Demo(argc: integer, argv: ^char[])
 begin
 	(* … *)
@@ -191,7 +196,13 @@ header tmodc
 end tmodc
 ```
 
-`(* C: void Demo(int argc, char **argv);  void Counters(void); *)`
+`(* C: integer kilo(char **args, integer args_length);
+      hosted main calls kilo(argv, argc).
+      void Demo(integer argc, char **argv, integer argv_length);
+      hosted main calls Demo(argc, argv, argc).
+      void Counters(void); *)`
+
+A program formal `args: ^char[]` is a slice (§5.4). `countof(args)` is the host argument count. `^pchar` after `type pchar = ^char` is one pointer and is not a slice. A module `function main` is not this wrapper. Write `argv: ^pchar` there.
 
 A header writes no unit prototype. `BEGIN` anywhere in a header is an error. A procedure or function there is a prototype (`EXTERN`, `FORWARD`, or no body). `@module` still names the unit. The `.mh` has no unit-entry export, so an importer does not bind a callable entry.
 
@@ -203,7 +214,7 @@ A `PROGRAM`, `MODULE`, or `HEADER` name may be a qualident. The last identifier 
 
 The C function, `@module`, and the auto-bound import entry use that unit name. `import String::new from tmodc.lib.String` binds `String::new` and, when `String` is not already in scope, the entry `String`. A second unit whose unit name is also `String` does not bind another `String`.
 
-The source file is the directory form `tmodc/lib/String.mc`. Unless `-b` or an explicit `-C` / `-H` / `-M` path is set, the output stem is that filename's stem (`String`), so `-C` writes `String.c`, `String.h`, and `String.mh` beside the source. The unit's own `#include` and header guard use the basename of the `.h` file. A character in that stem that is not an identifier character becomes `_`. The example includes `"String.h"` and guards `MODC_MODULE_String_H`. A header unit guards `MODC_HEADER_…_H`. The C function remains `String`. Two linked units with that unit name define the same C function.
+The source file is the directory form `tmodc/lib/String.mc`. Unless `-b` or an explicit `-C` / `-H` / `-M` path is set, the output stem is that filename's stem (`String`), so `-C` writes `String.c` and `String.h` beside the source. `-M` writes `String.mh` beside the source. `-C` does not write the `.mh` (0.27.2.222). The unit's own `#include` and header guard use the basename of the `.h` file. A character in that stem that is not an identifier character becomes `_`. The example includes `"String.h"` and guards `MODC_MODULE_String_H`. A header unit guards `MODC_HEADER_…_H`. The C function remains `String`. Two linked units with that unit name define the same C function.
 
 A quoted import path is the written file. A relative quote is joined only to the directory that contains the compiling `.mc`. A quote that does not end in `.mh` is a C `#include`, and the C compiler searches its include paths. A quote that ends in `.mh` is read as that path, and the `#include` is the same path with `.h`.
 
@@ -266,7 +277,7 @@ end
 
 Quoted `FROM "stdio.h"` does **not** parse the C header. The item list is the programmer’s claim that C will provide those names after the include.
 
-**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct.
+**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. An array type-spec uses the same suffix as source (`Node[]`, `^Node[]`, `integer 32[4]`) or the keyword form (`^array[] of Node`, `array[] of integer[4]`) when a suffix would not round-trip (**0.27.1.217**). A line with no array suffix still parses. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct.
 
 **Example** (generated `.mh` line, not source):
 
@@ -444,7 +455,7 @@ var p, q: ^Point
 
 - **`type T FORWARD`** — incomplete; completed later **in this unit**. *Implemented (0.24.17.135).*  
 - Postfix **`FORWARD`** on procedures/functions — mutual recursion. *Implemented.*  
-- Declaration blocks `forward … end` / `extern … end` — *deferred*.
+- Declaration blocks `forward … end` / `extern … end` — *parked indefinitely (19 October 2026).* Per-line `extern` and postfix `forward` stay.
 
 **Examples:**
 
@@ -502,7 +513,7 @@ var a: array[2] of ^opaque        (* C void *a[2] *)
 
 - **Bare `OPAQUE`** is a TYPE RHS only (`opaque-type-expression`). `var x: opaque`, `procedure f(p: opaque)`, and `array[N] of opaque` are errors.  
 - **`^opaque` and `POINTER TO opaque`** are type-specifiers (*0.26.9.200*). C is `void *`. `const ^opaque` is `const void *`. `sizeof(^opaque)` is legal.  
-- **`^opaque[N]`** and **`array[N] of ^opaque`** are arrays of `void *`. An open-array parameter `array[] of ^opaque` decays to `void **`. A block-scope `var a: ^opaque[]` is an incomplete C array, the same constraint as `var a: char[]`.  
+- **`^opaque[N]`** and **`array[N] of ^opaque`** are arrays of `void *`. An open-array parameter `array[] of ^opaque` decays to `void **` plus the hidden length (§5.4). A block-scope `var a: ^opaque[]` is an incomplete C array, the same constraint as `var a: char[]`.  
 - Distinct named opaques are **not** freely interchangeable (`Handle` ≠ `File`). A named alias is also distinct from a written `^opaque`.  
 - No user-facing type named **`void`**. A procedure has no result type. C `void *` is written `^opaque`.  
 - **C lowering:** a written `^opaque` / `POINTER TO opaque` emits `void *` (`const void *` when `CONST`). A named alias still emits **`typedef void *Name`** for both `type Handle = opaque` and `type address = ^opaque` (v1; `const` on that typedef is not kept).
@@ -548,7 +559,7 @@ Prefer `^unsigned char` or name `unsigned char` first, then take a pointer.
 
 **Not used:** `@p := …` as a special rebind form. Rebind is bare `p := …`. Existing `p^.field` remains valid (explicit peel; AST is postfix `^` then `.`). Auto-deref does **not** insert a caret node.
 
-**C `char **argv`:** `argv: ^char[]` (in-tree: `modc`, `ComputePi`) or `type pchar = ^char` then `argv: ^pchar` / `array of pchar`.
+**C `char **argv`:** a program formal `args: ^char[]` is a slice (§5.4). The pointer is `char **` and `countof(args)` is the host `argc`. `type pchar = ^char` then `argv: ^pchar` is one pointer and is not a slice. In-tree: `modc` and Kilo use `args: ^char[]`. `ComputePi` still writes `(argc: integer, argv: ^char[])`. A module `main` uses `^pchar`.
 
 **APIs that would be `T **` in C:** prefer **`VAR` / `REF` on `T`** (§8.2). The extra star is ABI, not a second pointer type in the source. That is the intended way to avoid stacked `^`.
 
@@ -605,9 +616,9 @@ var buf: array[N] of char
 
 Open / suffix forms (`T[]`, `integer[8]`) follow the syntax document.
 
-#### Slice formals *Planned (0.27)*
+#### Slice formals *Implemented (0.27.1.219)*
 
-An open-array formal is a **slice**. `s: char[]` and `s: array[] of char` are the same formal. A type alias of an open array is too (`type Buf = char[]`, then `s: Buf`). The source parameter list has no length argument. Generated C keeps the pointer and inserts an **`integer`** element count immediately after it. `countof(s)` reads that word.
+An open-array formal is a **slice**. `s: char[]`, `s: array[] of char`, and a one-step alias (`type Buf = char[]`, then `s: Buf`) are the same formal. `^char[]` is an array of pointers and is a slice too. The source parameter list has no length argument. Generated C keeps the pointer and inserts an **`integer`** element count immediately after it. The C name is `{name}_length`. It is not a TMod-c identifier. If a parameter already has that spelling, that is a semantic error. `countof(s)` reads that word.
 
 ```mod-c
 function show(s: char[]): integer
@@ -619,22 +630,31 @@ var buf: array[32] of char
 n := show(buf)          (* passes buf and 32 *)
 ```
 
-`(* C: integer show(char *s, integer s_length);  show(buf, (integer)32); *)`
+`(* C: integer show(char *s, integer s_length);  show(buf, ((integer)32)); *)`
 
-The count is the number of elements, not the result of `strlen`. Each open-array formal gets its own count, placed after that pointer and before the next source formal or `...`.
+The count is the number of elements, not the result of `strlen`. Each open-array formal gets its own count, placed after that pointer and before the next source formal or `...`. `f(a: char[], n: integer, b: integer[])` lowers to `f(char *a, integer a_length, integer n, integer *b, integer b_length)`.
 
-A slice `countof` is not a constant. `array[countof(s)]` is illegal when `s` is a slice. Passing a slice formal through to another slice formal passes the hidden integer along. An actual with no element count (`^char`, `string`, a scalar) is an error.
+A slice `countof` is `integer` and is not a constant. `array[countof(s)]` is illegal when `s` is a slice. Passing a slice formal through to another slice formal passes that formal's hidden integer. A fixed-array actual passes the folded bound. An actual with no element count (`^char`, `string`, a scalar, a local open array) is an error.
+
+A `VAR` or `REF` open-array formal still decays to one pointer. The length is a by-value `integer`. The call writes `@array`. That one `@` is peeled, and the count comes from the operand. A plain `@` in front of a non-`VAR` / non-`REF` `char[]` formal is still an error.
 
 These stay one C parameter, with no hidden length:
 
 - `array[N] of T` and `T[N]`. The bound is the type. `countof` folds, as in §10.2.
-- `^T`. Use this for a C function that takes one pointer. A `char[]` formal would pass a count that definition does not take.
+- `^T`, including `^pchar` after `type pchar = ^char`. Use this for a C function that takes one pointer. A `char[]` formal would pass a count that definition does not take.
+- `^array[] of T` and `^array[N] of T`. The pointer is on the array (`T (*p)[]`).
 
-A field `buf: array[] of char` is a C flexible array member, not a slice. `countof` of that field has no stored length. Index syntax `a[i..j]` is not part of this plan.
+A field `buf: array[] of char` is a C flexible array member, not a slice. `countof` of that field has no stored length. Index syntax `a[i..j]` is not part of this feature.
 
-Hosted `main` stays `int main(int argc, char **argv)`. A program `kilo(argc: integer, argv: ^char[])` lowers the program function to `(integer argc, char **argv, integer argv_length)`. The wrapper calls `kilo(argc, argv, argc)`. `countof(argv)` is `argc` and does not include the `NULL` at `argv[argc]`.
+Hosted `main` stays `int main(int argc, char **argv)`, or `(void)` when the program has no parameters. The program function gains the length. The wrapper does not copy the program list onto `main`.
 
-Same-unit calls do not need `.mh`. An exported slice round-trips only once the `.mh` type-spec can spell `[]`. Until then the export is `?` and another module cannot insert the length. Not in 0.26.x. See `CURRENT.md` (Future plan: slice formals).
+- `program kilo(args: ^char[])` is called as `kilo(argv, argc)`. `countof(args)` is `argc`. That count includes `args[0]` and excludes the `NULL` at `argv[argc]`.
+- `program Demo(argc: integer, argv: ^char[])` lowers to `(integer argc, char **argv, integer argv_length)`. The wrapper calls `Demo(argc, argv, argc)`.
+- `program Demo(argc: integer, argv: ^pchar)` is not a slice. The wrapper calls `Demo(argc, argv)`.
+
+A module `function main` is emitted as written. `argv: ^char[]` there grows `argv_length`, and the operating system does not pass it. Write `argv: ^pchar`. Do not use `countof` on that formal.
+
+Same-unit calls do not need `.mh`. An exported slice spells `[]` (**0.27.1.217**). Both sides insert the length from the type. There is no new export flag. A call through a function pointer or a callable field does not insert the length yet. Parser unchanged. See `CURRENT.md` (slice formals).
 
 #### Enumerations *Implemented (0.24.6–0.24.7)*
 
@@ -1002,6 +1022,14 @@ for i := 1 to n do
 	sum := sum + a[i]
 end
 
+for i = 1 to n do
+	sum := sum + a[i]
+end
+
+for i: integer = 0 to n do
+	(* … *)
+end
+
 for i := n downto 1 by 1 do
 	(* … *)
 end
@@ -1011,7 +1039,7 @@ loop
 end
 ```
 
-Today `FOR` assigns a predeclared `var i` (`for i := …`). Loop-local `FOR` (`for i = …`) is a later **breaking** change (JPL rule 6); see `CURRENT.md`. Bounds and `BY` are evaluated once at entry. The control variable must not be assigned in the body.
+`for i :=` assigns a variable already in scope. `for i =` and `for i: integer =` declare an index whose scope is the loop (*0.27.2.221*). An omitted type is `integer`. The written type is `integer` or `int`. `cardinal` is rejected as the index type. A `cardinal` expression may be a bound. The loop index may shadow an outer variable. After `end`, that outer variable is unchanged. Writing `=` where the source had `:=` leaves the outer variable unchanged. The body must not assign, `INC`, or `DEC` the control name. Bounds and `BY` are evaluated once at entry. `for i: integer :=` is a parse error.
 
 Statements after `RETURN`, `BREAK`, or `CONTINUE` in the same sequence are **unreachable**. Since **0.26.8.196** this is a **warning** (it was a fatal parse error from 0.24.3). Those statements are still omitted from the AST. A C preprocessor line may follow `return` (for example `#endif` after `sdsTest`). An early exit inside a nested `if` does not mark the rest of the enclosing sequence unreachable.
 
@@ -1405,9 +1433,9 @@ assert sizeof(w) == 4
 
 A type operand is legal (`countof(array[4] of integer)`). A type alias of a fixed array is legal (`type Buf = array[4] of integer`). Nested arrays report the outer bound only.
 
-Rejected: pointers, scalars, `string`, and open arrays. `array_size == 0` is an open array and is also how `array[0]` is spelled. This is not string length. No VLAs.
+Rejected: pointers, scalars, `string`, and an open array that is not a slice formal. `array_size == 0` is an open array and is also how `array[0]` is spelled. This is not string length. No VLAs.
 
-**Planned (0.27):** `countof` of an open-array formal reads the hidden `integer` length inserted after the pointer (§5.4). That result is not a constant. `countof` of a fixed array is unchanged. `countof` of a flexible array member stays rejected.
+**Slice formal (0.27.1.219):** `countof` of an open-array formal reads the hidden `integer` length inserted after the pointer (§5.4). That result is not a constant. `countof` of a fixed array is unchanged. `countof` of a flexible array member stays rejected.
 
 Interim `LEN(designator)` (*0.26.8.194*) is removed. It accepted a designator only and always emitted the sizeof division.
 
@@ -1444,7 +1472,8 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - Multi-TU hand-written C: `#include "tmodc.h"` (planned `tmodc.mc` → `tmodc.h`). Per-unit binds stay on that unit’s `.h`.  
 - Foreign functions: `IMPORT` / `EXTERN`. Unresolved free calls and unknown types are errors.
 - **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
-- **Slice formals (planned, 0.27):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays and `^T` do not gain a parameter. See §5.4.  
+- **Slice formals (0.27.1.219):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays, `^T`, and `^array[] of T` do not gain a parameter. Hosted `main` stays `(int argc, char **argv)` and passes `argc` as the length of a program `^char[]` formal. See §5.4.  
+- **`FOR` (0.27.2.221):** `for i :=` lowers to `for (i = start; …)`. `for i =` and `for i: integer =` lower to `for (integer i = start; …)` inside the loop block. The end temporary is still `const long long __for_end_l{line}_c{column}`. See §7.1.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 - **`DEFINE` with `=` (0.27.1.216):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is required and is omitted from the emitted `#define`. The 0.26.5.188 rest-of-line form is a parse error. A raw `#define` stays unbound. See §4.1.1.
 
@@ -1559,6 +1588,10 @@ Do not maintain a second full EBNF elsewhere.
 | 15 October 2026 | **§4.1.1 / §11 `DEFINE` with `=` (planned, 0.27):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is TMod-c syntax and is omitted from `#define`. Parameters are C macro names, plus `...`. The replacement list stays C text. The 0.26.5.188 form still parses. `#define` pass-through stays unbound. |
 | 15 October 2026 | **§3.2 subdirectory build (0.26.12.213):** `src/` may contain packages. `src/codegen/` is package `codegen`. Mutual `IMPORT` stays later. `IMPORT *` stays deferred. |
 | 16 October 2026 | **§4.1.1 / §11 `DEFINE` with `=` (0.27.1.216):** `=` is required and is omitted from `#define`. A `(` with no space after the name selects the function-like arm. A missing space before a non-whitespace replacement is inserted. The 0.26.5.188 rest-of-line form no longer parses. A raw `#define` stays unbound. |
+| 16 October 2026 | **§3.2 / §5.4 `.mh` array type-specs (0.27.1.217):** an exported anonymous array round-trips (`Node[]`, `^Node[]`, `integer[4]`, `^array[] of Node`). `@format` stays 1. A line with no array suffix still parses. Slice formals can see the open array. The hidden length is still planned. |
+| 19 October 2026 | **§3.1 / §5.3 / §5.4 / §10.2 / §11 slice formals (0.27.1.219):** an open-array formal lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it and is not a constant. `^char[]` is a slice. Fixed `array[N]`, `^T`, and `^array[] of T` stay one C parameter. Hosted `main` calls `program name(args: ^char[])` as `name(argv, argc)`. A module `main` uses `^pchar`. A function-pointer call does not insert the length yet. |
+| 19 October 2026 | **§7.1 / §11 dual `FOR` (0.27.2.221):** `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. The August sole-form sweep was not taken. |
+| 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
 
 ---
 
