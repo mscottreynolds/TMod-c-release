@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.27.2
+VERSION 	:= 0.27.3
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
@@ -520,18 +520,16 @@ reset: clean
 # ======================================================
 
 
-
 # Stage 1 and 2: Generate new source into build, compile temporary compiler.
-# Stage 1 copies src/c into build/seflhost with the src/c/ prefix stripped,
-# then writes each src/**/*.mc to build/selfhost/<stem>.c.
+# Stage 1 clears build/selfhost, copies the hand-written C (node.c, node.h,
+# version.h), then writes each src/**/*.mc to build/selfhost/<stem>.c.
+# Stage 2 compiles node.c plus each generated .c. A HEADER unit has no .c.
 selfhost: $(TARGET)
+	@rm -rf $(SH_BUILD_DIR)
 	@mkdir -p $(SH_BUILD_DIR)
 	@echo "=== Stage 1: Regenerating compiler sources (src tree) ==="
-	@for f in $$(find $(C_SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort ); do \
-		rel=$${f#$(C_SRC_DIR)/};										\
-		dest="$(SH_BUILD_DIR)/$$rel";									\
-		mkdir -p "$$(dirname "$$dest")";								\
-		cp -p "$$f" "$$dest";											\
+	@for f in node.c node.h version.h; do 	\
+		cp -p "$(C_SRC_DIR)/$$f" "$(SH_BUILD_DIR)/$$f" || exit 1;	\
 	done
 	@for mc in $(SRC_MC_FILES); do										\
 		rel=$${mc#$(SRC_DIR)/};											\
@@ -548,23 +546,32 @@ selfhost: $(TARGET)
 	for d in $$(find $(SH_BUILD_DIR) -type d -print | sort); do			\
 		inc="$$inc -I$$d";												\
 	done;																\
-	for c in $$(find $(SH_BUILD_DIR) -name '*.c' -print | sort); do		\
+	objs=""; 	\
+	c="$(SH_BUILD_DIR)/node.c"; 	\
+	o="$${c%.c}.o"; 	\
+	$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1; 	\
+	objs="$$o"; 	\
+	for mc in $(SRC_MC_FILES); do 	\
+		rel=$${mc#$(SRC_DIR)/}; 	\
+		stem=$${rel%.mc}; 	\
+		c="$(SH_BUILD_DIR)/$$stem.c"; 	\
+		if [ ! -f "$$c" ]; then 	\
+			continue; 	\
+		fi; 	\
 		o="$${c%.c}.o";													\
 		$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1;				\
+		objs="$$objs $$o"; 	\
 	done;																\
-	objs=$$(find $(SH_BUILD_DIR) -name '*.o' -print | sort);			\
 	$(CC) $$objs -o $(BIN_DIR)/modc.selfhost
 	@echo "=== Self-hosting stage 2 complete. Temporary compiler: $(BIN_DIR)/modc.selfhost ==="
 
-# Stage 3, 4, and 5. Full bootstrap with verification (2 stage)
+# Stage 3 clears build/bootstrap and copies the same hand-written C.
 bootstrap: selfhost
+	@rm -rf $(BS_BUILD_DIR)
 	@mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
 	@echo "=== Stage 3: Regenerating with new compiler ==="
-	@for f in $$(find $(C_SRC_DIR) \( -name '*.c' -o -name '*.h' \) -print | sort); do \
-		rel=$${f#$(C_SRC_DIR)/};										\
-		dest="$(BS_BUILD_DIR)/$$rel";									\
-		mkdir -p "$$(dirname "$$dest")";								\
-		cp -p "$$f" "$$dest";											\
+	@for f in node.c node.h version.h; do 	\
+		cp -p "$(C_SRC_DIR)/$$f" "$(BS_BUILD_DIR)/$$f" || exit 1; 	\
 	done
 	@for mc in $(SRC_MC_FILES); do										\
 		rel=$${mc#$(SRC_DIR)/};											\
@@ -577,15 +584,26 @@ bootstrap: selfhost
 		./$(BIN_DIR)/modc.selfhost "$$mc" -C "$$c_out" -H "$$h_out" || exit 1; \
 	done
 	@echo "=== Stage 4: Building second-generation compiler ==="
-	@inc="";															\
-	for d in $$(find $(BS_BUILD_DIR) -type d -print | sort); do			\
+	@inc="";															
+	@for d in $$(find $(BS_BUILD_DIR) -type d -print | sort); do		\
 		inc="$$inc -I$$d";												\
 	done;																\
-	for c in $$(find $(BS_BUILD_DIR) -name '*.c' -print | sort); do		\
+	objs=""; 	\
+	c="$(BS_BUILD_DIR)/node.c"; 	\
+	o="$${c%.c}.o"; 	\
+	$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1; 	\
+	objs="$$o"; 	\
+	for mc in $(SRC_MC_FILES); do 	\
+		rel=$${mc#$(SRC_DIR)/}; 	\
+		stem=$${rel%.mc}; 	\
+		c="$(BS_BUILD_DIR)/$$stem.c"; 	\
+		if [ ! -f "$$c" ]; then 	\
+			continue; 	\
+		fi; 	\
 		o="$${c%.c}.o";													\
 		$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1;				\
+		objs="$$objs $$o"; 	\
 	done;																\
-	objs=$$(find $(BS_BUILD_DIR) -name '*.o' -print | sort);			\
 	$(CC) $$objs -o $(BIN_DIR)/modc.bootstrap
 	@echo "=== Stage 5: Verifying identical output ==="
 	@success=true;														\

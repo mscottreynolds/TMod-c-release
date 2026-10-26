@@ -10,13 +10,13 @@ module Cardinal(n: cardinal): TCardinal
  * Basic TCardinal type.
  *)
 export type TCardinal = struct
-    _value: cardinal
+    value: cardinal
 end    
 
 
 export function TCardinal::value(ref self: TCardinal): cardinal
 begin
-    return self._value
+    return self.value
 end
 
 

@@ -1026,6 +1026,10 @@ for i = 1 to n do
 	sum := sum + a[i]
 end
 
+for c = 'A' to 'Z' do
+	(* char index, from the start literal *)
+end
+
 for i: integer = 0 to n do
 	(* … *)
 end
@@ -1039,7 +1043,7 @@ loop
 end
 ```
 
-`for i :=` assigns a variable already in scope. `for i =` and `for i: integer =` declare an index whose scope is the loop (*0.27.2.221*). An omitted type is `integer`. The written type is `integer` or `int`. `cardinal` is rejected as the index type. A `cardinal` expression may be a bound. The loop index may shadow an outer variable. After `end`, that outer variable is unchanged. Writing `=` where the source had `:=` leaves the outer variable unchanged. The body must not assign, `INC`, or `DEC` the control name. Bounds and `BY` are evaluated once at entry. `for i: integer :=` is a parse error.
+`for i :=` assigns a variable already in scope. `for i =` and `for i: T =` declare an index whose scope is the loop (*0.27.2.221*; index type *0.27.3.227*). On `for i =`, an omitted type is the type of the start expression. A numeric literal is `integer`, so `for i = 1 to n` stays `integer`. An unknown start type is `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type. A type is legal when C can step it with `++` or `--`: `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test, so `for c = 'A' to 'Z'` is legal. An enumeration constant is typed `integer`, so `for i = Red to Blue` is an `integer` loop. `for e: Color = Red to Blue` is the enumeration. The loop index may shadow an outer variable. After `end`, that outer variable is unchanged. Writing `=` where the source had `:=` leaves the outer variable unchanged. The body must not assign, `INC`, or `DEC` the control name. Bounds and `BY` are evaluated once at entry. `for i: integer :=` is a parse error.
 
 Statements after `RETURN`, `BREAK`, or `CONTINUE` in the same sequence are **unreachable**. Since **0.26.8.196** this is a **warning** (it was a fatal parse error from 0.24.3). Those statements are still omitted from the AST. A C preprocessor line may follow `return` (for example `#endif` after `sdsTest`). An early exit inside a nested `if` does not mark the rest of the enclosing sequence unreachable.
 
@@ -1473,7 +1477,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - Foreign functions: `IMPORT` / `EXTERN`. Unresolved free calls and unknown types are errors.
 - **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
 - **Slice formals (0.27.1.219):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays, `^T`, and `^array[] of T` do not gain a parameter. Hosted `main` stays `(int argc, char **argv)` and passes `argc` as the length of a program `^char[]` formal. See §5.4.  
-- **`FOR` (0.27.2.221):** `for i :=` lowers to `for (i = start; …)`. `for i =` and `for i: integer =` lower to `for (integer i = start; …)` inside the loop block. The end temporary is still `const long long __for_end_l{line}_c{column}`. See §7.1.  
+- **`FOR` (0.27.3.227):** `for i :=` lowers to `for (i = start; …)`. `for i =` and `for i: T =` lower to `for (T i = start; …)` inside the loop block. An omitted `T` is the type of the start, or `integer` when that type is unknown. A numeric literal start stays `integer`. The end temporary is `const T __for_end_l{line}_c{column}` and the test is `<=` or `>=` (*0.27.2.225*). See §7.1.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 - **`DEFINE` with `=` (0.27.1.216):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is required and is omitted from the emitted `#define`. The 0.26.5.188 rest-of-line form is a parse error. A raw `#define` stays unbound. See §4.1.1.
 
@@ -1591,6 +1595,7 @@ Do not maintain a second full EBNF elsewhere.
 | 16 October 2026 | **§3.2 / §5.4 `.mh` array type-specs (0.27.1.217):** an exported anonymous array round-trips (`Node[]`, `^Node[]`, `integer[4]`, `^array[] of Node`). `@format` stays 1. A line with no array suffix still parses. Slice formals can see the open array. The hidden length is still planned. |
 | 19 October 2026 | **§3.1 / §5.3 / §5.4 / §10.2 / §11 slice formals (0.27.1.219):** an open-array formal lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it and is not a constant. `^char[]` is a slice. Fixed `array[N]`, `^T`, and `^array[] of T` stay one C parameter. Hosted `main` calls `program name(args: ^char[])` as `name(argv, argc)`. A module `main` uses `^pchar`. A function-pointer call does not insert the length yet. |
 | 19 October 2026 | **§7.1 / §11 dual `FOR` (0.27.2.221):** `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. The August sole-form sweep was not taken. |
+| 26 October 2026 | **§7.1 / §11 `FOR` index type (0.27.3.227):** an omitted `for i =` type is the type of the start. A numeric literal stays `integer`. The declaring form accepts any type C can step with `++` or `--`, including `char`, `size_t`, `cardinal`, `byte`, an enumeration, and a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. |
 | 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
 
 ---

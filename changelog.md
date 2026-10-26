@@ -2,6 +2,24 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.3.227
+- **`FOR` index type (item 28)** — on `for i =`, an omitted type is the type of the start expression. A numeric literal is `integer`, so `for i = 1 to count` stays `integer`. An unknown start type is `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type.
+- The declaring form accepts a type C can step with `++` or `--`: `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. `for c = 'A' to 'Z'` is legal.
+- An enumeration constant is typed `integer`. `for i = Red to Blue` is an `integer` loop. `for e: Color = Red to Blue` is the enumeration.
+- The end temporary already has this type (item 18, **0.27.2.225**). The test stays a direct `<=` or `>=`.
+- **Tests:** `tests/test_for.mc` covers `char`, `cardinal`, `byte`, `size_t`, a `size_t` start, `^char`, and `Color`. `tests/test3_for_real.mc` rejects `real`. `tests/test3_for_cardinal.mc` is removed. `tests/test3_for_assign.mc` and `tests/test3_for_mix.mc` stay.
+- The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.3.227**. Stem **0.27.3**. `Makefile` `VERSION` is **0.27.3**. Branch **`main`**. Build **227**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`.
+
+## Version 0.27.2.225
+- **`FOR` end temporary (item 18)** — the saved end has the index type. The name stays `__for_end_l{line}_c{column}`. The test is a direct `<=` or `>=`. No `long long` cast.
+- `for i :=` uses the type of the variable already in scope. A `size_t` index stores a `const size_t` end. At this build, `for i =` with no written type is `integer`. `for i: T =` uses `T`. An unknown type falls back to `integer`. Item **28** (**0.27.3.227**) takes that omitted type from the start expression.
+- Compiler loops that were `for i := 0 to n - 1` are `for i := 1 to n`, and the body indexes `i - 1`. An empty `size_t` count is `1 <= 0`, which does not run.
+- `NUM_KEYWORDS` returns `integer`. The keyword scan casts that result to `size_t` so it matches its index. The exported-declaration loop in `codegen_header.mc` uses `var i: size_t`.
+- `BY` is unchanged: a numeric literal. `BY 0` is rewritten to step 1.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` clean, with no warnings, and promoted **0.27.2.225**. Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`main`**. Build **225**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `TODO-items-for-0.27.md`.
+
 ## Version 0.27.2.222
 - **C tree** — generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `src/parser/parser_main.mc` lowers to `src/c/parser/parser_main.c`. `.mh` stays beside the `.mc`. Hand-written `node.c` / `node.h` and Makefile-written `version.h` are under `src/c/`.
 - `-M` is the only flag that writes an `.mh`. `-C` writes the `.c` and the companion `.h`. With no `-d` and no explicit `-M` path, the `.mh` is written beside the `.mc`. `-d` uses the basename only, so a package unit needs an explicit `-C` and `-H`.

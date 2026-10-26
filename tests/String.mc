@@ -1,49 +1,49 @@
-module String(str: const ^char): TString
+module tmodc.lib.String(str: string): TString
 
 (**
- * Basic wrapper around const strings.
+ * Basic wrapper around strings.
  * example: var s: TString = String("...")
- * s.cstring()
- * s.length()
  *)
 
-
-import size_t from "stddef.h"
-import strlen from "string.h"
 
 
 (**
  * Basic TString type.
  *)
 export type TString = struct
-    value: const ^char
-    length: size_t
-end    
-
-
-export function TString::new(s: string): TString
-begin
-    var ts: TString
-    ts.value := s
-    ts.length := strlen(s)
-    return ts
+    value: string
+    length: integer
 end
 
-
-export function TString::cstring(ref self: TString): const ^char
+export function TString::value(ref self: TString): string
 begin
     return self.value
-end
+end TString::value
 
 
-export function TString::length(ref self: TString): size_t
+function len(str: string): integer
+begin
+    require str <> nil
+
+    var l: integer = 0
+
+    while str[l] <> '\0' do
+        inc(l)
+    end
+    return l
+end len
+
+
+export function TString::length(ref self: TString): integer
 begin
     return self.length
-end
+end TString::length
 
 
 begin
-    var s: TString = { str, strlen(str) }
+    require str <> nil
+
+    var s: TString = { str, len(str) }
 
     return s
 end String

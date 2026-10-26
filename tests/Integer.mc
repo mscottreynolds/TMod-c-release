@@ -10,13 +10,13 @@ module Integer(n: integer): TInteger
  * Basic TInteger type.
  *)
 export type TInteger = struct
-    _value: integer
+    value: integer
 end    
 
 
 export function TInteger::value(ref self: TInteger): integer
 begin
-    return self._value
+    return self.value
 end
 
 

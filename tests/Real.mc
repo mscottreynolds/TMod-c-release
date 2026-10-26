@@ -11,13 +11,13 @@ module Real(r: real): TReal
  * Basic TReal type
  *)
 export type TReal = struct
-    _value: real
+    value: real
 end    
 
 
 export function TReal::value(ref self: TReal): real
 begin
-    return self._value
+    return self.value
 end
 
 

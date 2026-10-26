@@ -1,0 +1,50 @@
+header tmodc.tmodc
+
+(**
+ * some additional type definitions.
+ *)
+
+import size_t, 
+    from "stddef.h"
+import int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t,
+    from "stdint.h"
+import from "stdbool.h"
+import from "limits.h"
+import from "float.h"
+import from "assert.h"
+import from "stdlib.h"
+import from "string.h"
+import from "stdio.h"
+import from "math.h"
+
+export type int8 = int8_t
+export type int16 = int16_t
+export type int32 = int32_t
+export type int64 = int64_t
+export type uint8 = uint8_t
+export type uint16 = uint16_t
+export type uint32 = uint32_t
+export type uint64 = uint64_t
+
+// export type integer = int
+
+// typedef char byte;
+// typedef char* string;
+// typedef int integer;
+// typedef unsigned int cardinal;
+// typedef double_t real;
+
+
+(**
+ * Basic String slice.
+ * Example: s: String = { "Hello world", 11}
+ *)
+export type String = struct
+    value: const ^char              // only initialize to existing strings.
+    length: size_t                  // Initialize with strlen("...")
+end
+
+
+end tmodc
+
+(* msr/gk/msr *)

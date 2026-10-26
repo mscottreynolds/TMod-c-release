@@ -1,7 +1,14 @@
 program test_for()
 
+import size_t from "stddef.h"
 import stderr, printf, fprintf from "stdio.h"
 import exit from "stdlib.h"
+
+type Color = enum
+	Red,
+	Green, 
+	Blue
+end
 
 var calls: integer = 0
 
@@ -65,5 +72,74 @@ begin
 		fprintf(stderr, "FAIL: for k: integer = count %d, expected 2\n", typed)
 		exit(1)
 	end
+
+	begin
+		var letters: integer = 0
+		var cards: integer = 0
+		var bytes: integer = 0
+		var sz: integer = 0
+		var sz2: integer = 0
+		var ptrs: integer = 0
+		var colors: integer = 0
+		var n: size_t = 4
+		var buf: array[3] of char
+
+		for c = 'A' to 'C' do
+			letters := letters + 1
+		end
+		if letters <> 3 then
+			fprintf(stderr, "FAIL: char FOR count %d, exptected 3\n", letters)
+			exit(1)
+		end
+
+		for cu: cardinal = 1 to 3 do
+			cards += 1
+		end
+		if cards <> 3 then
+			fprintf(stderr, "FAIL: cardinal FOR count %d, expected 3\n", cards)
+			exit(1)
+		end
+
+		for b: byte = 1 to 2 do
+			inc(bytes)
+		end
+		if bytes <> 2 then
+			fprintf(stderr, "FAIL: byte FOR count %d, exptected 2\n", bytes)
+			exit(1)
+		end
+
+		for s: size_t = 1 to n do
+			sz := sz + 1
+		end
+		if sz <> 4 then
+			fprintf(stderr, "FAIL: size_t FOR count %d, expected 4\n", sz)
+			exit(1)
+		end
+
+		for s2 = n to n do
+			sz2 += 1
+		end
+		if sz2 <> 1 then
+			fprintf(stderr, "FAIL: size_t start FOR count %d, expected 1\n", sz2)
+			exit(1)
+		end
+
+		for p: ^char = @buf[0] to @buf[2] do
+			ptrs := ptrs + 1
+		end
+		if ptrs <> 3 then
+			fprintf(stderr, "FAIL: pointer FOR count %d, expected 3\n", ptrs)
+			exit(1)
+		end
+
+		for e: Color = Red to Blue do
+			colors := colors + 1
+		end
+		if colors <> 3 then
+			fprintf(stderr, "FAIL: enum FOR count %d, expected 3\n", colors)
+			exit(1)
+		end
+	end
+
 	printf("FOR local index test passed.\n")
 end

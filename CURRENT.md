@@ -2,11 +2,11 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.2 (build 222)  
-**Last updated:** 2026-10-20  
+**Version:** 0.27.3 (build 227)  
+**Last updated:** 2026-10-26  
 **Active branch:** `main`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.  
-**Tag:** `MOD-C_0.23.7` (items 5–6); **0.23.8** postfix `FORWARD`; **0.23.9** type-qualified methods; **0.24.0** `.mh` writer + reader; **0.24.2** test-tier Makefiles; **0.24.3** builtin `integer`/`cardinal` lowering; **0.24.4** `codegen_header.mc` self-host step; **0.24.5** qualident `IMPORT … FROM`; **0.24.6** ENUM Phase A/B; **0.24.7** ENUM Phase C + `.mh` negative import tests; **0.24.8** named `CONST` array bounds + const-eval; **0.24.9** `symkind` / `mh_exportkind` as `.mc`; **0.24.10** `statement.mc`; **0.24.11** `expression.mc` + **`OPAQUE` (13a)**; **0.24.12** **`UNION` (13c)**; **0.24.13** **linked-chunk arena** + **`STRUCT EXTENDS` option A (13d)**; **0.24.14** **`Lexer.mc` self-host** + **`type_of_expr` / init inference (21a)**; **0.24.15** **discard enforcement (13b Policy A)**; **0.24.16** **`declaration.mc` self-host** + **EXTENDS by-value auto-upcast**; **0.24.17** **instance methods (21)** + static/instance by first formal; **0.24.17.135** **`type Name FORWARD`**; **0.24.18** **#11 Phase A** portable unit rebind; **0.25.0** **item 20** VAR/REF/CONST formals (**breaking**); **0.25.1** **callable field call-through**; **0.25.2** **cross-module method Phase A**; **0.25.3** **`.mh` formal signatures + 7a**; **0.25.4** **`RECURSIVE` enforce + signed `SIZEOF` + lean C prelude**; **0.26.0** **free-call soft-miss closed**; **0.26.1** **unknown types closed + no automatic `stddef.h`**; **0.26.2** **`Parser` → `TParser`**; **0.26.3** **`parser.c` → `parser_common.mc` + `parser_main.mc`**; **0.26.3.170** **`.mh` field lists**; **0.26.4** **method-type `.mh` RHS / cross-module field call-through**; **0.26.5** **width forms + `.h` prelude**; **0.26.5.174** **#11 import-bind + `.mh` widths**; **0.26.5.175** **EXTENDS polish** (`p^.x`, `as` → `.base`, pointer/`REF` upcast); **0.26.5.176** **Oberon `p.x` auto-deref**; **0.26.5.177** **Shapes example + light refactor**; **0.26.5.178** **`p[i]` peel + instance method on `^T`**; **0.26.5.179** **`Type::m(p)` peel**; **0.26.5.180** **parent-chain methods**; **0.26.5.181** **`LET` write-forbid**; **0.26.5.183** **drop C `const` on LET + `@` of LET/CONST**; **0.26.5.186** **`extern type = struct`, `'\x1b'`, `&` vs `@`, trailing `{ , }`**; **0.26.5.187** **`DEFER` only if executed**; **0.26.5.188** **`DEFINE`**; **0.26.7.190** **`...` pass-through**; **0.26.7.191** **C-index `p[i]` on `^T`**; **0.26.7.192** **several `.mc` inputs**; **0.26.8.194** **`.mh` alias RHS + packs + `LEN`**; **0.26.8.196** **named-type method owner + C-index of `^Named` + unreachable warning**; **0.26.9.198** **`COUNTOF` replaces interim `LEN`**; **0.26.9.199** **`codegen_common.mc` self-host**; **0.26.9.200** **`^opaque` type-specifier**; **0.26.9.201** **`codegen_c.mc` self-host**; **0.26.10.203** **21a-ternary**; **0.26.10.204** **named open-array alias formals**; **0.26.10.206** **`@` tighter than `as`**; **0.26.11.208** **`HEADER` unit**; **0.26.12.212** **package path** and **`Ident()` → `Ident::Ident`**; **0.26.12.213** **`src/` tree build**, **`codegen` package**, several inputs use each file's path; **0.27.1.216** **`DEFINE` with `=`**; **0.27.1.217** **`.mh` array type-specs**; **0.27.1.218** **package directories**; **0.27.1.219** **slice formals**; **0.27.2.221** **dual `FOR`**; **0.27.2.222** **C under `src/c`**.
+**Tag:** `MOD-C_0.23.7` (items 5–6); **0.23.8** postfix `FORWARD`; **0.23.9** type-qualified methods; **0.24.0** `.mh` writer + reader; **0.24.2** test-tier Makefiles; **0.24.3** builtin `integer`/`cardinal` lowering; **0.24.4** `codegen_header.mc` self-host step; **0.24.5** qualident `IMPORT … FROM`; **0.24.6** ENUM Phase A/B; **0.24.7** ENUM Phase C + `.mh` negative import tests; **0.24.8** named `CONST` array bounds + const-eval; **0.24.9** `symkind` / `mh_exportkind` as `.mc`; **0.24.10** `statement.mc`; **0.24.11** `expression.mc` + **`OPAQUE` (13a)**; **0.24.12** **`UNION` (13c)**; **0.24.13** **linked-chunk arena** + **`STRUCT EXTENDS` option A (13d)**; **0.24.14** **`Lexer.mc` self-host** + **`type_of_expr` / init inference (21a)**; **0.24.15** **discard enforcement (13b Policy A)**; **0.24.16** **`declaration.mc` self-host** + **EXTENDS by-value auto-upcast**; **0.24.17** **instance methods (21)** + static/instance by first formal; **0.24.17.135** **`type Name FORWARD`**; **0.24.18** **#11 Phase A** portable unit rebind; **0.25.0** **item 20** VAR/REF/CONST formals (**breaking**); **0.25.1** **callable field call-through**; **0.25.2** **cross-module method Phase A**; **0.25.3** **`.mh` formal signatures + 7a**; **0.25.4** **`RECURSIVE` enforce + signed `SIZEOF` + lean C prelude**; **0.26.0** **free-call soft-miss closed**; **0.26.1** **unknown types closed + no automatic `stddef.h`**; **0.26.2** **`Parser` → `TParser`**; **0.26.3** **`parser.c` → `parser_common.mc` + `parser_main.mc`**; **0.26.3.170** **`.mh` field lists**; **0.26.4** **method-type `.mh` RHS / cross-module field call-through**; **0.26.5** **width forms + `.h` prelude**; **0.26.5.174** **#11 import-bind + `.mh` widths**; **0.26.5.175** **EXTENDS polish** (`p^.x`, `as` → `.base`, pointer/`REF` upcast); **0.26.5.176** **Oberon `p.x` auto-deref**; **0.26.5.177** **Shapes example + light refactor**; **0.26.5.178** **`p[i]` peel + instance method on `^T`**; **0.26.5.179** **`Type::m(p)` peel**; **0.26.5.180** **parent-chain methods**; **0.26.5.181** **`LET` write-forbid**; **0.26.5.183** **drop C `const` on LET + `@` of LET/CONST**; **0.26.5.186** **`extern type = struct`, `'\x1b'`, `&` vs `@`, trailing `{ , }`**; **0.26.5.187** **`DEFER` only if executed**; **0.26.5.188** **`DEFINE`**; **0.26.7.190** **`...` pass-through**; **0.26.7.191** **C-index `p[i]` on `^T`**; **0.26.7.192** **several `.mc` inputs**; **0.26.8.194** **`.mh` alias RHS + packs + `LEN`**; **0.26.8.196** **named-type method owner + C-index of `^Named` + unreachable warning**; **0.26.9.198** **`COUNTOF` replaces interim `LEN`**; **0.26.9.199** **`codegen_common.mc` self-host**; **0.26.9.200** **`^opaque` type-specifier**; **0.26.9.201** **`codegen_c.mc` self-host**; **0.26.10.203** **21a-ternary**; **0.26.10.204** **named open-array alias formals**; **0.26.10.206** **`@` tighter than `as`**; **0.26.11.208** **`HEADER` unit**; **0.26.12.212** **package path** and **`Ident()` → `Ident::Ident`**; **0.26.12.213** **`src/` tree build**, **`codegen` package**, several inputs use each file's path; **0.27.1.216** **`DEFINE` with `=`**; **0.27.1.217** **`.mh` array type-specs**; **0.27.1.218** **package directories**; **0.27.1.219** **slice formals**; **0.27.2.221** **dual `FOR`**; **0.27.2.222** **C under `src/c`**; **0.27.2.225** **`FOR` end temporary**; **0.27.3.227** **`FOR` index type**.
 
 ## Current Focus
 
@@ -21,6 +21,8 @@
 | ~~**5**~~ | ~~**13b**~~ | ~~Discard enforcement (Policy A)~~ **Done (0.24.15)** — known result requires `(f())` or use; unknown/procedure bare OK. |
 
 **Suggested next language work** (on **`main`**, where **0.27.2.221** already sits; **`TMod-c_0.27`** is still at **0.27.1.216**; **`mod-c_0.26`** closed at **0.26.12.213**):
+
+**`FOR` index type (0.27.3.227).** On `for i =`, an omitted type is the type of the start expression. A numeric literal stays `integer`. The declaring form accepts any type C can step with `++` or `--`. Stem **0.27.3**. See [Future plan: loop-local FOR](#future-plan-loop-local-for-jpl-rule-6).
 
 **C tree (0.27.2.222).** Generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`. `-M` is required to write an `.mh`. Stem **0.27.2**. See [Recent Accomplishments (0.27.2.222)](#recent-accomplishments-20-october-2026--0272222--c-tree).
 
@@ -171,7 +173,7 @@ Same signed type as `SIZEOF`. Designator is written twice in C; `sizeof` does no
 
 ## Future plan: loop-local `FOR` (JPL Rule 6)
 
-**Status:** **Done (0.27.2.221).** Both forms stay. The 20 August 2026 sole-form lock was not taken. Existing `for i :=` loops were left in place. Spec in `docs/syntax-ebnf.md` and Language Report §7.1.
+**Status:** **Done.** Both forms **0.27.2.221**. End temporary **0.27.2.225**. Index type **0.27.3.227**. The 20 August 2026 sole-form lock was not taken. Existing `for i :=` loops were left in place. Spec in `docs/syntax-ebnf.md` and Language Report §7.1.
 
 **Why:** JPL Power of Ten rule 6 wants the smallest scope. `=` declares that scope. `:=` keeps the Oberon/Pascal assignment to a predeclared variable.
 
@@ -196,20 +198,22 @@ for i := n downto 0 by 1 do … end
 
 - `for i :=` assigns the `i` already in scope. After `end`, that variable has whatever value the generated C `for` left.
 - `for i =` and `for i: integer =` / `for i: int =` declare `i` for the loop. It may shadow an outer `i`. After `end`, the outer variable is unchanged.
-- An omitted type is `integer`. `cardinal` is rejected as the index type. A `cardinal` bound expression is accepted. `for i: integer :=` is a parse error.
+- On `for i =`, an omitted type is the type of the start expression (*0.27.3.227*). A numeric literal stays `integer`. An unknown start type stays `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type. A type is legal when C can step it with `++` or `--`: `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. An enumeration constant is typed `integer`, so `for i = Red to Blue` is an `integer` loop. `for i: integer :=` is a parse error.
 - The body must not assign, `INC`, or `DEC` the control name. Passing that name as a `VAR` or `REF` actual is still accepted.
 - Empty `TO` (`for i = 5 to 1`) does not enter the body.
 
-**Codegen.** The declaring form emits the type on the C `for`. The end temporary is still `long long` (item **18**).
+**Codegen (0.27.2.225).** The declaring form emits the type on the C `for`. The end temporary has the index type (item **18**). The test is direct.
 
 ```c
 {
-    const long long __for_end_lN_cC = (long long)(end);
-    for (integer i = start; (long long)(i) <= __for_end_lN_cC; i++) { … }
+    const integer __for_end_lN_cC = (end);
+    for (integer i = start; i <= __for_end_lN_cC; i++) { … }
 }
 ```
 
-`:=` emits the same block with `for (i = start; …)`. `BY` is still a numeric literal. `BY 0` is rewritten to step 1. A named constant after `BY` is also forced to 1.
+`:=` emits `for (i = start; …)` and types the temporary from the variable (`const size_t` when `i` is `size_t`). `BY` is still a numeric literal. `BY 0` is rewritten to step 1. A named constant after `BY` is also forced to 1.
+
+`for c = 'A' to 'Z'` emits `char` for the index and the end temporary. `for s = n to n`, when `n` is `size_t`, emits `size_t`.
 
 ## Future plan: `BOUND` on `WHILE` / `REPEAT` / `LOOP` (JPL Rule 2)
 
@@ -484,6 +488,19 @@ Hosted growing `StringBuffer` may remain for the compiler and Linux tests. Fligh
 **Done** in `semantic_analyze_block_body` — `requires[]` / `ensures[]` go through `semantic_resolve_expr` (same as loop `INVARIANT` and `ASSERT`). `REF`/`VAR` formals load as in the rest of the language.
 
 Still not a nil-check of a `REF T`: `n` is the object. Nil-check `^T` formals and pointer **fields**; check `p <> nil` **before** `foo(p^)`. Remaining polish (not planned): side-effect-free contract lint; optional `--pot` “two assertions per routine” warn.
+
+## Recent Accomplishments (26 October 2026 — 0.27.3.227 / FOR index type)
+
+### `FOR` index type **Done**
+
+- On `for i =`, an omitted type is the type of the start expression. A numeric literal stays `integer`. An unknown start stays `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type.
+- The declaring form accepts `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. It rejects `real`, `bool`, `string`, arrays, and structs. Both bounds use that test.
+- An enumeration constant stays `integer`. `for e: Color = Red to Blue` is the enumeration loop.
+- The end temporary already follows this type (item **18**, **0.27.2.225**).
+- Tests: `tests/test_for.mc`, `tests/test3_for_real.mc`. `tests/test3_for_cardinal.mc` is removed. `tests/test3_for_assign.mc` and `tests/test3_for_mix.mc` stay.
+- `src/c/version.h` is `0.27.3.227`. `Makefile` `VERSION` is **0.27.3**. Branch **`main`**.
+
+The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc.
 
 ## Recent Accomplishments (20 October 2026 — 0.27.2.222 / C tree)
 
@@ -1540,7 +1557,8 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 16. ~~Codegen: `@` vs `as` precedence.~~ **Done (0.26.10.206)** — `@e as T` is `(@e) as T`. The operand of `@` is a postfix. `as` stays tighter than `&` and the arithmetic operators.
 16b. ~~**`HEADER` unit**~~ — **Done (0.26.11.208)** — `header Name` … `end`. No parameter list, no `BEGIN`, no `.c`. `-C` writes the `.h`. An `.mh` is `-M` only (**0.27.2.222**). No unit-entry export. `src/tmodc.mc` generates `src/c/tmodc.h` and `src/tmodc.mh`.
 17. Codegen: struct forward-declare / deferred `p*` typedefs.
-18. FOR end temp type from expression types.
+18. ~~FOR end temp type from the index type.~~ **Done (0.27.2.225).** Direct `<=` / `>=`. No `long long` cast.
+28. ~~`FOR` index type from the start expression.~~ **Done (0.27.3.227).** The declaring form accepts any type C can step with `++` or `--`, including `char` and `size_t`. See [Future plan: loop-local FOR](#future-plan-loop-local-for-jpl-rule-6).
 19. **Compile-time `CONST` codegen** — **demoted (12 September 2026).** Stays C `static const`. Integer fold for bounds already (0.24.8). Need a preprocessor constant → **`DEFINE`**. Not a `CONST` → `#define` rewrite.
 20. ~~**`VAR` / `REF` / `CONST` formals**~~ — **Done (0.25.0)** — codegen + semantic modes; call-site auto-`&`; **breaking** non-VAR bare-name assign. ~~Soft: named array-alias formals.~~ **Done (0.26.10.204)** — `VAR` / `REF` of a named array alias decays like a written open array. The use type's `is_array` flag stays clear.
 20b. ~~**Callable field call-through**~~ — **Done (0.25.1)** — method-typed fields / values; Oberon no auto-self; ambiguity with instance methods; `test_callable_field` / `test_Math`.

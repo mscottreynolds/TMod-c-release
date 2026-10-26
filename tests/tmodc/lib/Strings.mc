@@ -9,9 +9,6 @@ module tmodc.lib.Strings(str: string, length: integer): String
  *)
 
 
-import strlen from "string.h"
-
-
 (**
  * Basic String type.
  *)
@@ -29,11 +26,24 @@ begin
 end String::String
 
 
+function len(str: string): integer
+begin
+    require str <> nil
+
+    var l: integer = 0
+
+    while str[l] <> '\0' do
+        inc(l)
+    end
+    return l
+end len
+
+
 export function String::new(s: string): String
 begin
     var ts: String
     ts.value := s
-    ts.length := strlen(s) as integer
+    ts.length := len(s) as integer
     return ts
 end String::new
 
