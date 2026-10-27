@@ -64,13 +64,16 @@ export type MhFormal = struct
 end
 
 
-(** One field: name: type-spec *)
+(** One field: name: type-spec, or an anonymous union ( ... ). *)
 export type MhField = struct
-	name: 		^char
-	name_len:	size_t
-	spec:		MhTypeSpec
+	name: 			^char
+	name_len:		size_t
+	spec:			MhTypeSpec
+	is_anon_union: 	bool
+	fields: 		^MhField
+	field_count:	size_t
 end
-
+export type pMhField = ^MhField
 
 export type MhExport = struct
 	kind: 			MhExportKind
@@ -1316,17 +1319,102 @@ end mh_parse_alias_rhs
 
 
 (*
- * Optional type tail: struct|union [extends ident] ( ident : type-spec { , ...} )
- * Absent => alias / opaque (caller skips). Pointers into the line / source buffer.
+ * Field items inside '(' ... ')'. Does not consume the closing ')'.
+ * "union (" is an anonymous union. "union:" is a field named union.
  *)
-procedure mh_parse_field_list(path: const ^char, line_no: size_t,
-		p: ^pchar, end_: pchar, exp: ^MhExport)
+recursive procedure mh_parse_field_items(path: const ^char, line_no: size_t,
+		p: ^pchar, end_: pchar, fields_out: ^pMhField, count_out: ^size_t)
 begin
 	var cap: size_t = 0
 	var fields: ^MhField = nil
 	var count: size_t = 0
 	var fname: ^char = nil
 	var flen: size_t = 0
+	var save: ^char = nil
+
+	if fields_out == nil or count_out == nil then
+		return
+	end
+	mh_skip_ws(p, end_)
+	if mh_peek_char(p^, end_, ')') then
+		fields_out^ := nil
+		count_out^ := 0
+		return
+	end
+
+	while true do
+		if count >= cap then
+			var new_cap: size_t = cap == 0 ? 4u : cap * 2u
+			var neu: ^MhField = realloc(fields, new_cap * sizeof(MhField)) as ^MhField
+			if neu == nil then
+				mh_fatal(path, line_no, "mh_parse_field_items: out of memory")
+			end
+			fields := neu
+			cap := new_cap
+		end
+		save := p^
+		if mh_match_word(p, end_, "union") and mh_peek_char(p^, end_, '(') then
+			var inner: ^MhField = nil
+			var inner_count: size_t = 0
+
+			if not mh_match_char(p, end_, '(') then
+				mh_fatal(path, line_no, "mh_parse_field_items: expected '(' after union")
+			end
+			mh_parse_field_items(path, line_no, p, end_, @inner, @inner_count)
+			if not mh_match_char(p, end_, ')') then
+				mh_fatal(path, line_no, "mh_parse_field_items: expected ')' after anonymous union")
+			end
+			fields[count].name := nil
+			fields[count].name_len := 0
+			fields[count].is_anon_union := true
+			fields[count].fields := inner
+			fields[count].field_count := inner_count
+			fields[count].spec.is_const := false
+			fields[count].spec.is_pointer := false
+			fields[count].spec.is_array := false
+			fields[count].spec.array_size := 0
+			fields[count].spec.name := nil
+			fields[count].spec.name_len := 0
+			fields[count].spec.width := 0
+			fields[count].spec.element := nil
+		else
+			p^ := save
+			if not mh_read_ident(p, end_, @fname, @flen) then
+				mh_fatal(path, line_no, "mh_parse_field_items: expected field name")
+			end
+			if not mh_match_char(p, end_, ':') then
+				mh_fatal(path, line_no, "mh_parse_field_items: expected ':' after field_name")
+			end
+			if not mh_parse_type_spec(path, line_no, p, end_, @fields[count].spec) then
+				mh_fatal(path, line_no, "mh_parse_field_items: expected field_type")
+			end
+			fields[count].name := fname
+			fields[count].name_len := flen
+			fields[count].is_anon_union := false
+			fields[count].fields := nil
+			fields[count].field_count := 0
+		end
+		inc(count)
+		if mh_match_char(p, end_, ',') then
+			continue
+		end
+		break
+	end
+
+	fields_out^ := fields
+	count_out^ := count
+end mh_parse_field_items
+
+
+(*
+ * Optional type tail: struct|union [extends ident] ( ident : type-spec { , ...} )
+ * Absent => alias / opaque (caller skips). Pointers into the line / source buffer.
+ *)
+procedure mh_parse_field_list(path: const ^char, line_no: size_t,
+		p: ^pchar, end_: pchar, exp: ^MhExport)
+begin
+	var fields: ^MhField = nil
+	var count: size_t = 0
 	var ext: ^char = nil
 	var ext_len: size_t = 0
 
@@ -1357,36 +1445,7 @@ begin
 		mh_fatal(path, line_no, "mh_parse_field_list: expected '(' after struct/union")
 	end
 
-	mh_skip_ws(p, end_)
-	if not mh_peek_char(p^, end_, ')') then
-		while true do
-			if count >= cap then
-				var new_cap: size_t = cap == 0 ? 4u : cap * 2u
-				var neu: ^MhField = realloc(fields, new_cap * sizeof(MhField)) as ^MhField
-				if neu == nil then
-					mh_fatal(path, line_no, "mh_parse_field_list: out of memory")
-				end
-				fields := neu
-				cap := new_cap
-			end
-			if not mh_read_ident(p, end_, @fname, @flen) then
-				mh_fatal(path, line_no, "mh_parse_field_list: expected field name")
-			end
-			if not mh_match_char(p, end_, ':') then
-				mh_fatal(path, line_no, "mh_parse_field_list: expected ':' after field name")
-			end
-			if not mh_parse_type_spec(path, line_no, p, end_, @fields[count].spec) then
-				mh_fatal(path, line_no, "mh_parse_field_list: expected field type")
-			end
-			fields[count].name := fname
-			fields[count].name_len := flen
-			count := count + 1
-			if mh_match_char(p, end_, ',') then
-				continue
-			end
-			break
-		end
-	end
+	mh_parse_field_items(path, line_no, p, end_, @fields, @count)
 
 	if not mh_match_char(p, end_, ')') then
 		mh_fatal(path, line_no, "mh_parse_field_list: expected ')'")

@@ -225,6 +225,7 @@ struct Node {
 			size_t		name_len;
 			TType 		*field_type;				// may be NULL if omitted
 			Node 		*initializer;		// optional = const-expression
+			Node 		*nested;			// anonymous UNION body; name is NULL
 		} field_decl;
 
 		// Method / Procedure type (e.g. TYPE Compare = PROCEDURE(a: T): integer)

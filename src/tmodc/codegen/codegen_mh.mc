@@ -420,16 +420,48 @@ begin
 end mh_append_ident
 
 
+recursive procedure mh_append_field_items(out: ^DynBuf, st: const ^Node)
+begin
+	var i: size_t = 0
+	var f: const ^Node = nil
+	var emitted: size_t = 0
+
+	if out == nil or st == nil or st^.kind <> NODE_STRUCT_DECL then
+		return
+	end
+	for i := 1 to st^.struct_decl.field_count do
+		f := st^.struct_decl.fields[i - 1]
+		if f == nil or f^.kind <> NODE_FIELD_DECL then
+			continue
+		end
+		if emitted > 0 then
+			dynbuf_append(out, ", ")
+		end
+		if f^.field_decl.nested <> nil then
+			dynbuf_append(out, "union (")
+			mh_append_field_items(out, f^.field_decl.nested)
+			dynbuf_append(out, ")")
+		else
+			mh_append_ident(out, f^.field_decl.name, f^.field_decl.name_len)
+			dynbuf_append(out, ": ")
+			if f^.field_decl.field_type <> nil then
+				mh_append_type_spec(out, f^.field_decl.field_type)
+			else
+				dynbuf_append(out, "?")
+			end
+		end
+		inc(emitted)
+	end
+end mh_append_field_items
+
+
 (*
  * Append struct/union field tail: struct|union [extends Name] (f: T {, ...})
  * Same physical line as export type. Type-spec may include an array (6b).
  *)
 procedure mh_append_field_list(out: ^DynBuf, st: const ^Node)
 begin
-	var i: size_t = 0
-	var f: const ^Node = nil
 	var ext: const ^TType = nil
-	var emitted: size_t = 0
 
 	if out == nil or st == nil or st^.kind <> NODE_STRUCT_DECL then
 		return
@@ -454,23 +486,7 @@ begin
 	end
 
 	dynbuf_append(out, " (")
-	for i := 1 to st^.struct_decl.field_count do
-		f := st^.struct_decl.fields[i - 1]
-		if f == nil or f^.kind <> NODE_FIELD_DECL then
-			continue
-		end
-		if emitted > 0 then
-			dynbuf_append(out, ", ")
-		end
-		mh_append_ident(out, f^.field_decl.name, f^.field_decl.name_len)
-		dynbuf_append(out, ": ")
-		if f^.field_decl.field_type <> nil then
-			mh_append_type_spec(out, f^.field_decl.field_type)
-		else
-			dynbuf_append(out, "?")
-		end
-		emitted := emitted + 1
-	end
+	mh_append_field_items(out, st)
 	dynbuf_append_char(out, ')')
 end mh_append_field_list
 

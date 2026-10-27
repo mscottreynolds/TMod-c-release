@@ -111,7 +111,7 @@ function semantic_method_type_node(ctx: pTSemanticContext, ty: pTType): pNode fo
 function semantic_field_type_on(ctx: pTSemanticContext, recv_ty: pTType,
 		fname: const ^char, flen: size_t): pTType forward
 function semantic_sym_is_method_value(ctx: pTSemanticContext, sym: pTSymbol): bool forward
-
+recursive function semantic_find_struct_member(st: pNode, name: const ^char, name_len: size_t): pNode forward
 
 (**
 * Fatal semantic error with source location from the node's token.
@@ -673,7 +673,6 @@ recursive function semantic_type_of_designator(ctx: pTSemanticContext, n: pNode)
 begin
 	var sym: pTSymbol = nil
 	var st: pNode = nil
-	var i: size_t = 0
 	var f: pNode = nil
 	var ety: pTType = nil
 
@@ -709,12 +708,10 @@ begin
 			end
 			// walk chain for field type (same order as find)
 			while st <> nil do
-				for i := 1 to st^.struct_decl.field_count do
-					f := st^.struct_decl.fields[i-1]
-					if f <> nil and semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len,
-								n^.field_access.field_name, n^.field_access.field_len) then
-						return f^.field_decl.field_type
-					end
+				f := semantic_find_struct_member(st, n^.field_access.field_name,
+					n^.field_access.field_len)
+				if f <> nil then
+					return f^.field_decl.field_type
 				end
 				if st^.struct_decl.extends_type == nil then
 					return nil
@@ -1030,6 +1027,102 @@ end semantic_type_of_expr
 
 
 (**
+ * Field with this name on st. Searchs an anonymous union. Does not walk EXTENDS.
+ *)
+recursive function semantic_find_struct_member(st: pNode,
+		name: const ^char, name_len: size_t): pNode
+begin
+	var i: size_t = 0
+	var f: pNode = nil
+	var inner: pNode = nil
+
+	if st == nil or st^.kind <> NODE_STRUCT_DECL or name == nil then
+		return nil
+	end
+	for i := 1 to st^.struct_decl.field_count do
+		f := st^.struct_decl.fields[i - 1]
+		if f == nil then
+			continue
+		end
+		if f^.field_decl.nested <> nil then
+			inner := semantic_find_struct_member(f^.field_decl.nested, name, name_len)
+			if inner <> nil then
+				return inner
+			end
+		elsif semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len,
+				name, name_len) then
+			return f
+		end
+	end
+	return nil
+end semantic_find_struct_member
+
+
+recursive function semantic_count_member(st: pNode,
+		name: const ^char, name_len: size_t): size_t
+begin
+	var n: size_t = 0
+	var i: size_t = 0
+	var f: pNode = nil
+
+	if st == nil or name == nil then
+		return 0
+	end
+	for i := 1 to st^.struct_decl.field_count do
+		f := st^.struct_decl.fields[i - 1]
+		if f == nil then
+			continue
+		end
+		if f^.field_decl.nested <> nil then
+			n := n + semantic_count_member(f^.field_decl.nested, name, name_len)
+		elsif semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len,
+				name, name_len) then
+			inc(n)
+		end
+	end
+	return n
+end semantic_count_member
+
+
+recursive procedure semantic_check_promoted_dups(st: pNode, at: pNode)
+begin
+	var i: size_t = 0
+	var j: size_t = 0
+	var f: pNode = nil
+	var c: pNode = nil
+
+	if st == nil then
+		return
+	end
+	for i := 1 to st^.struct_decl.field_count do
+		f := st^.struct_decl.fields[i - 1]
+		if f == nil then
+			continue
+		end
+		if f^.field_decl.nested <> nil then
+			semantic_check_promoted_dups(f^.field_decl.nested, at)
+			for j := 1 to f^.field_decl.nested^.struct_decl.field_count do
+				c := f^.field_decl.nested^.struct_decl.fields[j - 1]
+				if c <> nil and c^.field_decl.name <> nil and
+						semantic_count_member(st, c^.field_decl.name,
+							c^.field_decl.name_len) > 1 then
+					semantic_error_at(at,
+						"semantic_check_promoted_dups: duplicate field name in STRUCT")
+				end
+			end
+		elsif f^.field_decl.name <> nil and
+				semantic_count_member(st, f^.field_decl.name,
+					f^.field_decl.name_len) > 1 then
+			semantic_error_at(at,
+				"semantic_check_promoted_dups: duplicate field name in STRUCT")
+		end
+	end
+end semantic_check_promoted_dups
+
+
+
+
+(**
  * Find field => set base_depth
  * Returns true if found; out_depth = # of .base prefixes before field_name
  *)
@@ -1037,7 +1130,6 @@ function semantic_find_field_depth(ctx: pTSemanticContext, sem_type: pNode,
 	name: const ^char, name_len: size_t, out_depth: ^size_t): bool
 begin
 	var depth: size_t = 0
-	var i: size_t = 0
 	var f: pNode = nil
 	var parent: pNode = nil
 	var st: pNode = sem_type
@@ -1054,12 +1146,10 @@ begin
 			return true
 		end
 
-		for i := 1 to st^.struct_decl.field_count do
-			f := st^.struct_decl.fields[i-1]
-			if f <> nil and semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len, name, name_len) then
-				out_depth^ := depth
-				return true
-			end
+		f := semantic_find_struct_member(st, name, name_len)
+		if f <> nil then
+			out_depth^ := depth
+			return true
 		end
 
 		if st^.struct_decl.extends_type == nil then
@@ -1092,15 +1182,14 @@ begin
 		return
 	end
 
+	semantic_check_promoted_dups(st, at)
+
 	// duplicate names within this struct (always; plain STRUCT may use field name "base")
 	for i := 1 to st^.struct_decl.field_count do
 		f := st^.struct_decl.fields[i-1]
 		if f == nil then
 			continue
 		end
-		// if semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len, "base", 4) then
-		// 	semantic_error_at(at, "semantic_check_extends_clashes: field name 'base' is reserved for EXTENDS")
-		// end
 		for j := i + 1 to st^.struct_decl.field_count do
 			g := st^.struct_decl.fields[j-1]
 			if g <> nil and semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len,
@@ -1129,11 +1218,26 @@ begin
 		if f == nil then
 			continue
 		end
-		if semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len, "base", 4) then
-			semantic_error_at(at, "semantic_check_extends_clashes: field name 'base' is reserved for EXTENDS")
-		end
-		if semantic_find_field_depth(ctx, anc, f^.field_decl.name, f^.field_decl.name_len, @depth) then
-			semantic_error_at(at, "semantic_check_extends_clashes: field name clashes with EXTENDS base")
+		if f^.field_decl.nested <> nil then
+			for j := 1 to f^.field_decl.nested^.struct_decl.field_count do
+				g := f^.field_decl.nested^.struct_decl.fields[j - 1]
+				if g == nil or g^.field_decl.name == nil then
+					continue
+				end
+				if semantic_names_equal(g^.field_decl.name, g^.field_decl.name_len, "base", 4) then
+					semantic_error_at(at, "semantic_check_extends_clashes: field name 'base' is reserved for EXTENDS")
+				end
+				if semantic_find_field_depth(ctx, anc, g^.field_decl.name, g^.field_decl.name_len, @depth) then
+					semantic_error_at(at, "semantic_check_extends_clashes: field name clashes with EXTENDS base")
+				end
+			end
+		else
+			if semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len, "base", 4) then
+				semantic_error_at(at, "semantic_check_extends_clashes: field name 'base' is reserved for EXTENDS")
+			end
+			if semantic_find_field_depth(ctx, anc, f^.field_decl.name, f^.field_decl.name_len, @depth) then
+				semantic_error_at(at, "semantic_check_extends_clashes: field name clashes with EXTENDS base")
+			end
 		end
 	end
 end semantic_check_extends_clashes
@@ -1142,7 +1246,7 @@ end semantic_check_extends_clashes
 (**
  * Resolve field types inside a STRUCT ... END type body. 
  *)
-procedure semantic_resolve_struct_type(ctx: pTSemanticContext, st: pNode, at: pNode)
+recursive procedure semantic_resolve_struct_type(ctx: pTSemanticContext, st: pNode, at: pNode)
 begin
 	var i: size_t = 0
 	var f: pNode = nil
@@ -1161,7 +1265,9 @@ begin
 
 	for i := 1 to st^.struct_decl.field_count do
 		f := st^.struct_decl.fields[i-1]
-		if f <> nil and f^.field_decl.field_type <> nil then
+		if f <> nil and f^.field_decl.nested <> nil then
+			semantic_resolve_struct_type(ctx, f^.field_decl.nested, at)
+		elsif f <> nil and f^.field_decl.field_type <> nil then
 			semantic_resolve_type(ctx, f^.field_decl.field_type, at)
 		end
 	end
@@ -2101,6 +2207,52 @@ begin
 end semantic_mh_make_proc_decl
 
 
+recursive procedure semantic_mh_fill_fields(ctx: pTSemanticContext, st: pNode,
+		fields: const ^MhField, count: size_t, tok: TToken, loc: pNode)
+begin
+	var i: size_t = 0
+	var f: const ^MhField = nil
+	var field: pNode = nil
+	var nested: pNode = nil
+
+	for i := 1 to count do
+		f := @fields[i - 1]
+		field := node_create(ctx^.arena, NODE_FIELD_DECL, tok)
+		field^.field_decl.initializer := nil
+		if f^.is_anon_union then
+			nested := node_create(ctx^.arena, NODE_STRUCT_DECL, tok)
+			nested^.struct_decl.name := nil
+			nested^.struct_decl.name_len := 0
+			nested^.struct_decl.extends_type := nil
+			nested^.struct_decl.fields := nil
+			nested^.struct_decl.field_count := 0
+			nested^.struct_decl.field_capacity := 0
+			nested^.struct_decl.is_exported := false
+			nested^.struct_decl.is_packed := false
+			nested^.struct_decl.is_union := true
+			semantic_mh_fill_fields(ctx, nested, f^.fields, f^.field_count, tok, loc)
+			field^.field_decl.name := nil
+			field^.field_decl.name_len := 0
+			field^.field_decl.field_type := nil
+			field^.field_decl.nested := nested
+		else
+			if f^.name == nil or f^.name_len == 0 then
+				semantic_error_at(loc, "semantic_mh_fill_fields: field missing name")
+			end
+			field^.field_decl.name := semantic_arena_strndup(ctx^.arena, f^.name, f^.name_len)
+			field^.field_decl.name_len := f^.name_len
+			field^.field_decl.field_type := semantic_mh_make_type(ctx, @f^.spec)
+			field^.field_decl.nested := nil
+		end
+		arena_append_ptr(ctx.arena, 
+			(@st^.struct_decl.fields) as ppvoid,
+			@st^.struct_decl.field_count,
+			@st^.struct_decl.field_capacity,
+			field)
+	end
+end semantic_mh_fill_fields
+
+
 (*
  * Synthetic NODE_TYPE_DECL + STRUCT/UNION body from .mh field list.
  * loc: import item (token). bind_name already arena-owned.
@@ -2110,9 +2262,6 @@ function semantic_mh_make_type_decl(ctx: pTSemanticContext, exp: const ^MhExport
 begin
 	var decl: pNode = nil
 	var st: pNode = nil
-	var field: pNode = nil
-	var i: size_t = 0
-	var f: const ^MhField = nil
 	var tok: TToken
 
 	if ctx == nil or exp == nil then
@@ -2150,24 +2299,7 @@ begin
 			exp^.extends_name_len)
 	end
 
-	for i := 1 to exp^.field_count do
-		f := @exp^.fields[i - 1]
-		if f == nil or f^.name == nil or f^.name_len == 0 then
-			semantic_error_at(loc, "semantic_mh_make_type_decl: field missing name")
-		end
-
-		field := node_create(ctx^.arena, NODE_FIELD_DECL, tok)
-		field^.field_decl.name := semantic_arena_strndup(ctx^.arena, f^.name, f^.name_len)
-		field^.field_decl.name_len := f^.name_len
-		field^.field_decl.field_type := semantic_mh_make_type(ctx, @f^.spec)
-		field^.field_decl.initializer := nil
-
-		arena_append_ptr(ctx^.arena,
-			(@st^.struct_decl.fields) as ppvoid,
-			@st^.struct_decl.field_count,
-			@st^.struct_decl.field_capacity,
-			field)
-	end
+	semantic_mh_fill_fields(ctx, st, exp^.fields, exp^.field_count, tok, loc)
 
 	decl := node_create(ctx^.arena, NODE_TYPE_DECL, tok)
 	decl^.type_decl.name := bind_name
@@ -2803,7 +2935,6 @@ function semantic_field_type_on(ctx: pTSemanticContext, recv_ty: pTType,
 		fname: const ^char, flen: size_t): pTType
 begin
 	var st: pNode = nil
-	var i: size_t = 0
 	var f: pNode = nil
 
 	if ctx == nil or recv_ty == nil or fname == nil then
@@ -2811,12 +2942,9 @@ begin
 	end
 	st := semantic_struct_body_of_type(ctx, recv_ty)
 	while st <> nil do
-		for i := 1 to st^.struct_decl.field_count do
-			f := st^.struct_decl.fields[i-1]
-			if f <> nil and semantic_names_equal(f^.field_decl.name, f^.field_decl.name_len,
-					fname, flen) then
-				return f^.field_decl.field_type
-			end
+		f := semantic_find_struct_member(st, fname, flen)
+		if f <> nil then
+			return f^.field_decl.field_type
 		end
 		if st^.struct_decl.extends_type == nil then
 			return nil

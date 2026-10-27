@@ -163,8 +163,14 @@ set-type = "SET" "OF" type-identifier ;
 
 method-type = ( "PROCEDURE" | "FUNCTION" ) formal-parameters ;
 
-(* Field of STRUCT or UNION. type-specifier only (named types for nesting). *)
-field-decl  = identifier ":" type-specifier [ "=" const-expression ] ;
+(* Field of STRUCT or UNION.
+   Named field: type-specifier (name a nested struct first).
+   Anonymous UNION (0.27.4.228): members promote into the enclosing
+   struct or named union. Anonymous STRUCT is not a field. *)
+field-decl  = identifier ":" type-specifier [ "=" const-expression ]
+            | anon-union ;
+
+anon-union  = "UNION" [ EOS ] { field-decl EOS } "END" ;
 
 return-type = [ "CONST" ] [ "^" | "POINTER" "TO" ] type-identifier ;
 

@@ -1153,6 +1153,49 @@ begin
 end codegen_common_proc_or_func
 
 
+recursive procedure codegen_emit_anon_union(n: const ^Node, ctx: CodegenContext)
+begin
+    var i: size_t = 0
+    var inner: CodegenContext = ctx         // gcc complains about a potential overflow if we don't do this.
+
+    if n == nil or n.kind <> NODE_STRUCT_DECL or not n.struct_decl.is_union then
+        dynbuf_append(ctx.out, "/* TODO: codegen_emit_anon_union: invalid UNION */\n")
+        return
+    end
+
+    emit_indent(ctx.out, ctx.indent + 1)
+    dynbuf_append(ctx.out, "union {\n")
+    inner.indent := ctx.indent + 1              // gcc hack.
+    for i := 1 to n.struct_decl.field_count do
+        var f: const ^Node = n.struct_decl.fields[i - 1]
+
+        if f == nil then
+            continue
+        end
+        if f.field_decl.nested <> nil then
+            codegen_emit_anon_union(f.field_decl.nested, inner)     // gcc hack (inner)
+            continue
+        end
+        emit_indent(ctx.out, ctx.indent + 1)
+        dynbuf_append(ctx.out, "    ")          // gcc hack to get the indent right.
+        if f.field_decl.field_type <> nil then
+            emit_type_specifier(ctx.out, f.field_decl.field_type,
+                f.field_decl.name, f.field_decl.name_len,
+                false, false, false, false)
+        else
+            dynbuf_append(ctx.out, "int ")
+        end
+        if f.field_decl.initializer <> nil then
+            dynbuf_append(ctx.out, " = ")
+            codegen_common_expr(f.field_decl.initializer, ctx)
+        end
+        dynbuf_append(ctx.out, ";\n")
+    end
+    emit_indent(ctx.out, ctx.indent + 1)
+    dynbuf_append(ctx.out, "};\n")
+end codegen_emit_anon_union
+
+
 (**
  * Emit STRUCT declaration.
  * Maps to a C typedef struct with named fields.
@@ -1204,6 +1247,10 @@ begin
     for i := 1 to n.struct_decl.field_count do
         var f: ^Node = n.struct_decl.fields[i-1]
         if f == nil then
+            continue
+        end
+        if f.field_decl.nested <> nil then
+            codegen_emit_anon_union(f.field_decl.nested, ctx)
             continue
         end
 
@@ -1263,6 +1310,10 @@ begin
     for i := 1 to n.struct_decl.field_count do
         var f: const ^Node = n.struct_decl.fields[i-1]
         if f == nil then
+            continue
+        end
+        if f.field_decl.nested <> nil then
+            codegen_emit_anon_union(f.field_decl.nested, ctx)
             continue
         end
 

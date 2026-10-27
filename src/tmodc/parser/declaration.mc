@@ -741,34 +741,54 @@ begin
             break
         end
 
-        if p^.current.kind <> TOK_IDENT then
-            error_at(p, "parse_struct_type: expected field name (identifier) in struct", true)
+        if check(p, TOK_KEYWORD_UNION) then
+            var u:pNode = parse_union_type(p)
+
+            u^.struct_decl.name := nil
+            u^.struct_decl.name_len := 0
+            field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
+            field^.field_decl.name := nil
+            field^.field_decl.name_len := 0
+            field^.field_decl.field_type := nil
+            field^.field_decl.initializer := nil
+            field^.field_decl.nested := u
+            arena_append_ptr(p^.arena,
+                (@s^.struct_decl.fields) as ppvoid,
+                @s^.struct_decl.field_count,
+                @s^.struct_decl.field_capacity,
+                field)
+        else
+            if p^.current.kind <> TOK_IDENT then
+                error_at(p, "parse_struct_type: expected field name (identifier) in struct", true)
+            end
+
+            fname := p^.current.start
+            flen := p^.current.length
+
+            advance(p)
+
+            if match(p, TOK_COLON) then
+                ftype := TParser::parse_return_type(p^)
+            end
+
+            if match(p, TOK_EQ) then
+                finit := TParser::parse_const_expression(p^)
+            end
+
+            field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
+            field^.field_decl.name          := fname
+            field^.field_decl.name_len      := flen
+            field^.field_decl.field_type    := ftype
+            field^.field_decl.initializer   := finit
+            field^.field_decl.nested        := nil
+
+            arena_append_ptr(p^.arena,
+                (@s^.struct_decl.fields) as ppvoid,
+                @s^.struct_decl.field_count,
+                @s^.struct_decl.field_capacity,
+                field)
         end
 
-        fname := p^.current.start
-        flen := p^.current.length
-
-        advance(p)
-
-        if match(p, TOK_COLON) then
-            ftype := TParser::parse_return_type(p^)
-        end
-
-        if match(p, TOK_EQ) then
-            finit := TParser::parse_const_expression(p^)
-        end
-
-        field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
-        field^.field_decl.name          := fname
-        field^.field_decl.name_len      := flen
-        field^.field_decl.field_type    := ftype
-        field^.field_decl.initializer   := finit
-
-        arena_append_ptr(p^.arena,
-                        (@s^.struct_decl.fields) as ppvoid,
-                        @s^.struct_decl.field_count,
-                        @s^.struct_decl.field_capacity,
-                        field)
 
         // Fields are separated by end-of-statement
         (matchEOS(p))
@@ -790,13 +810,13 @@ end parse_struct_type
  *
  * Returns a NODE_STRUCT_DECL node with .is_union set to true
  *)
-export function parse_union_type(p: pParser): pNode
+export recursive function parse_union_type(p: pParser): pNode
 begin
     require p <> nil
 
     var union_token: TToken = p^.current
-    var name: string
-    var name_len: size_t
+    var name: string = nil
+    var name_len: size_t = 0
     var u: pNode = nil
 
     consume(p, TOK_KEYWORD_UNION, "parse_untion_type: expected UNION")
@@ -824,33 +844,54 @@ begin
             break
         end
 
-        if p^.current.kind <> TOK_IDENT then
-            error_at(p, "parse_union_type: expected field name (identifier) in UNION", true)
+        // if p^.current.kind <> TOK_IDENT then
+        //     error_at(p, "parse_union_type: expected field name (identifier) in UNION", true)
+        if check(p, TOK_KEYWORD_UNION) then
+            var inner: pNode = parse_union_type(p)
+
+            inner^.struct_decl.name := nil
+            inner^.struct_decl.name_len := 0
+            field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
+            field^.field_decl.name := nil
+            field^.field_decl.name_len := 0
+            field^.field_decl.field_type := nil
+            field^.field_decl.initializer := nil
+            field^.field_decl.nested := inner
+            arena_append_ptr(p^.arena,
+                (@u^.struct_decl.fields) as ppvoid,
+                @u^.struct_decl.field_count,
+                @u^.struct_decl.field_capacity,
+                field)
+        else
+            if p^.current.kind <> TOK_IDENT then
+                error_at(p, "parse_union_type: expected field name (identifier) in UNION", true)
+            end
+
+            fname := p^.current.start
+            flen := p^.current.length
+            advance(p)
+
+            if match(p, TOK_COLON) then
+                ftype := TParser::parse_return_type(p^)
+            end
+
+            if match(p, TOK_EQ) then
+                finit := TParser::parse_const_expression(p^)
+            end
+
+            field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
+            field^.field_decl.name          := fname
+            field^.field_decl.name_len      := flen
+            field^.field_decl.field_type    := ftype
+            field^.field_decl.initializer   := finit
+            field^.field_decl.nested        := nil
+
+            arena_append_ptr(p^.arena,
+                (@u^.struct_decl.fields) as ppvoid,
+                @u^.struct_decl.field_count,
+                @u^.struct_decl.field_capacity,
+                field)
         end
-
-        fname := p^.current.start
-        flen := p^.current.length
-        advance(p)
-
-        if match(p, TOK_COLON) then
-            ftype := TParser::parse_return_type(p^)
-        end
-
-        if match(p, TOK_EQ) then
-            finit := TParser::parse_const_expression(p^)
-        end
-
-        field := node_create(p^.arena, NODE_FIELD_DECL, p^.current)
-        field^.field_decl.name          := fname
-        field^.field_decl.name_len      := flen
-        field^.field_decl.field_type    := ftype
-        field^.field_decl.initializer   := finit
-
-        arena_append_ptr(   p^.arena,
-                            (@u^.struct_decl.fields) as ppvoid,
-                            @u^.struct_decl.field_count,
-                            @u^.struct_decl.field_capacity,
-                            field)
 
         matchEOS(p)
     end

@@ -441,19 +441,24 @@ void node_print(const Node *n, int indent)
 		case NODE_FIELD_DECL:
 			kind_name = "FIELD_DECL";
 			print_kind_line_column(n, kind_name);
-			printf("'%.*s'", (int)n->field_decl.name_len, n->field_decl.name);
-			if (n->field_decl.field_type) {
-				printf(" : ");
-				// print_type(n->field_decl.field_type);
-				type_print(n->field_decl.field_type);
-				// printf(" : '%.*s'", (int) n->field_decl.field_type->name_len,
-				// 	n->field_decl.field_type->name);
-			}
-			if (n->field_decl.initializer) {
-				printf(" = ");
-				node_print(n->field_decl.initializer, indent + 1);
+			if (n->field_decl.nested) {
+				printf(" anon union\n");
+				node_print(n->field_decl.nested, indent + 1);
 			} else {
-				printf("\n");
+				printf("'%.*s'", (int)n->field_decl.name_len, n->field_decl.name);
+				if (n->field_decl.field_type) {
+					printf(" : ");
+					// print_type(n->field_decl.field_type);
+					type_print(n->field_decl.field_type);
+					// printf(" : '%.*s'", (int) n->field_decl.field_type->name_len,
+					// 		n->field_decl.field_type->name);
+				}
+				if (n->field_decl.initializer) {
+					printf(" = ");
+					node_print(n->field_decl.initializer, indent + 1);
+				} else {
+					printf("\n");
+				}
 			}
 			break;
 

@@ -277,7 +277,7 @@ end
 
 Quoted `FROM "stdio.h"` does **not** parse the C header. The item list is the programmer’s claim that C will provide those names after the include.
 
-**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. An array type-spec uses the same suffix as source (`Node[]`, `^Node[]`, `integer 32[4]`) or the keyword form (`^array[] of Node`, `array[] of integer[4]`) when a suffix would not round-trip (**0.27.1.217**). A line with no array suffix still parses. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct.
+**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. An array type-spec uses the same suffix as source (`Node[]`, `^Node[]`, `integer 32[4]`) or the keyword form (`^array[] of Node`, `array[] of integer[4]`) when a suffix would not round-trip (**0.27.1.217**). A line with no array suffix still parses. An anonymous nested union inside that field list is `union (a: Arm, b: integer)` (**0.27.4.228**). The word `union` followed by `:` is a field name. An older compiler rejects a line that contains `union (`. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct.
 
 **Example** (generated `.mh` line, not source):
 
@@ -702,7 +702,7 @@ See `CURRENT.md` (Future plan: SET OF enum) for implementation order.
 
 #### Records (`STRUCT`)
 
-A struct is a fixed number of named fields, possibly of different types. Nested aggregates are named types first, then used as a field type.
+A struct is a fixed number of named fields, possibly of different types. A nested struct is a named type used as a field type. An anonymous nested union is a field (*0.27.4.228*, §5.4.1).
 
 **Examples:**
 
@@ -817,7 +817,27 @@ u.i := 3
 u.f := 1.5            (* overlays u.i — C-like; no active-member check in v1 *)
 ```
 
-No `EXTENDS` on unions. Nested anonymous unions deferred; name an inner type first.
+No `EXTENDS` on a named union. An anonymous nested union is a field written `union` … `end` with no name, inside a `struct` or a named `union` (*0.27.4.228*). Its members are in scope on the enclosing aggregate. A name that is also a field of the parent, a sibling promoted member, or an `EXTENDS` ancestor is an error. Nested anonymous unions are allowed. A nested struct stays a named type. A named `type T = union` is unchanged.
+
+```mod-c
+type Arm = struct
+	n: integer
+end
+
+type Box = struct
+	tag: integer
+	union
+		a: Arm
+		b: integer
+	end
+end
+
+var box: Box
+box.tag := 1
+box.a.n := 7          (* overlays box.b *)
+```
+
+C is an unnamed `union { ... };`. There is no extra dot for the union itself. `.mh` spells that field `union (a: Arm, b: integer)` inside the one-line field list. `@format` stays 1.
 
 ### 5.5 Built-in type names
 
@@ -1478,6 +1498,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **`^opaque` (0.26.9.200):** a type-specifier `^opaque` / `POINTER TO opaque` lowers to `void *`. `const ^opaque` lowers to `const void *`. Named `type Name = opaque` and `type Name = ^opaque` stay `typedef void *Name`. See §5.2.  
 - **Slice formals (0.27.1.219):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays, `^T`, and `^array[] of T` do not gain a parameter. Hosted `main` stays `(int argc, char **argv)` and passes `argc` as the length of a program `^char[]` formal. See §5.4.  
 - **`FOR` (0.27.3.227):** `for i :=` lowers to `for (i = start; …)`. `for i =` and `for i: T =` lower to `for (T i = start; …)` inside the loop block. An omitted `T` is the type of the start, or `integer` when that type is unknown. A numeric literal start stays `integer`. The end temporary is `const T __for_end_l{line}_c{column}` and the test is `<=` or `>=` (*0.27.2.225*). See §7.1.  
+- **Anonymous nested `UNION` (0.27.4.228):** a field `union` … `end` lowers to an unnamed C11 `union { ... };`. Members are accessed on the enclosing aggregate. See §5.4.1.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 - **`DEFINE` with `=` (0.27.1.216):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is required and is omitted from the emitted `#define`. The 0.26.5.188 rest-of-line form is a parse error. A raw `#define` stays unbound. See §4.1.1.
 
@@ -1595,6 +1616,7 @@ Do not maintain a second full EBNF elsewhere.
 | 16 October 2026 | **§3.2 / §5.4 `.mh` array type-specs (0.27.1.217):** an exported anonymous array round-trips (`Node[]`, `^Node[]`, `integer[4]`, `^array[] of Node`). `@format` stays 1. A line with no array suffix still parses. Slice formals can see the open array. The hidden length is still planned. |
 | 19 October 2026 | **§3.1 / §5.3 / §5.4 / §10.2 / §11 slice formals (0.27.1.219):** an open-array formal lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it and is not a constant. `^char[]` is a slice. Fixed `array[N]`, `^T`, and `^array[] of T` stay one C parameter. Hosted `main` calls `program name(args: ^char[])` as `name(argv, argc)`. A module `main` uses `^pchar`. A function-pointer call does not insert the length yet. |
 | 19 October 2026 | **§7.1 / §11 dual `FOR` (0.27.2.221):** `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. The August sole-form sweep was not taken. |
+| 26 October 2026 | **§5.4.1 / §3.2 / §11 anonymous nested `UNION` (0.27.4.228):** a field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate. C is an unnamed `union { ... };`. `.mh` spells `union (name: Type, …)`. `@format` stays 1. A nested struct stays a named type. |
 | 26 October 2026 | **§7.1 / §11 `FOR` index type (0.27.3.227):** an omitted `for i =` type is the type of the start. A numeric literal stays `integer`. The declaring form accepts any type C can step with `++` or `--`, including `char`, `size_t`, `cardinal`, `byte`, an enumeration, and a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. |
 | 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
 

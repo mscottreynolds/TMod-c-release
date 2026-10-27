@@ -2,6 +2,15 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.4.228
+- **Anonymous nested `UNION`** — a field written `union` … `end` inside a `struct` or a named `union` has no name. Its members are in scope on the enclosing aggregate (`box.tag`, `box.a.n`, `box.b`). C is an unnamed `union { ... };`.
+- A promoted name that clashes with the parent, a sibling promoted member, or an `EXTENDS` ancestor is an error. Nested anonymous unions are allowed. A nested struct stays a named type. Named `type T = union` is unchanged and still has no `EXTENDS`.
+- `.mh` spells that field `union (a: Arm, b: integer)` inside the field list. `@format` stays 1. The word `union` followed by `:` is a field name. An older reader rejects a line that contains `union (`.
+- **Tests:** `tests/test_anon_union.mc` (`tag` stays 1 while `b` reads 7). `tests/test3_anon_union.mc` rejects a promoted `tag` that repeats the parent field. `tests/test_union.mc` and `tests/test3_union.mc` stay.
+- `src/c/node.c` and `src/c/node.h` stay hand-written. This form is what a later port of `Node` needs. The port is not started.
+- The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.4.228**. Stem **0.27.4**. `Makefile` `VERSION` is **0.27.4**. Branch **`main`**. Build **228**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `AGENTS.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261026-1932.md`, and an append in `docs/project_bible.md`.
+
 ## Version 0.27.3.227
 - **`FOR` index type (item 28)** — on `for i =`, an omitted type is the type of the start expression. A numeric literal is `integer`, so `for i = 1 to count` stays `integer`. An unknown start type is `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type.
 - The declaring form accepts a type C can step with `++` or `--`: `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. `for c = 'A' to 'Z'` is legal.
@@ -11,6 +20,11 @@
 - The user reported `make CC=gcc clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.3.227**. Stem **0.27.3**. `Makefile` `VERSION` is **0.27.3**. Branch **`main`**. Build **227**.
 - Docs this round: `changelog.md`, `CURRENT.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`.
 
+## Version 0.27.2.226
+- **`tmodc.lib` wrappers** — `src/tmodc/lib/String.mc`, `Cardinal.mc`, `Integer.mc`, and `Real.mc`. Each module entry fills a small struct (`TString` also stores `length`) and returns it. `TString::value`, `TCardinal::value`, `TInteger::value`, and `TReal::value` read that field.
+- Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`main`**. Build **226**. Commit `e4eb090`. Recorded from that commit. No suite result is in the commit message.
+- Docs this round: this entry, with **0.27.4.228**.
+
 ## Version 0.27.2.225
 - **`FOR` end temporary (item 18)** — the saved end has the index type. The name stays `__for_end_l{line}_c{column}`. The test is a direct `<=` or `>=`. No `long long` cast.
 - `for i :=` uses the type of the variable already in scope. A `size_t` index stores a `const size_t` end. At this build, `for i =` with no written type is `integer`. `for i: T =` uses `T`. An unknown type falls back to `integer`. Item **28** (**0.27.3.227**) takes that omitted type from the start expression.
@@ -19,6 +33,12 @@
 - `BY` is unchanged: a numeric literal. `BY 0` is rewritten to step 1.
 - The user reported `make clean-all all test-all selfhost bootstrap promote` clean, with no warnings, and promoted **0.27.2.225**. Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`main`**. Build **225**.
 - Docs this round: `changelog.md`, `CURRENT.md`, `TODO-items-for-0.27.md`.
+
+## Version 0.27.2.223
+- **Compiler sources** — `.mc` and `.mh` moved under `src/tmodc/` as package `tmodc`. `module tmodc.parser.parser_main()` is the unit `parser_main`. Generated C mirrors that path (`src/c/tmodc/parser/parser_main.c`). Hand-written `src/c/node.c`, `src/c/node.h`, and Makefile-written `src/c/version.h` stay in `src/c/`.
+- `header tmodc.tmodc` is `src/tmodc/tmodc.mc`. It generates `src/c/tmodc/tmodc.h` and `src/tmodc/tmodc.mh`, and no `.c`. `program tmodc.modc` is `src/tmodc/modc.mc`. The `Makefile` follows the package.
+- Stem **0.27.2**. `Makefile` `VERSION` is **0.27.2**. Branch **`main`**. Build **223**. Commit `3c2a043`. Recorded from that commit. No suite result is in the commit message.
+- Docs this round: this entry, with **0.27.4.228**.
 
 ## Version 0.27.2.222
 - **C tree** — generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `src/parser/parser_main.mc` lowers to `src/c/parser/parser_main.c`. `.mh` stays beside the `.mc`. Hand-written `node.c` / `node.h` and Makefile-written `version.h` are under `src/c/`.
@@ -522,7 +542,7 @@
 
 ## Version 0.24.12.118
 - **Bare `UNION` types (item 13c / calm path step 2) Done** — `type T = union … end`; lexer `UNION`; `struct_decl.is_union`; `parse_union_type`; semantic (no EXTENDS on union); **`codegen_common_union_decl`** → C `union`
-- Nested aggregates: define named type first, then use as field type (no anonymous nested union/struct yet)
+- Nested aggregates: define named type first, then use as field type (no anonymous nested union/struct yet). Anonymous nested `union` … `end` is **0.27.4.228**.
 - Tests: `test_union.mc`, `test3_union.mc` (and opaque suite from 0.24.11)
 - Promoted; **make test-all** green on **gcc**, **clang**, and **tcc**
 - Docs: `CURRENT.md`, Language Report §5.4.1, `docs/grok_report-20260723-2250.md`
