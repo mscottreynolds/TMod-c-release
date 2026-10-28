@@ -112,6 +112,8 @@ function semantic_field_type_on(ctx: pTSemanticContext, recv_ty: pTType,
 		fname: const ^char, flen: size_t): pTType forward
 function semantic_sym_is_method_value(ctx: pTSemanticContext, sym: pTSymbol): bool forward
 recursive function semantic_find_struct_member(st: pNode, name: const ^char, name_len: size_t): pNode forward
+function semantic_type_is_pointer(ty: pTType): bool forward
+
 
 (**
 * Fatal semantic error with source location from the node's token.
@@ -452,7 +454,7 @@ begin
 	d := semantic_extends_upcast_depth(ctx, actual, expected)
 	if d > 0 then
 		expr^.upcast_depth := d
-		expr^.upcast_ptr := actual^.is_pointer
+		expr^.upcast_ptr := semantic_type_is_pointer(actual)
 	end
 end semantic_maybe_upcast
 
@@ -3089,6 +3091,96 @@ end semantic_sym_is_named_type
 
 
 (**
+ * True when codegen_args_needs_address will emit '&'.
+ * is_pointer is the written formal type. A named alias such as
+ * type Object = ^TObject stays a non-pointer here, so VAR/REF Object
+ * still requires a variable. A written ref p: ^T does not.
+ *)
+function semantic_formal_needs_address(formal: pNode): bool
+begin
+	var ty: pTType = nil
+
+	if formal == nil or formal^.kind <> NODE_PARAM then
+		return false
+	end
+	if not formal^.param.is_var and not formal^.param.is_ref then
+		return false
+	end
+	ty := formal^.param.param_type
+	if ty == nil then
+		return false
+	end
+	if semantic_array_param_view(ty) <> nil then
+		return false
+	end
+	if ty^.is_pointer then
+		return formal^.param.is_var
+	end
+	return true
+end semantic_formal_needs_address
+
+
+(**
+ * Designator: name, then field, index, or postfix ^. Parens are ignored.
+ * A cast, call, or other expression is not a designator.
+ *)
+function semantic_actual_is_designator(n: pNode): bool
+begin
+	var d: pNode = n
+
+	while d <> nil do
+		if d^.kind == NODE_PAREN then
+			d := d^.paren.expr
+		elsif d^.kind == NODE_FIELD_ACCESS then
+			d := d^.field_access.record_
+		elsif d^.kind == NODE_ARRAY_INDEX then
+			d := d^.array_index.array_
+		elsif d^.kind == NODE_UNARY and d^.unary.op == TOK_CARET then
+			d := d^.unary.operand
+		elsif d^.kind == NODE_IDENT then
+			return true
+		else
+			return false
+		end
+	end
+	return false
+end semantic_actual_is_designator
+
+
+(** 
+ * VAR/REF that lower to an address need a designator.
+ * A pointer upcast of that designator is still a value, so & would
+ * land on the upcast and emit '&&'.
+ *)
+procedure semantic_check_byref_actual(formal: pNode, actual: pNode)
+begin
+	var d: pNode = actual
+
+	if actual == nil or not semantic_formal_needs_address(formal) then
+		return
+	end
+	while d <> nil and d^.kind == NODE_PAREN do
+		d := d^.paren.expr
+	end
+	if d <> nil and d^.kind == NODE_UNARY and d^.unary.op == TOK_AT then
+		if not semantic_actual_is_designator(d^.unary.operand) then
+			semantic_error_at(actual,
+				"semantic_check_byref_actual: VAR or REF address-of requires a designator")
+		end
+		return
+	end
+	if not semantic_actual_is_designator(actual) then
+		semantic_error_at(actual,
+			"semantic_check_byref_actual: VAR or REF parameter requires a designator")
+	end
+	if actual^.upcast_ptr then
+		semantic_error_at(actual,
+			"semantic_check_byref_actual: pointer upcast is not a variable of this VAR or REF type")
+	end
+end semantic_check_byref_actual
+
+
+(**
  * Resolve a call target (procedure/function) and its arguments.
  * Type::name uses method_owner from the parser.
  * obj.method (item 21): instance Type__method; receiver prepended in codegen.
@@ -3342,6 +3434,7 @@ begin
 					formal^.param.param_type <> nil then
 				semantic_maybe_upcast(ctx, n^.call.args[fi - 1],
 					formal^.param.param_type)
+				semantic_check_byref_actual(formal, n^.call.args[fi - 1])
 			end
 			formal_index := formal_index + 1
 		end
@@ -3349,6 +3442,7 @@ begin
 		if has_receiver and fcount > 0 and formals <> nil and
 				formals[0] <> nil and formals[0]^.kind == NODE_PARAM and
 				formals[0]^.param.param_type <> nil then
+			semantic_check_byref_actual(formals[0], n^.call.receiver_expr)
 			semantic_resolve_formal_for_slice(ctx, formals[0])
 			semantic_bind_slice_actual(ctx, formals[0], n^.call.receiver_expr,
 				@n^.call.receiver_slice)
@@ -3524,7 +3618,7 @@ begin
 					n^.cast_expr.target_type)
 				if d > 0 then
 					n^.upcast_depth := d
-					n^.upcast_ptr := inner_ty^.is_pointer
+					n^.upcast_ptr := semantic_type_is_pointer(inner_ty)
 				end
 			end
 

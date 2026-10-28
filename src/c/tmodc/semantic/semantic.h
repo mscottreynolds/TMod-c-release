@@ -362,6 +362,24 @@ void semantic_error_at(pNode n, const char* msg);
  */
 
 /**
+ * True when codegen_args_needs_address will emit '&'.
+ * is_pointer is the written formal type. A named alias such as
+ * type Object = ^TObject stays a non-pointer here, so VAR/REF Object
+ * still requires a variable. A written ref p: ^T does not.
+ */
+
+/**
+ * Designator: name, then field, index, or postfix ^. Parens are ignored.
+ * A cast, call, or other expression is not a designator.
+ */
+
+/** 
+ * VAR/REF that lower to an address need a designator.
+ * A pointer upcast of that designator is still a value, so & would
+ * land on the upcast and emit '&&'.
+ */
+
+/**
  * Resolve a call target (procedure/function) and its arguments.
  * Type::name uses method_owner from the parser.
  * obj.method (item 21): instance Type__method; receiver prepended in codegen.

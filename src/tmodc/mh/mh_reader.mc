@@ -857,6 +857,16 @@ begin
 			m^.exports[i - 1].fields := nil
 			m^.exports[i - 1].field_count := 0
 		end
+		// name and method_owner are mh_strdup_n copies. Other names point
+		// into sourc,e which is freed below.
+		if m^.exports[i - 1].name <> nil then
+			free(m^.exports[i - 1].name)
+			m^.exports[i - 1].name := nil
+		end
+		if m^.exports[i - 1].method_owner <> nil then
+			free(m^.exports[i - 1].method_owner)
+			m^.exports[i - 1].method_owner := nil
+		end
 		mh_type_spec_free_tree(@m^.exports[i - 1].result)
 		mh_type_spec_free_tree(@m^.exports[i - 1].alias_)
 	end

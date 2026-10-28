@@ -2,6 +2,23 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.4.230
+- **`VAR` / `REF` designator** — a `VAR` or `REF` formal that codegen addresses requires a designator. A designator is a name, or that name through a field, an index, or a postfix `^`. Parentheses are skipped.
+- `semantic_formal_needs_address` uses the written formal's `is_pointer`, the same test as `codegen_args_needs_address`. `type Object = ^TObject` keeps `is_pointer` false, so `var self: Object` and `ref self: Object` both require a variable. A written `ref p: ^T` passes the pointer value.
+- `self as Object` is `semantic_check_byref_actual: VAR or REF parameter requires a designator`. A designator with `upcast_ptr` set is `semantic_check_byref_actual: pointer upcast is not a variable of this VAR or REF type`. That call is the one that lowered to `&&`.
+- `@` of a designator is accepted, including `(@p[1])`. `tests/test_ptr_index.mc` keeps `(@p[1]).bump()`.
+- A `CONST` formal and a bare formal stay by value. A child variable passed to `ref Parent` stays legal.
+- **Tests:** `tests/test3_byref_cast.mc` (`var self: Object`), `tests/test3_byref_ref.mc` (`ref self: Object`). `tests/Nodes.mc` is renamed `tests/test_Nodes.mc`, so `make test` runs it. `Node::free` copies `var object: Object = self as Object` and calls `object.free()`.
+- The user reported that gcc, clang, and tcc each pass, and promoted **0.27.4.230**. Stem **0.27.4**. `Makefile` `VERSION` is **0.27.4**. Branch **`main`**. Build **230**.
+- Docs this round: `changelog.md`, `CURRENT.md`.
+
+## Version 0.27.4.229
+- **Pointer-alias `as`** — `semantic_type_is_pointer` reads the type and one `resolved_type` step. `semantic_maybe_upcast` and an explicit `as` set `upcast_ptr` from that. `type Node = ^TNode` emits `&((*(expr)).base)`.
+- **`.mh` free** — `mh_module_free` frees each export's `name` and `method_owner` and sets them to nil. Those two are `mh_strdup_n` copies. The other name pointers remain inside `source`.
+- `tests/Nodes.mc` is the program that showed the pointer-alias cast (`Object(...) as Node`). **0.27.4.230** renames that file to `tests/test_Nodes.mc`.
+- Stem **0.27.4**. `Makefile` `VERSION` is **0.27.4**. Branch **`main`**. Build **229**. Commit `7e157f7`. Recorded from that commit. No suite result is in the commit message.
+- Docs this round: this entry, with **0.27.4.230**.
+
 ## Version 0.27.4.228
 - **Anonymous nested `UNION`** — a field written `union` … `end` inside a `struct` or a named `union` has no name. Its members are in scope on the enclosing aggregate (`box.tag`, `box.a.n`, `box.b`). C is an unnamed `union { ... };`.
 - A promoted name that clashes with the parent, a sibling promoted member, or an `EXTENDS` ancestor is an error. Nested anonymous unions are allowed. A nested struct stays a named type. Named `type T = union` is unchanged and still has no `EXTENDS`.
