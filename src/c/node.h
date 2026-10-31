@@ -373,6 +373,9 @@ struct Node {
 			Node **invariants;		// INVARIANT (expr)clauses (after DO, before body)
 			size_t invariant_count;
 			size_t invariant_capacity;
+			Node *bound_expr; 		// nil when BOUND is omitted
+			bool has_bound;
+			int bound_value;		// folded; 0 on LOOP is idel
 		} while_stmt;
 
 		// For
@@ -400,6 +403,9 @@ struct Node {
 			Node **invariants;			// INVARIANT (expr) clauses
 			size_t invariant_count;
 			size_t invariant_capacity;
+			Node *bound_expr;			// nil when BOUND is omitted
+			bool has_bound;
+			int bound_value; 			// folded; 0 on LOOP is idle
 
 		} repeat_until;
 
@@ -409,7 +415,10 @@ struct Node {
 
 			Node **invariants;			// INVARIANT (expr) clauses
 			size_t invariant_count;
-			size_t invariant_capacity;			
+			size_t invariant_capacity;
+			Node *bound_expr; 			// nil when BOUND is omitted
+			bool has_bound;
+			int bound_value; 			// folded; 0 on LOOP is idle
 		} loop_stmt;
 
 		// Switch statement

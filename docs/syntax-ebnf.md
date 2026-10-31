@@ -295,6 +295,11 @@ loop-statement =
         statement-sequence 
     "END" ;
 
+(* BOUND is implemented (0.27.5.232) on WHILE, REPEAT, and LOOP.
+   One const-expression, then end of statement. FOR has no BOUND.
+   LOOP BOUND 0 is the idle loop. WHILE and REPEAT reject 0.
+   The largest trusted value is 2147483647. *)
+
 assignment-stmt = designator ( ":=" | compound-assignment ) expression ;
 
 compound-assignment

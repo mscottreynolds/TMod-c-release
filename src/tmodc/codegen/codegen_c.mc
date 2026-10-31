@@ -230,12 +230,68 @@ end codegen_c_if_stmt
 
 
 (**
+ * A positive BOUND emits a trip counter. An omitted BOUND and LOOP BOUND 0 do not.
+ * --assert-off omits the counter. --dbc-off keeps it. 
+ *)
+function codegen_c_bound_active(has_bound: bool, bound_value: int, ctx: CodegenContext): bool
+begin
+    return has_bound and (bound_value > 0) and not ctx.assert_off   // TODO: why not --dbc-off?
+end codegen_c_bound_active
+
+
+procedure codegen_c_emit_bound_name(ctx: CodegenContext, n: const ^Node)
+begin
+    var buf: array[32] of char
+
+    dynbuf_append(ctx.out, "__bound_l")
+    snprintf(buf, sizeof(buf), "%d_c%d", n.token.line, n.token.column)
+    dynbuf_append(ctx.out, buf)
+end codegen_c_emit_bound_name
+
+
+procedure codegen_c_emit_bound_init(n: const ^Node, ctx: CodegenContext)
+begin
+    emit_indent(ctx.out, ctx.indent)
+    dynbuf_append(ctx.out, "cardinal ")
+    codegen_c_emit_bound_name(ctx, n)
+    dynbuf_append(ctx.out, " = 0;\n")
+end codegen_c_emit_bound_init
+
+
+procedure codegen_c_emit_bound_check(n: const ^Node, value: int, ctx: CodegenContext)
+begin
+    var buf: array[32] of char
+
+    emit_indent(ctx.out, ctx.indent)
+    dynbuf_append(ctx.out, "assert(")
+    codegen_c_emit_bound_name(ctx, n)
+    dynbuf_append(ctx.out, " < ")
+    snprintf(buf, sizeof(buf), "%u", value as cardinal)
+    dynbuf_append(ctx.out, buf)
+    dynbuf_append(ctx.out, ");\n")
+    emit_indent(ctx.out, ctx.indent)
+    codegen_c_emit_bound_name(ctx, n)
+    dynbuf_append(ctx.out, "++;\n")
+end codegen_c_emit_bound_check
+
+
+(**
  * Emit WHILE ... DO ... END
  *)
 procedure codegen_c_while_stmt(n: const ^Node, ctx: CodegenContext)
 begin
+    var active: bool = false
+
     if n == nil or n.kind <> NODE_WHILE then
         return
+    end
+
+    active := codegen_c_bound_active(n.while_stmt.has_bound, n.while_stmt.bound_value, ctx)
+    if active then
+        dynbuf_append(ctx.out, "{\n")
+        inc(ctx.indent)
+        codegen_c_emit_bound_init(n, ctx)
+        emit_indent(ctx.out, ctx.indent)
     end
 
     dynbuf_append(ctx.out, "while (")
@@ -250,12 +306,20 @@ begin
         var child: CodegenContext = ctx_push(@ctx, n)
 
         child.enclosing_loop := n               // important for BREAK/CONTINUE
+        if active then
+            codegen_c_emit_bound_check(n, n.while_stmt.bound_value, child)
+        end
         codegen_dbc_emit_invariants(n, child)
         codegen_c_stmt(n.while_stmt.body, child)
         dec(ctx.indent)
         emit_indent(ctx.out, ctx.indent)
         dynbuf_append(ctx.out, "}\n")
         codegen_dbc_emit_invariants(n, ctx)
+    end
+    if active then
+        dec(ctx.indent)
+        emit_indent(ctx.out, ctx.indent)
+        dynbuf_append(ctx.out, "}\n")
     end
 end codegen_c_while_stmt
 
@@ -364,8 +428,18 @@ end codegen_c_for_stmt
  *)
 procedure codegen_c_repeat_until_stmt(n: const ^Node, ctx: CodegenContext)
 begin
+    var active: bool = false
+
     if n == nil or n.kind <> NODE_REPEAT_UNTIL then
         return
+    end
+
+    active := codegen_c_bound_active(n.repeat_until.has_bound, n.repeat_until.bound_value, ctx)
+    if active then
+        dynbuf_append(ctx.out, "{\n")
+        inc(ctx.indent)
+        codegen_c_emit_bound_init(n, ctx)
+        emit_indent(ctx.out, ctx.indent)
     end
 
     dynbuf_append(ctx.out, "do\n")
@@ -376,6 +450,9 @@ begin
     begin
         var child: CodegenContext = ctx_push(@ctx, n)
 
+        if active then
+            codegen_c_emit_bound_check(n, n.repeat_until.bound_value, child)
+        end
         codegen_dbc_emit_invariants(n, child)
         codegen_c_stmt(n.repeat_until.body, child)
         dec(ctx.indent)
@@ -388,6 +465,11 @@ begin
     codegen_common_expr(n.repeat_until.cond, ctx)
     dynbuf_append(ctx.out, "));\n")
     codegen_dbc_emit_invariants(n, ctx)
+    if active then
+        dec(ctx.indent)
+        emit_indent(ctx.out, ctx.indent)
+        dynbuf_append(ctx.out, "}\n")
+    end
 end codegen_c_repeat_until_stmt
 
 
@@ -396,8 +478,18 @@ end codegen_c_repeat_until_stmt
  *)
 procedure codegen_c_loop_stmt(n: const ^Node, ctx: CodegenContext)
 begin
+    var active: bool = false
+
     if n == nil or n.kind <> NODE_LOOP then
         return
+    end
+
+    active := codegen_c_bound_active(n.loop_stmt.has_bound, n.loop_stmt.bound_value, ctx)
+    if active then
+        dynbuf_append(ctx.out, "{\n")
+        inc(ctx.indent)
+        codegen_c_emit_bound_init(n, ctx)
+        emit_indent(ctx.out, ctx.indent)
     end
 
     dynbuf_append(ctx.out, "while (1)\n")
@@ -408,6 +500,9 @@ begin
     begin
         var child: CodegenContext = ctx_push(@ctx, n)
         child.enclosing_loop := n
+        if active then
+            codegen_c_emit_bound_check(n, n.loop_stmt.bound_value, child)
+        end
         codegen_dbc_emit_invariants(n, child)
         codegen_c_stmt(n.loop_stmt.body, child)
         dec(ctx.indent)
@@ -415,6 +510,11 @@ begin
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "}\n")
     codegen_dbc_emit_invariants(n, ctx)
+    if active then
+        dec(ctx.indent)
+        emit_indent(ctx.out, ctx.indent)
+        dynbuf_append(ctx.out, "}\n")
+    end
 end codegen_c_loop_stmt
 
 

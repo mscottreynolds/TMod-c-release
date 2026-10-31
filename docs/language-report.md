@@ -1061,9 +1061,25 @@ end
 loop
 	if done then break end
 end
+
+while p <> nil do
+	bound 4096
+	p := p^.next
+end
+
+loop
+	bound 0
+	(* idle task loop: no counter *)
+end
 ```
 
 `for i :=` assigns a variable already in scope. `for i =` and `for i: T =` declare an index whose scope is the loop (*0.27.2.221*; index type *0.27.3.227*). On `for i =`, an omitted type is the type of the start expression. A numeric literal is `integer`, so `for i = 1 to n` stays `integer`. An unknown start type is `integer`. `for i: T =` uses `T`. `for i :=` uses the variable's type. A type is legal when C can step it with `++` or `--`: `integer`, `int`, `char`, `size_t`, `cardinal`, `byte`, an enumeration, or a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test, so `for c = 'A' to 'Z'` is legal. An enumeration constant is typed `integer`, so `for i = Red to Blue` is an `integer` loop. `for e: Color = Red to Blue` is the enumeration. The loop index may shadow an outer variable. After `end`, that outer variable is unchanged. Writing `=` where the source had `:=` leaves the outer variable unchanged. The body must not assign, `INC`, or `DEC` the control name. Bounds and `BY` are evaluated once at entry. `for i: integer :=` is a parse error.
+
+**`BOUND` (0.27.5.232, item 25).** Optional on `WHILE`, `REPEAT`, and `LOOP`, after `DO` / `REPEAT` / `LOOP` and before any `INVARIANT`. One const-expression, then end of statement. `FOR` has `TO` / `DOWNTO` and does not take `BOUND`. An omitted bound leaves the loop as it is. A second `BOUND` is a parse error.
+
+The value is a compile-time integer. The largest value the folder can trust is **2,147,483,647** (`2^31 - 1`). Default `integer` is C `int`, 32 bits on this host. The folder parses the literal with `strtol` into a `long`, then stores an `integer`. A number above that maximum is cut to 32 bits before the sign check. It is not a wider ceiling. A result that is negative is an error. `0` is legal only on `LOOP`. That is the idle loop: no counter. A unit that rebinds `integer` to `integer 64` does not widen the value the compiler folds.
+
+A positive bound wraps the loop and counts body entries. The counter is `cardinal __bound_l{line}_c{column}`, starting at 0. At the start of the body, before `INVARIANT`, the generated C checks `assert(__bound < Nu)` and then increments. That many entries are allowed. The next entry aborts. `CONTINUE` still costs a trip. `BREAK` does not check again. `--assert-off` omits the counter. `--dbc-off` leaves it. `BOUND` is a trip ceiling. It is not a `REQUIRE`, `ENSURE`, or `INVARIANT` clause (§7.5). `--pot` is not this build.
 
 Statements after `RETURN`, `BREAK`, or `CONTINUE` in the same sequence are **unreachable**. Since **0.26.8.196** this is a **warning** (it was a fatal parse error from 0.24.3). Those statements are still omitted from the AST. A C preprocessor line may follow `return` (for example `#endif` after `sdsTest`). An early exit inside a nested `if` does not mark the rest of the enclosing sequence unreachable.
 
@@ -1141,7 +1157,7 @@ Keywords are case-insensitive (`require`, `REQUIRE`). Parentheses around the exp
 
 **Not** class/object invariants on `STRUCT`. **Not** a separate proof language. Side effects in a contract expression are allowed by the grammar and **discouraged** (same as Holzmann: assertions should be observational).
 
-**`ASSERT` vs DbC:** `ASSERT` is an ad-hoc check in the middle of a body (Power of Ten rule 5: many assertions). `REQUIRE`/`ENSURE`/`INVARIANT` name **entry**, **exit**, and **loop** obligations so a reviewer can see the contract without reading the whole body.
+**`ASSERT` vs DbC:** `ASSERT` is an ad-hoc check in the middle of a body (Power of Ten rule 5: many assertions). `REQUIRE`/`ENSURE`/`INVARIANT` name **entry**, **exit**, and **loop** obligations so a reviewer can see the contract without reading the whole body. Loop `BOUND` (§7.1) is a trip count, not one of these clauses. `--dbc-off` removes the three clauses and leaves a `BOUND` counter in place.
 
 **C lowering:** each clause becomes `assert(expr); /* precondition */` (or `postcondition` / invariant). A compiler flag (`dbc_off`) omits them. `<assert.h>` is in the generated prelude.
 
@@ -1499,6 +1515,7 @@ Generated C is **C11**, intended for pedantic/warning-heavy flags.
 - **Slice formals (0.27.1.219):** an open-array parameter lowers to `T *name, integer name_length`. The length follows the pointer. `countof` on that formal is the inserted integer. Fixed arrays, `^T`, and `^array[] of T` do not gain a parameter. Hosted `main` stays `(int argc, char **argv)` and passes `argc` as the length of a program `^char[]` formal. See §5.4.  
 - **`FOR` (0.27.3.227):** `for i :=` lowers to `for (i = start; …)`. `for i =` and `for i: T =` lower to `for (T i = start; …)` inside the loop block. An omitted `T` is the type of the start, or `integer` when that type is unknown. A numeric literal start stays `integer`. The end temporary is `const T __for_end_l{line}_c{column}` and the test is `<=` or `>=` (*0.27.2.225*). See §7.1.  
 - **Anonymous nested `UNION` (0.27.4.228):** a field `union` … `end` lowers to an unnamed C11 `union { ... };`. Members are accessed on the enclosing aggregate. See §5.4.1.  
+- **`BOUND` (0.27.5.232):** a positive bound on `WHILE`, `REPEAT`, or `LOOP` wraps the loop in a block and counts body entries with `cardinal __bound_l{line}_c{column}`. The check is `assert(__bound < Nu)` before `INVARIANT`. `LOOP` `BOUND 0` and an omitted bound emit no counter. The largest trusted value is 2,147,483,647. See §7.1.  
 - Preprocessor lines (`#define` / `#if`) in `.mc` are emitted as-is; they do not create TMod-c symbols. **`DEFINE`** (§4.1.1) emits `#define` **and** binds the name.
 - **`DEFINE` with `=` (0.27.1.216):** `define Name = replacement` and `define Name(params) = replacement`. The `=` is required and is omitted from the emitted `#define`. The 0.26.5.188 rest-of-line form is a parse error. A raw `#define` stays unbound. See §4.1.1.
 
@@ -1618,6 +1635,7 @@ Do not maintain a second full EBNF elsewhere.
 | 19 October 2026 | **§7.1 / §11 dual `FOR` (0.27.2.221):** `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. The August sole-form sweep was not taken. |
 | 26 October 2026 | **§5.4.1 / §3.2 / §11 anonymous nested `UNION` (0.27.4.228):** a field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate. C is an unnamed `union { ... };`. `.mh` spells `union (name: Type, …)`. `@format` stays 1. A nested struct stays a named type. |
 | 26 October 2026 | **§7.1 / §11 `FOR` index type (0.27.3.227):** an omitted `for i =` type is the type of the start. A numeric literal stays `integer`. The declaring form accepts any type C can step with `++` or `--`, including `char`, `size_t`, `cardinal`, `byte`, an enumeration, and a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. |
+| 30 October 2026 | **§7.1 / §7.5 / §11 `BOUND` (0.27.5.232):** optional trip ceiling on `WHILE`, `REPEAT`, and `LOOP`. `0` is legal only on `LOOP`. The largest trusted value is 2,147,483,647. The counter is `cardinal`. `--dbc-off` leaves it. `--assert-off` omits it. |
 | 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
 
 ---

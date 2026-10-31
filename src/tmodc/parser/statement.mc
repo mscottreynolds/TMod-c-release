@@ -31,10 +31,10 @@ import TToken, TOK_KEYWORD_DEFER, TOK_KEYWORD_DEBUG, TOK_KEYWORD_SWITCH,
 	TOK_KEYWORD_END, TOK_IDENT, TOK_DOT, TOK_KEYWORD_FROM, TOK_STRING,
 	TOK_KEYWORD_AS, TOK_KEYWORD_BREAK, TOK_KEYWORD_CONTINUE, TOK_KEYWORD_RETURN,
 	TOK_KEYWORD_IF, TOK_KEYWORD_THEN, TOK_KEYWORD_ELSIF, TOK_KEYWORD_DO,
-	TOK_KEYWORD_INVARIANT, TOK_KEYWORD_FOR, TOK_COLON_EQ, TOK_EQ, TOK_KEYWORD_DOWNTO,
-	TOK_KEYWORD_TO, TOK_KEYWORD_BY, TOK_NUMBER, TOK_KEYWORD_REPEAT,
-	TOK_KEYWORD_UNTIL, TOK_KEYWORD_LOOP, TOK_KEYWORD_INC, TOK_KEYWORD_DEC,
-	TOK_LPAREN, TOK_RPAREN, TOK_ADD, TOK_SUB, TOK_COLON_COLON,
+	TOK_KEYWORD_INVARIANT, TOK_KEYWORD_BOUND, TOK_KEYWORD_FOR, TOK_COLON_EQ, 
+	TOK_EQ, TOK_KEYWORD_DOWNTO, TOK_KEYWORD_TO, TOK_KEYWORD_BY, TOK_NUMBER, 
+	TOK_KEYWORD_REPEAT, TOK_KEYWORD_UNTIL, TOK_KEYWORD_LOOP, TOK_KEYWORD_INC, 
+	TOK_KEYWORD_DEC, TOK_LPAREN, TOK_RPAREN, TOK_ADD, TOK_SUB, TOK_COLON_COLON,
 	from tmodc.lexer.Lexer
 
 import TType 
@@ -532,9 +532,40 @@ end parse_if_stmt
 
 
 (**
+ * One optional BOUND const-expression, then EOS.
+ * A second BOUND is an error. Nil when omitted.
+ *)
+function parse_optional_bound(p: pParser): ^Node
+begin
+	require p <> nil
+
+	var expr: ^Node = nil
+
+	if not match(p, TOK_KEYWORD_BOUND) then
+		return nil
+	end
+
+	expr := TParser::parse_const_expression(p^)
+	if expr == nil then
+		error_at(p, "parse_optional_bound: expected constant expression after BOUND", true)
+	end
+	if not matchEOS(p) then
+		error_at(p, "parse_optional_bound: expected end-of-statement after BOUND", true)
+	end
+
+	skip_empty_statements(p)
+	if check(p, TOK_KEYWORD_BOUND) then
+		error_at(p, "parse_optional_bound: only one BOUND is allowed", true)
+	end
+
+	return expr
+end parse_optional_bound
+
+
+(**
  * Parse WHILE ... DO ... END statement
  * Grammar:
- * 		"WHILE" expression "DO" statement-sequence "END"
+ * 		"WHILE" expression "DO" [ "BOUND" const-expression ] statement-sequence "END"
  *
  * Returns NODE_WHILE node
  * Exits on fatal error (missing DO, END, etc).
@@ -562,6 +593,9 @@ begin
 	// DO keyword
 	consume(p, TOK_KEYWORD_DO, "parse_while_stmt: expected DO after WHILE condition")
 
+	skip_empty_statements(p)
+
+	n^.while_stmt.bound_expr := parse_optional_bound(p)
 	skip_empty_statements(p)
 
 	// Optional invariant clauses
@@ -773,7 +807,9 @@ begin
 	n^.repeat_until.invariant_count 	:= 0
 	n^.repeat_until.invariant_capacity 	:= 0
 
-	// Optional invariant clauses
+	// Optional BOUND, then invariant clauses
+	skip_empty_statements(p)
+	n^.repeat_until.bound_expr := parse_optional_bound(p)
 	skip_empty_statements(p)
 	while check(p, TOK_KEYWORD_INVARIANT) do
 		var expr: ^Node = nil
@@ -830,7 +866,9 @@ begin
 	n^.loop_stmt.invariant_count 	:= 0
 	n^.loop_stmt.invariant_capacity := 0
 
-	// Optional invariant clauses
+	// Optional BOUND, then invariant clauses
+	skip_empty_statements(p)
+	n^.loop_stmt.bound_expr := parse_optional_bound(p)
 	skip_empty_statements(p)
 	while check(p, TOK_KEYWORD_INVARIANT) do
 		var expr: ^Node = nil

@@ -3841,7 +3841,7 @@ end semantic_for_type_is_stepable
 procedure semantic_check_for_local(ctx: pTSemanticContext, n: pNode)
 begin
 	var ty: pTType = nil
-	var bound: pTType = nil
+	var bound_: pTType = nil
 
 	if n == nil or not n^.for_stmt.declares then
 		return
@@ -3860,17 +3860,50 @@ begin
 	if not semantic_for_type_is_stepable(ctx, ty) then
 		semantic_error_at(n, "semantic_check_for_local: FOR index type cannot be stepped")
 	end
-	bound := semantic_type_of_expr(ctx, n^.for_stmt.start_)
-	if bound <> nil and not semantic_for_type_is_stepable(ctx, bound) then
+	bound_ := semantic_type_of_expr(ctx, n^.for_stmt.start_)
+	if bound_ <> nil and not semantic_for_type_is_stepable(ctx, bound_) then
 		semantic_error_at(n^.for_stmt.start_, 
 			"semantic_check_for_local: FOR bound cannot be stepped")
 	end
-	bound := semantic_type_of_expr(ctx, n^.for_stmt.end_)
-	if bound <> nil and not semantic_for_type_is_stepable(ctx, bound) then
+	bound_ := semantic_type_of_expr(ctx, n^.for_stmt.end_)
+	if bound_ <> nil and not semantic_for_type_is_stepable(ctx, bound_) then
 		semantic_error_at(n^.for_stmt.end_,
 			"semantic_check_for_local: FOR bound cannot be stepped")
 	end
 end semantic_check_for_local
+
+
+(**
+ * Fold an optional loop BOUND. BOUND 0 is legal only on LOOP.
+ *)
+procedure semantic_bind_loop_bound(ctx: pTSemanticContext, n: pNode, expr: pNode)
+begin
+	var val: integer = 0
+
+	if n == nil or expr == nil then
+		return
+	end
+	semantic_resolve_expr(ctx, expr)
+	val := semantic_eval_const_expr(ctx, expr)
+	if val < 0 then
+		semantic_error_at(expr,
+			"semantic_bind_loop_bound: BOUND must be a non-negative integer")
+	end
+	if val == 0 and n^.kind <> NODE_LOOP then
+		semantic_error_at(expr,
+			"semantic_bind_loop_bound: BOUND 0 is legal only on LOOP")
+	end
+	if n^.kind == NODE_WHILE then
+		n^.while_stmt.has_bound := true
+		n^.while_stmt.bound_value := val as int
+	elsif n^.kind == NODE_REPEAT_UNTIL then
+		n^.repeat_until.has_bound := true
+		n^.repeat_until.bound_value := val as int
+	elsif n^.kind == NODE_LOOP then
+		n^.loop_stmt.has_bound := true
+		n^.loop_stmt.bound_value := val as int
+	end
+end semantic_bind_loop_bound
 
 
 (**
@@ -3963,6 +3996,7 @@ begin
 
 		case NODE_WHILE:
 			semantic_resolve_expr(ctx, n^.while_stmt.cond)
+			semantic_bind_loop_bound(ctx, n, n^.while_stmt.bound_expr)
 			for i := 1 to n^.while_stmt.invariant_count do
 				semantic_resolve_expr(ctx, n^.while_stmt.invariants[i-1])
 			end
@@ -3970,12 +4004,14 @@ begin
 
 		case NODE_REPEAT_UNTIL:
 			semantic_analyze_stmt_or_block(ctx, n^.repeat_until.body)
+			semantic_bind_loop_bound(ctx, n, n^.repeat_until.bound_expr)
 			semantic_resolve_expr(ctx, n^.repeat_until.cond)
 			for i := 1 to n^.repeat_until.invariant_count do
 				semantic_resolve_expr(ctx, n^.repeat_until.invariants[i-1])
 			end
 
 		case NODE_LOOP:
+			semantic_bind_loop_bound(ctx, n, n^.loop_stmt.bound_expr)
 			for i := 1 to n^.loop_stmt.invariant_count do
 				semantic_resolve_expr(ctx, n^.loop_stmt.invariants[i-1])
 			end

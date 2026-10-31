@@ -28,10 +28,10 @@ all: $(BIN)
 
 # Onetmodc run per library writes that stem's .c, .h, and .mh
 $(LIB_DIR)/%c $(LIB_DIR)/%.h $(LIB_DIR)/%.mh: $(LIB_DIR)/%.mc $(TMODC)
-		$(TMODC) $< -C
+		$(TMODC) $< -C -H -M
 
 $(PROG_C) $(PROG_H) &: $(PROG_MC) $(LIB_MHS) $(TMODC)
-	$(TMODC) $(PROG_MC) -C
+	$(TMODC) $(PROG_MC) -C -H
 
 $(BIN): $(PROG_C) $(LIB_CS) $(PROG_H) $(LIB_HS) | $(BIN_DIR)
 		$(CC) $(CFLAGS) -o $(BIN) $(PROG_C) $(LIB_CS)

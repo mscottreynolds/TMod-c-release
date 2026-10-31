@@ -93,6 +93,7 @@ export type TokenKind = enum
 	TOK_KEYWORD_FOR,
 	TOK_KEYWORD_TO,
 	TOK_KEYWORD_BY,
+	TOK_KEYWORD_BOUND,
 	TOK_KEYWORD_DO,
 	TOK_KEYWORD_DOWNTO,
 	TOK_KEYWORD_PROGRAM,
@@ -207,6 +208,7 @@ var keyword_table: array of TKeywordTable = {
 	{ "AS",         TOK_KEYWORD_AS         },
 	{ "ASSERT", 	TOK_KEYWORD_ASSERT     },
 	{ "BEGIN",      TOK_KEYWORD_BEGIN      },
+	{ "BOUND", 		TOK_KEYWORD_BOUND 	   },
 	{ "BREAK",      TOK_KEYWORD_BREAK      },
 	{ "BY",         TOK_KEYWORD_BY         },
 	{ "CASE",       TOK_KEYWORD_CASE       },
@@ -960,6 +962,7 @@ begin
 		case TOK_KEYWORD_FOR:       return "FOR"
 		case TOK_KEYWORD_TO:        return "TO"
 		case TOK_KEYWORD_BY:        return "BY"
+		case TOK_KEYWORD_BOUND:		return "BOUND"
 		case TOK_KEYWORD_DO:        return "DO"
 		case TOK_KEYWORD_DOWNTO:    return "DOWNTO"
 		case TOK_KEYWORD_PROGRAM:   return "PROGRAM"

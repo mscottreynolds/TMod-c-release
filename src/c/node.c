@@ -618,6 +618,13 @@ void node_print(const Node *n, int indent)
 
 			node_print(n->while_stmt.cond, indent + 1);
 
+			if (n->while_stmt.bound_expr != NULL) {
+				print_line_column(n);
+				node_indent_dots(indent + 1);
+				printf("BOUND\n");
+				node_print(n->while_stmt.bound_expr, indent + 2);
+			}
+
 			// DbC INVARIANTS
 			for (size_t i = 0; i < n->while_stmt.invariant_count; i++) {
 				print_line_column(n);
@@ -661,6 +668,13 @@ void node_print(const Node *n, int indent)
 			print_kind_line_column(n, kind_name);
 			printf("\n");
 
+			if (n->repeat_until.bound_expr != NULL) {
+				print_line_column(n);
+				node_indent_dots(indent + 1);
+				printf("BOUND\n");
+				node_print(n->repeat_until.bound_expr, indent + 2);
+			}
+
 			// DbC INVARIANTS
 			for (size_t i = 0; i < n->repeat_until.invariant_count; i++) {
 				print_line_column(n);
@@ -681,6 +695,13 @@ void node_print(const Node *n, int indent)
 			kind_name = "LOOP";
 			print_kind_line_column(n, kind_name);
 			printf("\n");
+
+			if (n->loop_stmt.bound_expr != NULL) {
+				print_line_column(n);
+				node_indent_dots(indent + 1);
+				printf("BOUND\n");
+				node_print(n->loop_stmt.bound_expr, indent + 2);
+			}
 
 			// DbC INVARIANTS
 			for (size_t i = 0; i < n->loop_stmt.invariant_count; i++) {

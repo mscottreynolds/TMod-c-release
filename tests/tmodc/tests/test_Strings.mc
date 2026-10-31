@@ -2,15 +2,17 @@ program tmodc.tests.test_Strings()
 
 import String, String::new, String::length, String::value
 	from tmodc.lib.Strings
-import printf
-	from "stdio.h"
+import TIO, TIO::WriteF, TIO::WriteLn
+	from tmodc.lib.IO
 
 begin
 	var s: String = Strings("Hello tmodc.lib.Strings.\n", 13)
+	var io: TIO = IO()
 
-	printf("%s", s.value())
+	io.WriteLn("With tmodc.lib.IO")
+	io.WriteF("%s", s.value())
 
 	s := String::new("Good bye.")
-	printf("%s\n,", s.value)
+	io.WriteF("%s\n,", s.value)
 end test_Strings
 

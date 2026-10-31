@@ -2,6 +2,15 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.5.232
+- **`BOUND` (item 25)** — optional on `WHILE`, `REPEAT`, and `LOOP`, before any `INVARIANT`. One const-expression. `FOR` does not take it. An omitted bound leaves the loop as it is. A second `BOUND` is a parse error.
+- The value is a compile-time integer. The largest trusted value is **2,147,483,647**. Default `integer` is C `int`. A larger literal is cut to 32 bits before the sign check. A negative value is an error. `0` is legal only on `LOOP` and emits no counter.
+- A positive bound counts body entries with `cardinal __bound_l{line}_c{column}`. The check is `assert(__bound < Nu)` at the start of the body, then the counter increments. The next entry aborts. `--assert-off` omits the counter. `--dbc-off` leaves it. `BOUND` is not a contract clause.
+- **Tests:** `tests/test_bound.mc`. `tests/test3_bound_while0.mc`, `tests/test3_bound_repeat0.mc`, `tests/test3_bound_neg.mc`, `tests/test3_bound_var.mc`.
+- **19 remainder** stays open. `const LIM = 4` then `bound LIM` still emits `static const integer LIM` and gcc warns that `LIM` is unused.
+- The user reported that all tests pass and that gcc, clang, and tcc each pass, and promoted **0.27.5.232**. Stem **0.27.5**. `Makefile` `VERSION` is **0.27.5**. Branch **`main`**. Build **232**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261030-2000.md`, and an append in `docs/project_bible.md`.
+
 ## Version 0.27.4.230
 - **`VAR` / `REF` designator** — a `VAR` or `REF` formal that codegen addresses requires a designator. A designator is a name, or that name through a field, an index, or a postfix `^`. Parentheses are skipped.
 - `semantic_formal_needs_address` uses the written formal's `is_pointer`, the same test as `codegen_args_needs_address`. `type Object = ^TObject` keeps `is_pointer` false, so `var self: Object` and `ref self: Object` both require a variable. A written `ref p: ^T` passes the pointer value.

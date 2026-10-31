@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.27.4
+VERSION 	:= 0.27.5
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
@@ -455,7 +455,6 @@ run-lib: lib $(TARGET)
 		$(TEST_BUILD_DIR)/$$base.c \
 		-L$(LIB_DIR) -l$(LIB_NAME) || exit 1; \
 	$(BIN_DIR)/$$base
-
 
 # Make all of the examples
 examples: tmodc $(EXAMPLES)
