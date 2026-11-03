@@ -26,8 +26,10 @@ import Node, pNode, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_FOR, NODE_WHILE, NODE_R
     from "node.h"
 import size_t 
     from "stddef.h"
-import snprintf,
+import snprintf, fprintf, stderr,
     from "stdio.h"
+import exit,
+    from "stdlib.h"
 import strncmp, memcmp,
     from "string.h"
 
@@ -46,7 +48,7 @@ import TSymbol
     from tmodc.symbol
 import SYM_KIND_LET, SYM_KIND_PARAM, 
     from tmodc.symkind
-import TType, pTType, type_c_spelling, 
+import TType, pTType, type_c_spelling, type_is_portable_rebindable,
     from tmodc.ttype
 import long_long, utils_parse_integer_literal,
     from tmodc.utils
@@ -792,7 +794,7 @@ begin
 end emit_let_binding_name
 
 
-(**
+(*
  * Codegen_param_is_by_ref
  *)
 function codegen_param_is_by_ref(param_decl: const ^Node): bool
@@ -804,7 +806,7 @@ begin
 end codegen_param_is_by_ref
 
 
-(**
+(*
  * True when C formal is T* alias of value T (not when formal type is already ^U).
  *)
 function codegen_param_needs_pointee_load(param_decl: const ^Node): bool
@@ -832,7 +834,7 @@ begin
 end codegen_param_needs_pointee_load
 
 
-(**
+(*
  * Formal for call arg index (0-based). Instance sugar: receiver is formal 0,
  * so args[i] maps to formals[i + 1].
  *)
@@ -864,7 +866,7 @@ begin
 end codegen_call_formal_for_arg
 
 
-(**
+(*
  * codgen_call_formal_receiver
  *)
 function codegen_call_formal_receiver(call: const ^Node): const ^Node
@@ -890,7 +892,7 @@ begin
 end codegen_call_formal_receiver
 
 
-(**
+(*
  * True when this actual should be emitted with a leading '&' for a VAR/REF formal
  *)
 function codegen_args_needs_address(formal: const ^Node, arg: const ^Node): bool
@@ -925,7 +927,7 @@ begin
 end codegen_args_needs_address
 
 
-(**
+(*
  * codegen_emit_call_arg_deref
  *)
 procedure codegen_emit_call_arg_deref(formal: const ^Node, arg: const ^Node,
@@ -987,6 +989,423 @@ end emit_let_ident
 
 
 (**
+ * True when this TYPE is emitted in the header (for_header) or in the .c.
+ * Matches thehistorical split: exported types go to the header, and a
+ * non-exported portable rebind (integer / cardinal / real / string) does too.
+ *)
+export function codegen_type_in_file(n: const ^Node, for_header: bool): bool
+begin
+    if n == nil or n.kind <> NODE_TYPE_DECL then
+        return false
+    end
+    if for_header then
+        if n.type_decl.is_exported then
+            return true
+        end
+        if n.type_decl.is_forward or n.type_decl.is_extern then
+            return false
+        end
+        if n.type_decl.name <> nil and
+                type_is_portable_rebindable(n.type_decl.name, n.type_decl.name_len) then
+            return true
+        end
+        return false
+    end
+    return not n.type_decl.is_exported
+end codegen_type_in_file
+
+
+(**
+ * A declaration that can use a type name. The type-order preamble runs
+ * just before the first one, after any leading imports and comments.
+ *)
+export function codegen_decl_opens_type_order(n: const ^Node): bool
+begin
+    if n == nil then
+        return false
+    end
+    if n.kind == NODE_TYPE_DECL or n.kind == NODE_PROC_DECL or
+            n.kind == NODE_FUNC_DECL or n.kind == NODE_VAR_DECL or
+            n.kind == NODE_CONST_DECL or n.kind == NODE_LET_DECL or
+            n.kind == NODE_DEFINE then
+        return true
+    end
+    return false
+end codegen_decl_opens_type_order
+
+
+function codegen_names_equal(a: const ^char, a_len: size_t,
+        b: const ^char, b_len: size_t): bool
+begin
+    if a == nil or b == nil or a_len <> b_len then
+        return false
+    end
+    return memcmp(a, b, a_len) == 0
+end codegen_names_equal
+
+
+(*
+ * Pointer alias: type P = ^Target. Not opaque, not an array, not a
+ * struct, union, enum, method type, FORWARD, or extern.
+ * The pointee name is defined_type.name (the name as written).
+ *)
+function codegen_type_is_pointer_alias(n: const ^Node): bool
+begin
+    var dt: const ^TType = nil
+
+    if n == nil or n.kind <> NODE_TYPE_DECL then
+        return false
+    end
+    if n.type_decl.is_forward or n.type_decl.is_extern then
+        return false
+    end
+    if n.type_decl.struct_body <> nil or n.type_decl.enum_type <> nil or
+            n.type_decl.method_type <> nil then
+        return false
+    end
+    dt := n.type_decl.defined_type
+    if dt == nil or dt.is_opaque or dt.is_array or not dt.is_pointer then
+        return false
+    end
+    if dt.name == nil or dt.name_len == 0 then
+        return false
+    end
+    return true
+end codegen_type_is_pointer_alias
+
+
+(*
+ * This file defines a struct or union body with this typedef name.
+ *)
+function codegen_file_has_aggregate_body(prog: const ^Node, for_header: bool,
+        name: const ^char, name_len: size_t): bool
+begin
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
+        return false
+    end
+    if name == nil or name_len == 0 then
+        return false
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if not codegen_type_in_file(d, for_header) then
+            continue
+        end
+        if d.type_decl.struct_body == nil or d.type_decl.is_extern then
+            continue
+        end
+        if codegen_names_equal(d.type_decl.name, d.type_decl.name_len, name, name_len) then
+            return true
+        end
+    end
+    return false
+end codegen_file_has_aggregate_body
+
+(*
+ * An incomplete struct or union tag in this file is enough for a pointer.
+ *)
+function codegen_aggregate_tag_ready(prog: const ^Node, for_header: bool,
+        name: const ^char, name_len: size_t): bool
+begin
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
+        return false
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if not codegen_type_in_file(d, for_header) then
+            continue
+        end
+        if d.type_decl.is_extern then
+            continue
+        end
+        if not codegen_names_equal(d.type_decl.name, d.type_decl.name_len, name, name_len) then
+            continue
+        end
+        if d.type_decl.struct_body <> nil or d.type_decl.is_forward then
+            return true
+        end
+    end
+    return false
+end codegen_aggregate_tag_ready
+
+
+(* 
+ * The written pointee is a C type already: a builtin, an import, an
+ * incomplete aggregate in this file, or a typedef this file has emitted.
+ *)
+function codegen_pointee_ready(prog: const ^Node, decl: const ^Node,
+        for_header: bool, flags: ^bool, cap: size_t): bool
+begin
+    var pname: const ^char = nil
+    var plen: size_t = 0
+    var i: size_t = 0
+    var d: const ^Node = nil
+    var blocked: bool = false
+    var dt: const ^TType = nil
+
+    if decl == nil or decl.type_decl.defined_type == nil or flags == nil then
+        return false
+    end
+    dt := decl.type_decl.defined_type
+    pname := dt.name
+    plen := dt.name_len
+    if codegen_aggregate_tag_ready(prog, for_header, pname, plen) then
+        return true
+    end
+    if prog == nil or prog.program_decl.decls == nil then
+        return true
+    end
+    for i := 1 to prog.program_decl.count do
+        if i - 1 >= cap then
+            return false
+        end
+        d := prog.program_decl.decls[i - 1]
+        if not codegen_type_in_file(d, for_header) then
+            continue
+        end
+        if not codegen_names_equal(d.type_decl.name, d.type_decl.name_len, pname, plen) then
+            continue
+        end
+        if d.type_decl.is_extern and not d.type_decl.is_extern_struct then
+            continue
+        end
+        if flags[i - 1] then
+            return true
+        end
+        blocked := true
+    end
+    return not blocked
+end codegen_pointee_ready
+
+
+procedure codegen_emit_incomplete(ctx: CodegenContext, for_header: bool,
+        is_union: bool, name: const ^char, name_len: size_t)
+begin
+    if ctx.out == nil or name == nil or name_len == 0 then
+        return
+    end
+    if for_header then
+        emit_indent(ctx.out, ctx.indent)
+        dynbuf_append(ctx.out, "/* == TYPE EXPORT ==== */\n")
+    end
+    emit_indent(ctx.out, ctx.indent)
+    if is_union then
+        dynbuf_append(ctx.out, "typedef union ")
+    else
+        dynbuf_append(ctx.out, "typedef struct ")
+    end
+    dynbuf_appendn(ctx.out, name, name_len)
+    dynbuf_append_char(ctx.out, ' ')
+    dynbuf_appendn(ctx.out, name, name_len)
+    dynbuf_append(ctx.out, ";\n")
+    if for_header then
+        dynbuf_append_char(ctx.out, '\n')
+    end
+end codegen_emit_incomplete
+
+
+procedure codegen_emit_alias(n: const ^Node, ctx: CodegenContext, for_header: bool)
+begin
+    if for_header then
+        emit_indent(ctx.out, ctx.indent)
+        dynbuf_append(ctx.out, "/* == TYPE EXPORT == */\n")
+    end
+    codegen_common_type_decl(n, ctx)
+    if for_header then
+        dynbuf_append_char(ctx.out, '\n')
+    end
+end codegen_emit_alias
+
+
+(*
+ * Emit pointer aliases whose pointee is ready, in source order.
+ * Repeat so type pp = ^p follows type p=^T.
+ *)
+procedure codegen_flush_pointer_aliases(prog: const ^Node, ctx: CodegenContext,
+        for_header: bool, flags: ^bool, cap: size_t)
+begin
+    var wave: size_t = 0
+    var i: size_t = 0
+    var count: size_t = 0
+    var progress: bool = false
+    var d: const ^Node = nil
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
+        return
+    end
+    if flags == nil then
+        return
+    end
+    count := prog.program_decl.count
+    for wave := 1 to count do
+        progress := false
+        for i := 1 to count do
+            if i - 1 >= cap then
+                return
+            end
+            d := prog.program_decl.decls[i - 1]
+            if not codegen_type_in_file(d, for_header) then
+                continue
+            end
+            if not codegen_type_is_pointer_alias(d) then
+                continue
+            end
+            if flags[i - 1] then
+                continue
+            end
+            if not codegen_pointee_ready(prog, d, for_header, flags, cap) then
+                continue
+            end
+            codegen_emit_alias(d, ctx, for_header)
+            flags[i - 1] := true
+            progress := true
+        end
+        if not progress then
+            break
+        end
+    end
+end codegen_flush_pointer_aliases
+
+
+(**
+ * Incomplete aggregate typedefs, then every pointer alias that can use them.
+ * flags has cap entries, indexed by declaration index. Cleared here.
+ *)
+export procedure codegen_emit_type_preamble(prog: const ^Node, ctx: CodegenContext,
+        for_header: bool, flags: ^bool, cap: size_t)
+begin
+    var i: size_t = 0
+    var count: size_t = 0
+    var d: const ^Node = nil
+    var is_union: bool = false
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or flags == nil or ctx.out == nil then
+        return
+    end
+    if prog.program_decl.decls == nil or prog.program_decl.count == 0 then
+        return
+    end
+    count := prog.program_decl.count
+    if count > cap then
+        fprintf(stderr, "ERROR: codegen_emit_type_preamble: too many declarations\n")
+        exit(1)
+    end
+    for i := 1 to count do
+        flags[i - 1] := false
+    end
+    for i := 1 to count do
+        d := prog.program_decl.decls[i - 1]
+        if not codegen_type_in_file(d, for_header) then
+            continue
+        end
+        if d.type_decl.is_extern then
+            continue
+        end
+        if d.type_decl.name == nil or d.type_decl.name_len == 0 then
+            continue
+        end
+        if d.type_decl.struct_body <> nil then
+            is_union := d.type_decl.struct_body^.struct_decl.is_union
+            codegen_emit_incomplete(ctx, for_header, is_union,
+                d.type_decl.name, d.type_decl.name_len)
+        elsif d.type_decl.is_forward then
+            flags[i - 1] := true
+            if not codegen_file_has_aggregate_body(prog, for_header,
+                    d.type_decl.name, d.type_decl.name_len) then
+                codegen_emit_incomplete(ctx, for_header, false,
+                    d.type_decl.name, d.type_decl.name_len)
+            end
+        end
+    end
+    codegen_flush_pointer_aliases(prog, ctx, for_header, flags, cap)
+end codegen_emit_type_preamble
+
+
+(**
+ * True when the walk must not emit this declaration. Already emitted,
+ * or a pointer alias whose pointee is not a C type yet.
+ *)
+export function codegen_type_order_skip(prog: const ^Node, n: const ^Node,
+        for_header: bool, flags: ^bool, cap: size_t, index: size_t): bool
+begin
+    if n == nil or n.kind <> NODE_TYPE_DECL or flags == nil then
+        return false
+    end
+    if not codegen_type_in_file(n, for_header) then
+        return false
+    end
+    if index >= cap then
+        return false
+    end
+    if flags[index] then
+        return true
+    end
+    if codegen_type_is_pointer_alias(n) and
+            not codegen_pointee_ready(prog, n, for_header, flags, cap) then
+        return true
+    end
+    return false
+end codegen_type_order_skip
+
+
+(**
+ * The walk just emitted this type. Pointer aliases waiting on it can follow.
+ *)
+export procedure codegen_type_order_after_type(prog: const ^Node, ctx: CodegenContext,
+        for_header: bool, flags: ^bool, cap: size_t, index: size_t)
+begin
+    if flags == nil or index >= cap then
+        return
+    end
+    flags[index] := true
+    codegen_flush_pointer_aliases(prog, ctx, for_header, flags, cap)
+end codegen_type_order_after_type
+
+
+(**
+ * A pointer alias in this file that was never emitted has no C order.
+ *)
+export procedure codegen_type_order_check(prog: const ^Node, for_header: bool,
+        flags: ^bool, cap: size_t)
+begin
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
+        return
+    end
+    if flags == nil then
+        return
+    end
+    for i := 1 to prog.program_decl.count do
+        if i - 1 >= cap then
+            return
+        end
+        d := prog.program_decl.decls[i - 1]
+        if not codegen_type_in_file(d, for_header) then
+            continue
+        end
+        if not codegen_type_is_pointer_alias(d) then
+            continue
+        end
+        if flags[i - 1] then
+            continue
+        end
+        fprintf(stderr, 
+            "ERROR: line %d col %d: codegen_type_order: pointer typedef has no C order\n",
+            d.token.line, d.token.column)
+        exit(1)
+    end
+end codegen_type_order_check
+
+
+(**
  * Emit a TYPE declaration.
  * Simple types for now.
  *)
@@ -998,9 +1417,9 @@ begin
 
     emit_indent(ctx.out, ctx.indent)
 
-    // type Name FORWARD -- incomplete tag+typedef so the name exists for ^Name
-    // and for a later complete struct. Method types that take Name by value
-    // must still be emitted after the complete definition (see codegen_c).
+    // type Name FORWARD.The union preable emits this typedef once.
+    // Kept for a direct call. A protype may use the incomplete name.
+    // The complete struct stays where it was written.
     if n.type_decl.is_forward then
         if n.type_decl.name == nil or n.type_decl.name_len == 0 then
             dynbuf_append(ctx.out, "/* type FORWARD (unnamed) */\n")
@@ -1209,23 +1628,13 @@ begin
         return
     end
 
-    // First forward declare the struct so self-referential pointers will work.
+    // Caller wrote "typedef ". The union preamble emits
+    // "typedef struct Name Name;" once, before any use.
     dynbuf_append(ctx.out, "struct ")
     if n.struct_decl.is_packed then
         dynbuf_append(ctx.out, "__attribute__((packed)) ")
     end
 
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
-    dynbuf_append_char(ctx.out, ' ')
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
-    dynbuf_append(ctx.out, ";\n")
-
-    // Now emit the regular definition.
-    emit_indent(ctx.out, ctx.indent)
-    dynbuf_append(ctx.out, "typedef struct ")
-    if n.struct_decl.is_packed then
-        dynbuf_append(ctx.out, "__attribute__((packed)) ")
-    end
     dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
     dynbuf_append(ctx.out, " {\n")
 
@@ -1293,16 +1702,9 @@ begin
         return
     end
 
-    // First forward declare the union so self-referential pointers will work.
+    // Caller wrote "typedef ". The union preamble emits
+    // "typedef union Name Name;" once, before any use.
     dynbuf_append(ctx.out, "union ")
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
-    dynbuf_append_char(ctx.out, ' ')
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
-    dynbuf_append(ctx.out, ";\n")
-
-    // Now emit the regular definition.
-    emit_indent(ctx.out, ctx.indent)
-    dynbuf_append(ctx.out, "typedef union ")
     dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
     dynbuf_append(ctx.out, " {\n")
 

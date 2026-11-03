@@ -54,6 +54,9 @@ import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_exp
     codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
     emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
     codegen_common_module_prototype, codegen_common_import, codegen_type_is_open_slice,
+    codegen_decl_opens_type_order, codegen_type_in_file,
+    codegen_emit_type_preamble, codegen_type_order_skip,
+    codegen_type_order_after_type, codegen_type_order_check,
     from tmodc.codegen.codegen_common
 import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
     codegen_dbc_emit_invariants_to_loop, codegen_dbc_emit_requires, 
@@ -603,7 +606,7 @@ begin
     end
 
     // If type is exported, skip because they will be exported in the definition header.
-    if not n.type_decl.is_exported then
+    if codegen_type_in_file(n, false) then
         codegen_common_type_decl(n, ctx)
     end
 
@@ -1193,6 +1196,300 @@ begin
 end codegen_c_module
 
 
+procedure codegen_c_emit_top(n: const ^Node, ctx: CodegenContext)
+begin
+    if n == nil then
+        return
+    end
+    if n.kind == NODE_IMPORT then
+        codegen_common_import(n, ctx)
+    else
+        codegen_c_stmt(n, ctx)
+    end
+end codegen_c_emit_top
+
+
+(*
+ * Top-level procedures and functions with a body get one prototype in the
+ * .c before any body. An exported body is already prototyped in the header.
+ * A FORWARD line completed by a later body is skipped so the prototype is
+ * not written twice. FORWARD with no body, and EXTERN, stay in place.
+ * A doc comment above a moved body, or above the program begin, is emitted
+ * with that body.
+ *)
+function codegen_c_text_equal(a: const ^char, a_len: size_t,
+        b: const ^char, b_len: size_t): bool
+begin
+    var i: size_t = 0
+
+    if a_len <> b_len then
+        return false
+    end
+    if a_len == 0 then
+        return true
+    end
+    if a == nil or b == nil then
+        return false
+    end
+    for i := 1 to a_len do
+        if a[i - 1] <> b[i - 1] then
+            return false
+        end
+    end
+    return true
+end codegen_c_text_equal
+
+
+function codegen_c_same_proc(a: const ^Node, b: const ^Node): bool
+begin
+    if a == nil or b == nil then
+        return false
+    end
+    if a.kind <> b.kind then
+        return false
+    end
+    return codegen_c_text_equal(a.proc_decl.name, a.proc_decl.name_len,
+            b.proc_decl.name, b.proc_decl.name_len) and
+        codegen_c_text_equal(a.proc_decl.method_owner, a.proc_decl.method_owner_len,
+            b.proc_decl.method_owner, b.proc_decl.method_owner_len)
+end codegen_c_same_proc
+
+
+function codegen_c_completing_body(prog: const ^Node, sig: const ^Node): const ^Node
+begin
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
+        return nil
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if d == nil or d == sig then
+            continue
+        end
+        if d.kind <> NODE_PROC_DECL and d.kind <> NODE_FUNC_DECL then
+            continue
+        end
+        if d.proc_decl.body == nil then
+            continue
+        end
+        if codegen_c_same_proc(sig, d) then
+            return d
+        end
+    end
+    return nil
+end codegen_c_completing_body
+
+
+function codegen_c_defer_proc(prog: const ^Node, d: const ^Node): bool
+begin
+    if d == nil then
+        return false
+    end
+    if d.kind <> NODE_PROC_DECL and d.kind <> NODE_FUNC_DECL then
+        return false
+    end
+    if d.proc_decl.is_extern then
+        return false
+    end
+    if d.proc_decl.body <> nil then
+        return true
+    end
+    return codegen_c_completing_body(prog, d) <> nil
+end codegen_c_defer_proc
+
+
+function codegen_c_prev_index(prog: const ^Node, index: size_t): size_t
+begin
+    var j: size_t = 0
+
+    if prog == nil or prog.program_decl.decls == nil or index <= 1 then
+        return 0
+    end
+    j := index - 1
+    while j >= 1 do
+        if prog.program_decl.decls[j - 1] <> nil then
+            return j
+        end
+        if j == 1 then
+            return 0
+        end
+        j := j - 1
+    end
+    return 0
+end codegen_c_prev_index
+
+
+function codegen_c_next_index(prog: const ^Node, index: size_t): size_t
+begin
+    var j: size_t = 0
+    var count: size_t = 0
+
+    if prog == nil or prog.program_decl.decls == nil then
+        return 0
+    end
+    count := prog.program_decl.count
+    j := index + 1
+    while j <= count do
+        if prog.program_decl.decls[j - 1] <> nil then
+            return j
+        end
+        j := j + 1
+    end
+    return 0
+end codegen_c_next_index
+
+
+function codegen_c_doc_before(prog: const ^Node, index: size_t): const ^Node
+begin
+    var prev: size_t = 0
+    var d: const ^Node = nil
+
+    prev := codegen_c_prev_index(prog, index)
+    if prev == 0 then
+        return nil
+    end
+    d := prog.program_decl.decls[prev - 1]
+    if d.kind <> NODE_DOC_COMMENT then
+        return nil
+    end
+    return d
+end codegen_c_doc_before
+
+
+function codegen_c_hold_doc(prog: const ^Node, index: size_t): bool
+begin
+    var d: const ^Node = nil
+    var next: size_t = 0
+
+    if prog == nil or prog.program_decl.decls == nil or index == 0 or
+            index > prog.program_decl.count then
+        return false
+    end
+    d := prog.program_decl.decls[index - 1]
+    if d == nil or d.kind <> NODE_DOC_COMMENT then
+        return false
+    end
+    next := codegen_c_next_index(prog, index)
+    if next == 0 then
+        return true
+    end
+    return codegen_c_defer_proc(prog, prog.program_decl.decls[next - 1])
+end codegen_c_hold_doc
+
+
+function codegen_c_body_comment(prog: const ^Node, index: size_t,
+        body: const ^Node): const ^Node
+begin
+    var direct: const ^Node = nil
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    direct := codegen_c_doc_before(prog, index)
+    if direct <> nil then
+        return direct
+    end
+    if prog == nil or prog.program_decl.decls == nil or body == nil then
+        return nil
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if d == nil or d == body then
+            continue
+        end
+        if d.kind <> NODE_PROC_DECL and d.kind <> NODE_FUNC_DECL then
+            continue
+        end
+        if d.proc_decl.body <> nil or d.proc_decl.is_extern then
+            continue
+        end
+        if not codegen_c_same_proc(body, d) then
+            continue
+        end
+        return codegen_c_doc_before(prog, i)
+    end
+    return nil
+end codegen_c_body_comment
+
+
+function codegen_c_entry_comment(prog: const ^Node): const ^Node
+begin
+    var i: size_t = 0
+    var last: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.program_decl.decls == nil then
+        return nil
+    end
+    for i := 1 to prog.program_decl.count do
+        if prog.program_decl.decls[i - 1] <> nil then
+            last := i
+        end
+    end
+    if last == 0 or not codegen_c_hold_doc(prog, last) then
+        return nil
+    end
+    d := prog.program_decl.decls[last - 1]
+    return d
+end codegen_c_entry_comment
+
+
+procedure codegen_c_emit_proc_prototypes(prog: const ^Node, ctx: CodegenContext)
+begin
+    var i: size_t = 0
+    var d: const ^Node = nil
+
+    if prog == nil or prog.program_decl.decls == nil or ctx.out == nil then
+        return
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if d == nil then
+            continue
+        end
+        if d.kind <> NODE_PROC_DECL and d.kind <> NODE_FUNC_DECL then
+            continue
+        end
+        if d.proc_decl.body == nil or d.proc_decl.is_extern or
+                d.proc_decl.is_exported then
+            continue
+        end
+        codegen_common_proc_or_func(d, ctx)
+        dynbuf_append(ctx.out, ";\n")
+    end
+end codegen_c_emit_proc_prototypes
+
+
+procedure codegen_c_emit_proc_bodies(prog: const ^Node, ctx: CodegenContext)
+begin
+    var i: size_t = 0
+    var note: const ^Node = nil
+    var d: const ^Node = nil
+
+    if prog == nil or prog.program_decl.decls == nil then
+        return
+    end
+    for i := 1 to prog.program_decl.count do
+        d := prog.program_decl.decls[i - 1]
+        if d == nil then
+            continue
+        end
+        if d.kind <> NODE_PROC_DECL and d.kind <> NODE_FUNC_DECL then
+            continue
+        end
+        if d.proc_decl.body == nil or d.proc_decl.is_extern then
+            continue
+        end
+        note := codegen_c_body_comment(prog, i, d)
+        if note <> nil then
+            emit_doc_comment_as_c(ctx.out, note)
+        end
+        codegen_c_emit_top(d, ctx)
+    end
+end codegen_c_emit_proc_bodies
+
+
 (**
  * Emit top-level program / module
  *)
@@ -1242,6 +1539,9 @@ begin
     // Declaration sequence. It is possible for decls to be NIL.
     if n.program_decl.decls <> nil then
         var i: size_t
+        var cap: size_t = 1024
+        var preamble_done: bool = false
+        var order_flags: array[1024] of bool
 
         // Emit imports and declarations.
         if ctx.debug_enabled then
@@ -1251,23 +1551,54 @@ begin
         for i := 1 to n.program_decl.count do
             var d: const ^Node = n.program_decl.decls[i-1]
 
-            if d.kind == NODE_IMPORT then
-                codegen_common_import(d, ctx)
-            else
-                codegen_c_stmt(d, ctx)
+            // if d.kind == NODE_IMPORT then
+            //     codegen_common_import(d, ctx)
+            // else
+            //     codegen_c_stmt(d, ctx)
+            if d == nil then
+                continue
+            end
+            if codegen_c_hold_doc(n, i) then
+                continue
+            end
+            if not preamble_done and not codegen_decl_opens_type_order(d) then
+                codegen_c_emit_top(d, ctx)
+                continue
+            end
+            if not preamble_done then
+                codegen_emit_type_preamble(n, ctx, false, @order_flags[0], cap)
+                preamble_done := true
+            end
+            if codegen_type_order_skip(n, d, false, @order_flags[0], cap, i - 1) then
+                continue
+            end
+            if codegen_c_defer_proc(n, d) then
+                continue
+            end
+            codegen_c_emit_top(d, ctx)
+            if d.kind == NODE_TYPE_DECL and codegen_type_in_file(d, false) then
+                codegen_type_order_after_type(n, ctx, false, @order_flags[0], cap, i - 1)
             end
         end
+        if not preamble_done then
+            codegen_emit_type_preamble(n, ctx, false, @order_flags[0], cap)
+        end
+        codegen_type_order_check(n, false, @order_flags[0], cap)
+        codegen_c_emit_proc_prototypes(n, ctx)
+        codegen_c_emit_proc_bodies(n, ctx)
         dynbuf_append_char(ctx.out, '\n')
     end
 
     // Program / module function.
     if n.program_decl.unit_kind == TOK_KEYWORD_PROGRAM then
         // Always create a main() wrapper.
+        emit_doc_comment_as_c(ctx.out, codegen_c_entry_comment(n))
         codegen_c_main_wrapper(n, ctx)
     elsif n.program_decl.unit_kind == TOK_KEYWORD_MODULE then
         if ctx.debug_enabled then
             dynbuf_append(ctx.out, "/********** Module Body **********/\n\n")
         end
+        emit_doc_comment_as_c(ctx.out, codegen_c_entry_comment(n))
         codegen_c_module(n, ctx)
     end
 end codegen_c_program

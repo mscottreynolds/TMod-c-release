@@ -2,6 +2,22 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.6.237
+- **Optional procedure `FORWARD`** — a top-level procedure or function may call one defined later in the same file. The keyword stays legal. Semantic analysis already registers every top-level procedure before bodies. Generated C writes one `static` prototype for each non-exported procedure or function that has a body, after the other declarations, then the bodies in source order. An exported procedure is prototyped in the `.h`. A `forward` line completed by a later body is not emitted again. A `forward` with no body, and `EXTERN`, stay where they are written. A function that returns a struct by value is emitted after that struct's body. `RECURSIVE` is unchanged. A header unit is unchanged.
+- A doc comment `(** … *)` above a moved body, or above the program or module `begin`, is emitted with that body. The program entry comment sits above `int modc(...)`. An ordinary `(* *)` comment is not a node and stays where the source walk leaves it. A comment above an import, a type, or `EXTERN` stays in place.
+- **Tests:** `tests/test_forward.mc` (`ProcB` calls `ProcA` with no `forward`; `ProcD() forward` is still completed by a later body). `tests/test_proc_order.mc` (`Use` calls `Make(): Box` before `type Box`; `Ping` and `Pong` call each other). `tests/test_type_forward.mc` drops `type TString forward`. The method type before the struct body stays.
+- `FORWARD` remains a reserved keyword. Removing it waits until existing `forward` lines are deleted. A lone signature with no `BEGIN` and no `EXTERN` in a program was left as it is.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.6.237**. Stem **0.27.6**. `Makefile` `VERSION` is **0.27.6**. Branch **`TMod-c_0.27`**. Build **237**. Commit `34763ce` is **0.27.5.234**. This promote is in the tree with these docs.
+- Docs this round: `README.md`, `CURRENT.md`, `changelog.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261102-1834.md`, and an append in `docs/project_bible.md`.
+
+## Version 0.27.5.234
+- **Struct and union typedef order (item 17)** — generated C emits one incomplete `typedef struct Name Name` or `typedef union Name Name` for each aggregate this file owns, then pointer aliases whose pointees are ready (`type p = ^T`, then `type pp = ^p`), then the remaining declarations in source order. The body keeps the tag (`typedef struct Name {`, `typedef union Name {`). `.mh` stays source order. The grammar is unchanged.
+- A same-file struct or union may omit `type Name FORWARD`. The marker remains an incomplete tag when the file has no body. `opaque` and `^opaque` are left in source order. A pointer to an enum, or a non-pointer alias, waits for that declaration. A by-value field of a later struct still needs that struct's body earlier in the source. A method type that names the struct before the body stays legal. `type A = ^B` and `type B = ^A` remains a semantic error.
+- The header uses the same order for the types it already emits. `extern` types are skipped. More than 1024 top-level declarations is `codegen_emit_type_preamble: too many declarations`.
+- **Tests:** `tests/test_type_order.mc`, `tests/test3_type_ptr_cycle.mc`. The same commit adds the `char` and `cardinal` loops in `tests/test_for.mc` and `tests/test3_for_index.mc` (`real` rejected). Those lock the **0.27.3.227** index gate.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.5.234**. Stem **0.27.5**. `Makefile` `VERSION` was **0.27.5**. Branch **`TMod-c_0.27`**. Build **234**. Commit `34763ce`.
+- Docs this round: with **0.27.6.237**.
+
 ## Version 0.27.5.232
 - **`BOUND` (item 25)** — optional on `WHILE`, `REPEAT`, and `LOOP`, before any `INVARIANT`. One const-expression. `FOR` does not take it. An omitted bound leaves the loop as it is. A second `BOUND` is a parse error.
 - The value is a compile-time integer. The largest trusted value is **2,147,483,647**. Default `integer` is C `int`. A larger literal is cut to 32 bits before the sign check. A negative value is an error. `0` is legal only on `LOOP` and emits no counter.

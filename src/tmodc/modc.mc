@@ -520,7 +520,7 @@ begin
 end get_file_size
 
 
-(**
+(*
  * Open input file, allocate space, read source, close output file. 
  * @param: input_file = Name of input file to read.
  * @return: Allocated pointer to source if successful. Nil if not successful.
@@ -555,7 +555,7 @@ end get_file_size
 end allocate_source_file
 
 
-(**
+(*
  * Generate code from AST.
  * @param context = context with ast, debug_enabled, and target previous set.
  * @param file_name = name of output file.
@@ -603,7 +603,7 @@ begin
 end generate_from_ast
 
 
-(**
+(*
  * Process one unit at a time.
  *)
 function process_one_unit(options: TCommandLine, input_file: pchar): int

@@ -26,8 +26,6 @@ import VERSION_BASE
 
 import pDynBuf, dynbuf_append_char, dynbuf_append, dynbuf_appendn 
 	from tmodc.dynbuf
-import type_is_portable_rebindable 
-	from tmodc.ttype
 import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
 	from tmodc.lexer.Lexer
 
@@ -35,6 +33,9 @@ import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c,
 	codegen_common_expr, codegen_common_type_decl, codegen_common_import, 
 	codegen_common_module_prototype, codegen_common_proc_or_func, 
 	codegen_emit_c_prelude, codegen_common_define,
+	codegen_decl_opens_type_order, codegen_type_in_file,
+	codegen_emit_type_preamble, codegen_type_order_skip,
+	codegen_type_order_after_type, codegen_type_order_check,
 	from tmodc.codegen.codegen_common
 
 
@@ -124,10 +125,7 @@ begin
 
 	// TYPE declaration exported
 	elsif n^.kind == NODE_TYPE_DECL then
-		if n^.type_decl.is_exported or
-				(n^.type_decl.name <> nil and
-					type_is_portable_rebindable(n^.type_decl.name, n^.type_decl.name_len) and
-					not n^.type_decl.is_forward and not n^.type_decl.is_extern) then
+		if codegen_type_in_file(n, true) then
 			emit_indent(ctx.out, ctx.indent)
 			dynbuf_append(ctx.out, "/* === TYPE EXPORT === */\n")
 			codegen_common_type_decl(n, ctx)
@@ -174,7 +172,22 @@ begin
 end emit_header_guard_name
 
 
-(**
+procedure codegen_header_emit_one(n: ^Node, ctx: CodegenContext)
+begin
+	if n == nil then
+		return
+	end
+	if n^.kind == NODE_IMPORT then
+		dynbuf_append(ctx.out, "/* === IMPORT === */\n")
+		codegen_common_import(n, ctx)
+		dynbuf_append_char(ctx.out, '\n')
+	else
+		codegen_header_emit_exported(n, ctx)
+	end
+end codegen_header_emit_one
+
+
+(*
  * Walk the AST, create header file, and emit only exported declarations.
  *)
 procedure codegen_header_program(n: const ^Node, ctx: CodegenContext)
@@ -242,16 +255,36 @@ begin
 	// Declaration sequence. It is possible for decls to be NULL.
 	if n^.program_decl.decls <> nil then
 		var i: size_t = 0
+		var cap: size_t = 1024
+		var preamble_done: bool = false
+		var order_flags: array[1024] of bool
+
 		for i := 1 to n^.program_decl.count do
 			let d: ^Node = n^.program_decl.decls[i-1]
-			if d^.kind == NODE_IMPORT then
-				dynbuf_append(ctx.out, "/* === IMPORT === */\n")
-				codegen_common_import(d, ctx)
-				dynbuf_append_char(ctx.out, '\n')
-			else
-				codegen_header_emit_exported(d, ctx)
+
+			if d == nil then
+				continue
+			end
+			if not preamble_done and not codegen_decl_opens_type_order(d) then
+				codegen_header_emit_one(d, ctx)
+				continue
+			end
+			if not preamble_done then
+				codegen_emit_type_preamble(n, ctx, true, @order_flags[0], cap)
+				preamble_done := true
+			end
+			if codegen_type_order_skip(n, d, true, @order_flags[0], cap, i - 1) then
+				continue
+			end
+			codegen_header_emit_one(d, ctx)
+			if d^.kind == NODE_TYPE_DECL and codegen_type_in_file(d, true) then
+				codegen_type_order_after_type(n, ctx, true, @order_flags[0], cap, i - 1)
 			end
 		end
+		if not preamble_done then
+			codegen_emit_type_preamble(n, ctx, true, @order_flags[0], cap)
+		end
+		codegen_type_order_check(n, true, @order_flags[0], cap)
 	end
 
 	// HEADER has no entry function. PROGRAM and MODULE still emit one.

@@ -5,8 +5,6 @@ import strlen from "string.h"
 import printf from "stdio.h"
 
 
-type TString forward
-
 type FCString = function(s: TString): const ^char
 type FLength  = function(s: TString): size_t
 

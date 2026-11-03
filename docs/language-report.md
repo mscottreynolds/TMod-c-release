@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.2** (see `CURRENT.md` for implementation status).  
-**Last updated:** 19 October 2026  
+**Version alignment:** Compiler **0.27.6** (see `CURRENT.md` for implementation status).  
+**Last updated:** 2 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -133,7 +133,7 @@ Integers are decimal digit sequences. Reals contain a decimal point. Strings use
 "\x1b[2J"
 ```
 
-Comments: `//` to end of line, or `(* … *)` / `(** … *)`. They may appear between symbols. They do not affect meaning.
+Comments: `//` to end of line, or `(* … *)` / `(** … *)`. They may appear between symbols. They do not affect meaning. A `(** … *)` doc comment is copied into the generated C. When a procedure body is emitted later than its place in the source, or when the comment sits above the program or module `begin`, that comment is emitted with the body (**0.27.6.237**). An ordinary `(* … *)` comment is not.
 
 ```mod-c
 var n: integer = 1    // working set
@@ -453,21 +453,23 @@ var p, q: ^Point
 
 ### 4.4 `FORWARD` and incomplete types
 
-- **`type T FORWARD`** — incomplete; completed later **in this unit**. *Implemented (0.24.17.135).*  
-- Postfix **`FORWARD`** on procedures/functions — mutual recursion. *Implemented.*  
+`FORWARD` remains a keyword. A same-file body may omit the marker. The old spelling still compiles.
+
+- **`type T FORWARD`** — an incomplete struct or union tag, completed later in this unit. *Implemented (0.24.17.135).* As of **0.27.5.234**, a struct or union whose body is in the same file may omit this line. Generated C emits one incomplete `typedef struct Name Name` or `typedef union Name Name` for each aggregate this file owns, then pointer aliases whose pointees are ready (`type p = ^T`, then `type pp = ^p`), then the remaining declarations in source order. The body keeps the tag (`typedef struct Name {`, `typedef union Name {`). `.mh` stays source order. A pointer to an enum, or a non-pointer alias, waits for that declaration. `opaque` and `^opaque` stay in source order. A by-value field of a later struct still needs that struct's body earlier in the source. A method type may name the struct before the body. `type A = ^B` together with `type B = ^A` remains a semantic error. `type Name FORWARD` with no body in the file remains the incomplete tag. `EXTERN TYPE` is unchanged.
+- Postfix **`FORWARD`** on a procedure or function stays legal. As of **0.27.6.237**, a later top-level procedure or function may be called without it. Semantic analysis registers every top-level procedure before bodies. Generated C writes one `static` prototype for each non-exported procedure or function that has a body, after the other declarations, then the bodies. An exported procedure is prototyped in the `.h`. A `forward` line that a later body completes is emitted once. A `forward` with no body, and `EXTERN`, stay where they are written. A function that returns a struct by value is emitted after that struct's body. `RECURSIVE` is unchanged. The program `begin` stays last. A header procedure is still a prototype (`EXTERN`, `FORWARD`, or no body).
 - Declaration blocks `forward … end` / `extern … end` — *parked indefinitely (19 October 2026).* Per-line `extern` and postfix `forward` stay.
+- Removing `FORWARD` from the keyword list is a later step, after existing `forward` lines have been deleted.
 
 **Examples:**
 
 ```mod-c
-type Node forward
+type pNode = ^TNode
 
-type Node = struct
+type TNode = struct
 	key: integer
-	next: ^Node
+	next: pNode
 end
 
-procedure A(n: integer) forward
 procedure B(n: integer)
 begin
 	if n > 0 then A(n - 1) end
@@ -477,6 +479,8 @@ begin
 	if n > 0 then B(n - 1) end
 end
 ```
+
+`type Node forward` before `type Node = struct`, and `procedure A(n: integer) forward` before the body, remain legal.
 
 ---
 
@@ -1637,6 +1641,8 @@ Do not maintain a second full EBNF elsewhere.
 | 26 October 2026 | **§7.1 / §11 `FOR` index type (0.27.3.227):** an omitted `for i =` type is the type of the start. A numeric literal stays `integer`. The declaring form accepts any type C can step with `++` or `--`, including `char`, `size_t`, `cardinal`, `byte`, an enumeration, and a pointer. `real`, `bool`, `string`, arrays, and structs are rejected. Both bounds use that test. |
 | 30 October 2026 | **§7.1 / §7.5 / §11 `BOUND` (0.27.5.232):** optional trip ceiling on `WHILE`, `REPEAT`, and `LOOP`. `0` is legal only on `LOOP`. The largest trusted value is 2,147,483,647. The counter is `cardinal`. `--dbc-off` leaves it. `--assert-off` omits it. |
 | 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
+| 2 November 2026 | **§4.4 struct and union order (0.27.5.234):** a same-file struct or union may omit `type Name FORWARD`. Generated C emits one incomplete tag per aggregate this file owns, then ready pointer aliases, then the rest in source order. The body keeps the tag. `.mh` stays source order. `type Name FORWARD` remains for an incomplete tag with no body. A pointer-alias cycle remains an error. |
+| 2 November 2026 | **§2.3 / §4.4 optional procedure `FORWARD` (0.27.6.237):** a later top-level procedure or function may be called without postfix `FORWARD`. The keyword stays. Generated C writes `static` prototypes for non-exported bodies, then the bodies. A doc comment above a moved body, or above the program `begin`, is emitted with that body. `EXTERN`, `RECURSIVE`, and a header prototype are unchanged. |
 
 ---
 

@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 19 October 2026
+**Last updated:** 2 November 2026
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -84,6 +84,9 @@ var-def     = "VAR" var-item { "," var-item } EOS ;
 
 type-item   = identifier "=" type-expression 
 			| identifier "FORWARD" ;
+    (* "FORWARD" (0.24.17.135) is an incomplete struct or union tag.
+       As of 0.27.5.234 a same-file body may omit it. The marker stays legal.
+       Generated C order: Language Report §4.4. *)
 const-item  = identifier [ ":" type-specifier ] "=" const-expression ;
 let-item    = identifier [ ":" type-specifier ] "=" ( initializer | expression ) ;
 var-item    = identifier [ ":" type-specifier ] [ "=" ( initializer | expression ) ] ;
@@ -194,6 +197,10 @@ extern-func-decl = "EXTERN" [ "EXPORT" ] "FUNCTION" identifier formal-parameters
 
 method-prototype = [ "RECURSIVE" ] ( "PROCEDURE" | "FUNCTION" )
     qualified-method-name formal-parameters [ "FORWARD" ] EOS ;
+    (* [ "FORWARD" ] stays optional in the grammar.
+       As of 0.27.6.237 a later top-level procedure or function may be
+       called without it. EXTERN, and a forward with no body, stay prototypes.
+       Language Report §4.4. *)
 
 qualified-method-name = [ type-identifier "::" ] identifier ;
 

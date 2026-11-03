@@ -26,6 +26,8 @@ begin
 	var shadow: integer = 40
 	var acc: integer = 0
 	var typed: integer = 0
+	var letters: integer = 0
+	var ch: char = '?'
 
 	for i := 1 to limit() do
 		printf("i = %d\n", i)
@@ -142,4 +144,33 @@ begin
 	end
 
 	printf("FOR local index test passed.\n")
+
+	for ch: char = 'A' to 'Z' do
+		letters := letters + 1
+	end
+	if letters <> 26 then
+		fprintf(stderr, "FAIL: char FOR count %d, expected 26\n", letters)
+		exit(1)
+	end
+
+	letters := 0
+	for letter: char = 'A' to 'Z' do
+		letters := letters + 1
+	end
+	if letters <> 26 then
+		fprintf(stderr, "FAIL: for letter: char = count %d, expected 26\n", letters)
+		exit(1)
+	end
+	if ch <> '?' then
+		fprintf(stderr, "FAIL: for letter: char = wrote ch\n")
+		exit(1)
+	end
+
+	for n: cardinal = 1 to 3 do
+		acc := acc + 1
+	end
+	if acc <> 19 then
+		fprintf(stderr, "FAIL: for n: cardinal = left acc %d, expected 19\n", acc)
+	end
+	printf("FOR index-type test passed.\n")
 end

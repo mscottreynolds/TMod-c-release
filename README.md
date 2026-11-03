@@ -180,7 +180,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.27.4 hello.mc -C hello.c
+./bin/modc.0.27.6 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```
