@@ -110,86 +110,86 @@ export type pCodegenContext = ^CodegenContext
 (**
  * Creae a child context for a nested node.
  *)
-export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^Node): CodegenContext forward
+// export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^Node): CodegenContext forward
 
 
 (* ===============================================
  * Low-level Emission Helpers
  * =============================================== *)
 
-export procedure emit_indent(out: pDynBuf, indent: int) forward
+// export procedure emit_indent(out: pDynBuf, indent: int) forward
 
-export function codegen_unit_binds_portable(prog: const ^Node, name: const ^char, name_len: size_t): bool forward
+// export function codegen_unit_binds_portable(prog: const ^Node, name: const ^char, name_len: size_t): bool forward
 
-export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^Node) forward
+// export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^Node) forward
 
-export procedure emit_return_type(out: pDynBuf, t: const ^TType) forward
+// export procedure emit_return_type(out: pDynBuf, t: const ^TType) forward
 
-export procedure emit_array_type(out: pDynBuf, t: const ^TType, name: const ^char, name_len: size_t) forward
+// export procedure emit_array_type(out: pDynBuf, t: const ^TType, name: const ^char, name_len: size_t) forward
 
-export procedure emit_type_specifier(out: pDynBuf, t: const ^TType, name: const ^char, length: size_t,
-        is_param: bool, is_var: bool, is_ref: bool, is_const: bool) forward
+// export procedure emit_type_specifier(out: pDynBuf, t: const ^TType, name: const ^char, length: size_t,
+        // is_param: bool, is_var: bool, is_ref: bool, is_const: bool) forward
 
 type pNode = ^Node
-export procedure emit_param_list(out: pDynBuf, params: ^pNode, count: size_t, is_parameter: bool, has_ellipsis: bool) forward
+// export procedure emit_param_list(out: pDynBuf, params: ^pNode, count: size_t, is_parameter: bool, has_ellipsis: bool) forward
 
-export function codegen_type_is_open_slice(t: const ^TType): bool forward
+// export function codegen_type_is_open_slice(t: const ^TType): bool forward
 
-export procedure emit_var_decl(out: pDynBuf, name: const ^char, name_len: size_t, t: const ^TType) forward
+// export procedure emit_var_decl(out: pDynBuf, name: const ^char, name_len: size_t, t: const ^TType) forward
 
-export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^Node) forward
+// export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^Node) forward
 
 
 (**
  * Emit a LET binding name: name_l{line}_c{col}
  * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
  *)
-export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t,
-                        binding_decl: const ^Node) forward
+// export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t,
+//                         binding_decl: const ^Node) forward
 
 (**
  * Emit an identifier expression (mangles LET uses via resolved_sym).
  *)
-export procedure emit_let_ident(out: pDynBuf, n: const ^Node) forward
+// export procedure emit_let_ident(out: pDynBuf, n: const ^Node) forward
 
 
 (* ============================================
  * Reusable Declaration Emitters
  * ============================================ *)
 
-export procedure codegen_common_type_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_type_decl(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_struct_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_struct_decl(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_union_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_union_decl(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_enum_type(n: const ^Node, type_name: const ^char, type_name_len: size_t,
-        ctx: CodegenContext) forward
+// export procedure codegen_common_enum_type(n: const ^Node, type_name: const ^char, type_name_len: size_t,
+//         ctx: CodegenContext) forward
 
-export procedure codegen_common_method_type(method: const ^Node, type_decl: const ^Node, 
-        ctx: CodegenContext) forward
+// export procedure codegen_common_method_type(method: const ^Node, type_decl: const ^Node, 
+//         ctx: CodegenContext) forward
 
-export procedure codegen_common_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_expr(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_emit_literal(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_emit_literal(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_array_literal(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_array_literal(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_preprocessor(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_preprocessor(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_field_access(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_field_access(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_sizeof_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_sizeof_expr(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_countof_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_countof_expr(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_inc_dec(n: const ^Node, ctx: CodegenContext, as_statement: bool) forward
+// export procedure codegen_common_inc_dec(n: const ^Node, ctx: CodegenContext, as_statement: bool) forward
 
-export procedure codegen_common_module_prototype(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_module_prototype(n: const ^Node, ctx: CodegenContext) forward
 
-export procedure codegen_common_import(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_import(n: const ^Node, ctx: CodegenContext) forward
 
 
 (* ============================================

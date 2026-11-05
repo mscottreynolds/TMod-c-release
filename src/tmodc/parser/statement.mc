@@ -254,7 +254,6 @@ begin
 
 	var import_token: TToken = p^.current
 	var imp: ^Node = nil
-	var has_item: bool = false
 
 	advance(p)
 
@@ -274,12 +273,13 @@ begin
 			break
 		end
 
+		if p^.current.kind <> TOK_IDENT then
+			error_at(p, "parse_import_stmt: expected identifier in IMPORT", true)
+		end
+
 		item := parse_import_item(p)
 		if item == nil then
-			if not has_item then
-				error_at(p, "parse_import_stmt: expected identifier in IMPORT", true)
-			end
-			break
+			error_at(p, "parse_import_stmt: expected identifier in IMPORT", true)
 		end
 
 		arena_append_ptr(p^.arena,
@@ -287,7 +287,14 @@ begin
 						@imp^.import_stmt.count,
 						@imp^.import_stmt.capacity,
 						item)
-		match(p, TOK_COMMA)
+
+		skip_layout_breaks(p)
+		if check(p, TOK_KEYWORD_FROM) or isEOF(p) then
+			break
+		end
+		if not match(p, TOK_COMMA) then
+			error_at(p, "parse_import_stmt: expected ',' or FROM in IMPORT", true)
+		end
 	end
 
 	// Required FROM import-source
@@ -379,7 +386,7 @@ begin
 
 	return item
 
-	ensure item^.kind == NODE_IMPORT_ITEM
+	ensure item == nil or item^.kind == NODE_IMPORT_ITEM
 end parse_import_item
 
 

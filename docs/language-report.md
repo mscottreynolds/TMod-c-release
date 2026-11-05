@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.27.6** (see `CURRENT.md` for implementation status).  
-**Last updated:** 2 November 2026  
+**Last updated:** 3 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -208,23 +208,23 @@ A header writes no unit prototype. `BEGIN` anywhere in a header is an error. A p
 
 Optional `end` tag may repeat the unit or procedure name (`end Demo`, `end Type::name`).
 
-### 3.1.1 Package path *Implemented (0.26.12.212)*
+### 3.1.1 Package path *Implemented (0.26.12.212); filename omitted from the root match (0.27.6.239)*
 
 A `PROGRAM`, `MODULE`, or `HEADER` name may be a qualident. The last identifier is the unit name. The identifiers before it are the package path, with no trailing dot. `module tmodc.lib.String()` is the unit `String`, and its entry is `String()`. `header tmodc.lib.tmodc` is the unit `tmodc` and has no entry. `module String()` has an empty path. The optional `end` tag repeats the unit name (`end String`), not the whole qualident.
 
 The C function, `@module`, and the auto-bound import entry use that unit name. `import String::new from tmodc.lib.String` binds `String::new` and, when `String` is not already in scope, the entry `String`. A second unit whose unit name is also `String` does not bind another `String`.
 
-The source file is the directory form `tmodc/lib/String.mc`. Unless `-b` or an explicit `-C` / `-H` / `-M` path is set, the output stem is that filename's stem (`String`), so `-C` writes `String.c` and `String.h` beside the source. `-M` writes `String.mh` beside the source. `-C` does not write the `.mh` (0.27.2.222). The unit's own `#include` and header guard use the basename of the `.h` file. A character in that stem that is not an identifier character becomes `_`. The example includes `"String.h"` and guards `MODC_MODULE_String_H`. A header unit guards `MODC_HEADER_…_H`. The C function remains `String`. Two linked units with that unit name define the same C function.
+A finished source file is the directory form `tmodc/lib/String.mc`, and its export table is `tmodc/lib/String.mh`. The compiler does not check the compiling file's name against the unit name. Unless `-b` or an explicit `-C` / `-H` / `-M` path is set, the output stem is that filename's stem (`String`), so `-C` writes `String.c` and `String.h` beside the source. `-M` writes `String.mh` beside the source. `-C` does not write the `.mh` (0.27.2.222). The unit's own `#include` and header guard use the basename of the `.h` file. A character in that stem that is not an identifier character becomes `_`. The example includes `"String.h"` and guards `MODC_MODULE_String_H`. A header unit guards `MODC_HEADER_…_H`. The C function remains `String`. Two linked units with that unit name define the same C function.
 
 A quoted import path is the written file. A relative quote is joined only to the directory that contains the compiling `.mc`. A quote that does not end in `.mh` is a C `#include`, and the C compiler searches its include paths. A quote that ends in `.mh` is read as that path, and the `#include` is the same path with `.h`.
 
-An unquoted qualident has one candidate. `from something.else.Something` is the file `<root>/something/else/Something.mh`. There is no flat `something.else.Something.mh` probe, and a mixed spelling such as `something.else/Something.mh` is not a candidate. A qualident with no dot is `<root>/Name.mh`. The paired `.h` is that path with `.h`, spelled relative to the compiling `.mc`. An importer at `tmodc/tests/test_String.mc` includes `"../lib/String.h"`.
+An unquoted qualident has one candidate. `from something.else.Something` is the file `<root>/something/else/Something.mh`. The last identifier is that filename, and the extension is `.mh`. There is no flat `something.else.Something.mh` probe, and a mixed spelling such as `something.else/Something.mh` is not a candidate. A qualident with no dot is `<root>/Name.mh`. The paired `.h` is that path with `.h`, spelled relative to the compiling `.mc`. An importer at `tmodc/tests/test_String.mc` includes `"../lib/String.h"`. The compiler does not open another suffix for that designator. `from tmodc.arena` opens `<root>/tmodc/arena.mh`, which is the export table beside a finished `tmodc/arena.mc`.
 
-The root comes from the importing unit's declaration and its source path.
+The root comes from the importing unit's declared package path and the directory that contains the source file. As of **0.27.6.239** the filename is not used.
 
-- The source path ends in the directory form of the declared qualident (`…/tmodc/lib/String.mc` for `module tmodc.lib.String`, using the source file's extension). The root is the directory above `tmodc/`. A path that is exactly that form, with nothing before it, has an empty root (the current directory). A leading `/` at that boundary means the root is `/`.
-- Any other source path, including a flat dotted filename such as `tmodc.lib.String.mc`, uses the directory that contains the file. That path is not peeled.
-- A declaration with no prefix (`module String`, and the compiler's own `src/*.mc`) uses the directory that contains the source file.
+- The directory ends in the package path (`…/tmodc/lib` for `module tmodc.lib.String`). The root is the directory above `tmodc/`. A directory that is exactly that path, with nothing before it, has an empty root (the current directory). A leading `/` at that boundary means the root is `/`. `src/tmodc/node.mc` and `src/tmodc/node.mc.inprogress`, both declared `module tmodc.node`, have the same root, `src`.
+- Any other directory, including a flat dotted filename such as `tmodc.lib.String.mc`, uses the directory that contains the file. That path is not peeled.
+- A declaration with no prefix (`module String`) uses the directory that contains the source file.
 
 The search does not walk to the filesystem root, and it does not also look beside a nested source file. From `tmodc/lib/String.mc`, `from something.else.Something` does not open `tmodc/lib/something/else/Something.mh`. A program with no prefix, compiled from `tests/`, still resolves `from fixtures.minimod` as `tests/fixtures/minimod.mh`.
 
@@ -235,7 +235,7 @@ On 13 October 2026 the lock was two candidates, flat file then directory, flat w
 - **`.mh` / `.h` split:** `.mh` carries TMod-c export semantics; `.h` is the C ABI. Generated C **`#include`s `.h` only**, never `.mh`.  
 - **`IMPORT … FROM`:**  
   - **Quoted string** — foreign/C path or explicit path (`"stdio.h"`, `"path.mh"`).  
-  - **Qualident** — TMod-c module. Dots become directory separators under the importing unit's package root (§3.1.1). *Directory form implemented (0.26.12.212).* A unit with no package prefix still resolves beside the compiling file, which is what 0.24.5 did for every unquoted import.  
+  - **Qualident** — TMod-c module. Dots become directory separators under the importing unit's package root (§3.1.1). The root is the directory above the compiling file's package path. The compiling file's name is not used. *Directory form implemented (0.26.12.212). Filename omitted from the root match (0.27.6.239).* A unit with no package prefix still resolves beside the compiling file, which is what 0.24.5 did for every unquoted import.  
   - **Import items:** plain names, or **`Type::name`** for type-bound methods (*0.25.2*); lookup uses C mangling `Type__name`.  
 - **Include-only:** `IMPORT FROM source` with no item list — `#include` only, no TMod-c names.  
 - **Module entry (7a, 0.25.3.150):** a named import from an `.mh` also binds the `@module` unit-entry export. Include-only does not. `PROGRAM` names are not bound. A `HEADER` unit writes `@module` and does not write a unit-entry export, so nothing is bound.  
@@ -1573,6 +1573,8 @@ Do not maintain a second full EBNF elsewhere.
 | **[`parameter-passing.md`](parameter-passing.md)** | Parameter Passing Rules |
 | **[`../CURRENT.md`](../CURRENT.md)** | What the **compiler** is doing this week; TODOs; version |
 | **[`../changelog.md`](../changelog.md)** | Version-oriented change list |
+| **[`../README.md`](../README.md)** | Main README |
+| **[`../LICENSE.md`](../LICENSE.md)** | MIT/Apache-2 License |
 | **`grok_report-*.md`**, **`project_bible.md`** | Session history — **not** daily language reference |
 
 `grammar.md` is a stub pointing here. Filenames use hyphens (`language-report.md`, `syntax-ebnf.md`).
@@ -1643,6 +1645,7 @@ Do not maintain a second full EBNF elsewhere.
 | 20 October 2026 | **§3.1 / §3.1.1 `.mh` only with `-M` (0.27.2.222):** `-C` writes the `.c` and the companion `.h`. It does not write an `.mh`. `-M` writes the export table. A header unit still writes no `.c` file. |
 | 2 November 2026 | **§4.4 struct and union order (0.27.5.234):** a same-file struct or union may omit `type Name FORWARD`. Generated C emits one incomplete tag per aggregate this file owns, then ready pointer aliases, then the rest in source order. The body keeps the tag. `.mh` stays source order. `type Name FORWARD` remains for an incomplete tag with no body. A pointer-alias cycle remains an error. |
 | 2 November 2026 | **§2.3 / §4.4 optional procedure `FORWARD` (0.27.6.237):** a later top-level procedure or function may be called without postfix `FORWARD`. The keyword stays. Generated C writes `static` prototypes for non-exported bodies, then the bodies. A doc comment above a moved body, or above the program `begin`, is emitted with that body. `EXTERN`, `RECURSIVE`, and a header prototype are unchanged. |
+| 3 November 2026 | **§3.1.1 / §3.2 package root (0.27.6.239):** the directory that contains the compiling file is matched to the declared package path. The filename is not part of that match. `src/tmodc/node.mc.inprogress` declared `module tmodc.node` has the same root as `src/tmodc/node.mc`. An unquoted import still names one file, `<root>/tmodc/arena.mh`, beside a finished `tmodc/arena.mc`. |
 
 ---
 

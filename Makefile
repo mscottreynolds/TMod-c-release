@@ -262,22 +262,31 @@ dist-clean:
 # Distribution directory. Run all tests first.
 dist: test-all tmodc
 	@mkdir -p $(DIST_DIR)
+	@mkdir -p $(DIST_DIR)/docs
 	@cp -v $(TARGET) $(DIST_DIR)
 	@cp -v $(BIN_DIR)/tmodc $(DIST_DIR)/tmodc
-	@cp -v $(DOC_DIR)/syntax-ebnf.md $(DIST_DIR)/grammar.md
-	@cp -v $(DOC_DIR)/language-report.md $(DIST_DIR)
-	@cp -v README.md $(DIST_DIR)
+	@cp -v $(DOC_DIR)/language-report.md $(DIST_DIR)/docs
+	@cp -v $(DOC_DIR)/parameter-passing.md $(DIST_DIR)/docs
+	@cp -v $(DOC_DIR)/syntax-ebnf.md $(DIST_DIR)/docs
+	@cp -v changelog.md $(DIST_DIR)
+	@cp -v CURRENT.md $(DIST_DIR)
 	@cp -v LICENSE.md $(DIST_DIR)
+	@cp -v README.md $(DIST_DIR)
 	@echo "Dist complete"
 
 # Install into INSTALL_DIR
 install:
 	@mkdir -p $(INSTALL_DIR)
+	@mkdir -p $(INSTALL_DIR)/docs
 	@cp -v $(DIST_DIR)/modc.$(VERSION) $(INSTALL_DIR)/
 	@chmod +x $(INSTALL_DIR)/modc.$(VERSION)
-	@cp -v $(DIST_DIR)/grammar.md $(INSTALL_DIR)
-	@cp -v $(DIST_DIR)/README.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/docs/language-report.md $(INSTALL_DIR)/docs
+	@cp -v $(DIST_DIR)/docs/parameter-passing.md $(INSTALL_DIR)/docs
+	@cp -v $(DIST_DIR)/docs/syntax-ebnf.md $(INSTALL_DIR)/docs
+	@cp -v $(DIST_DIR)/changelog.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/CURRENT.md $(INSTALL_DIR)
 	@cp -v $(DIST_DIR)/LICENSE.md $(INSTALL_DIR)
+	@cp -v $(DIST_DIR)/README.md $(INSTALL_DIR)
 	@cp -v $(DIST_DIR)/tmodc $(INSTALL_DIR)/tmodc
 	@chmod +x $(INSTALL_DIR)/tmodc
 	@echo "Install complete"

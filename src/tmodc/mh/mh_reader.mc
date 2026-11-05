@@ -223,14 +223,14 @@ begin
 end mh_path_is_mh
 
 
-export function mh_resolve_import_path(source_path: const ^char,
-		package_path: const ^char, package_path_len: size_t,
-		unit_name: const ^char, unit_name_len: size_t,
-		from_path: const ^char, from_len: size_t,
-		out: ^char, out_cap: size_t): bool forward
+// export function mh_resolve_import_path(source_path: const ^char,
+// 		package_path: const ^char, package_path_len: size_t,
+// 		unit_name: const ^char, unit_name_len: size_t,
+// 		from_path: const ^char, from_len: size_t,
+// 		out: ^char, out_cap: size_t): bool forward
 
-function mh_include_from_mh(source_path: const ^char, resolved: const ^char,
-		out: ^char, out_cap: size_t): bool forward
+// function mh_include_from_mh(source_path: const ^char, resolved: const ^char,
+// 		out: ^char, out_cap: size_t): bool forward
 
 (**
  * Format the C #include path for a Mod-c import source (.mh symtab world).
@@ -374,61 +374,21 @@ end mh_dirname_len
 
 
 (**
- * package + '.' + unit, or unit alone. Writes a trailing NUL.
- *)
-function mh_build_qualident(package_path: const ^char, package_path_len: size_t,
-		unit_name: const ^char, unit_name_len: size_t,
-		out: ^char, out_cap: size_t, out_len: ^size_t): bool
-begin
-	var n: size_t = 0
-
-	if unit_name == nil or unit_name_len == 0 or
-			out == nil or out_len == nil or out_cap == 0 then
-		return false
-	end
-	if package_path_len > 0 then
-		if package_path == nil then
-			return false
-		end
-		n := package_path_len + 1 + unit_name_len
-	else
-		n := unit_name_len
-	end
-	if n + 1 > out_cap then
-		return false
-	end
-	if package_path_len > 0 then
-		memcpy(out, package_path, package_path_len)
-		out[package_path_len] := '.'
-		memcpy(out + package_path_len + 1, unit_name, unit_name_len)
-	else
-		memcpy(out, unit_name, unit_name_len)
-	end
-	out[n] := '\0'
-	out_len^ := n
-	return true
-end mh_build_qualident
-
-
-(**
  * Package root as a prefix of source_path. Length 0 means the current directory.
- * Directory layout (.../tmodc/lib/String.mc for tmodc.lib.String) peels to the
- * directory above tmodc/. Any other file uses the directory that contains it.
+ * The directory that contains the file is matched to the package path
+ * (tmodc/lib for module tmodc.lib.String). The filename is not part of the match.
+ * The root is the directory above that package path.
+ * Any other file uses the directory that contains it.
  *)
 function mh_package_root_len(source_path: const ^char, 
 		package_path: const ^char, package_path_len: size_t,
 		unit_name: const ^char, unit_name_len: size_t,
 		root_len: ^size_t): bool
 begin
-	var qual: array[1024] of char
-	var qual_len: size_t = 0
 	var form: array[2048] of char
 	var form_len: size_t = 0
-	var path_len: size_t = 0
-	var off: size_t = 0
+	var dir_len: size_t = 0
 	var i: size_t = 0
-	var last_dot: size_t = 0
-	var ext_len: size_t = 0
 	var cut: size_t = 0
 
 	if root_len == nil then
@@ -438,68 +398,45 @@ begin
 	if source_path == nil or source_path[0] == '\0' then
 		return true
 	end
+	dir_len := mh_dirname_len(source_path)
 	if package_path_len == 0 or package_path == nil or
 			unit_name == nil or unit_name_len == 0 then
-		root_len^ := mh_dirname_len(source_path)
+		root_len^ := dir_len
 		return true
 	end
-	if not mh_build_qualident(package_path, package_path_len,
-			unit_name, unit_name_len, @qual[0], sizeof(qual), @qual_len) then
-		return false
+	if package_path_len + 1 > sizeof(form) then
+		root_len^ := dir_len
+		return true
 	end
 
-	path_len :=strlen(source_path)
-	off := 0
 	i := 0
-	while i < path_len do
-		if source_path[i] == '/' then
-			off := i + 1
+	while i < package_path_len do
+		var c: char = package_path[i]
+		if c == '.' then
+			c := '/'
 		end
-		i := i + 1
+		form[i] := c
+		inc(i)
 	end
-	last_dot := path_len
-	i := off
-	while i < path_len do
-		if source_path[i] == '.' then
-			last_dot := i
-		end
-		i := i + 1
+	form_len := package_path_len
+	form[form_len] := '\0'
+
+	if dir_len == form_len and memcmp(source_path, @form[0], form_len) == 0 then
+		root_len^ := 0
+		return true
 	end
-	if last_dot < path_len then
-		ext_len := path_len - last_dot
+	if dir_len > form_len and
+			source_path[dir_len - form_len - 1] == '/' and
+			memcmp(source_path + (dir_len - form_len), @form[0], form_len) == 0 then
+		cut := dir_len - form_len - 1
+		if cut == 0 then
+			root_len^ := 1
+		else
+			root_len^ := cut
+		end
+		return true
 	end
-	if qual_len + ext_len + 1 <= sizeof(form) then
-		i := 0
-		while i < qual_len do
-			var c: char = qual[i]
-			if c == '.' then
-				c := '/'
-			end
-			form[i] := c
-			i := i + 1
-		end
-		if ext_len > 0 then
-			memcpy(@form[qual_len], source_path + last_dot, ext_len)
-		end
-		form_len := qual_len + ext_len
-		form[form_len] := '\0'
-		if path_len == form_len and memcmp(source_path, @form[0], form_len) == 0 then
-			root_len^ := 0
-			return true
-		end
-		if path_len > form_len and
-				source_path[path_len - form_len - 1] == '/' and
-				memcmp(source_path + (path_len - form_len), @form[0], form_len) == 0 then
-			cut := path_len - form_len - 1
-			if cut == 0 then
-				root_len^ := 1
-			else
-				root_len^ := cut
-			end
-			return true
-		end
-	end
-	root_len^ := mh_dirname_len(source_path)
+	root_len^ := dir_len
 	return true
 end mh_package_root_len
 

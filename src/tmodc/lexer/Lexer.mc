@@ -284,7 +284,7 @@ var keyword_table: array of TKeywordTable = {
  * @param lexer 			Lexer state to initialize
  * @param source 			Null-terminated source code buffer.
  *)
-export procedure TLexer::init(ref lexer: TLexer, source: const ^char) forward
+// export procedure TLexer::init(ref lexer: TLexer, source: const ^char) forward
 
 
 (**
@@ -292,20 +292,20 @@ export procedure TLexer::init(ref lexer: TLexer, source: const ^char) forward
  * Advance internal position; returns TOK_EOF when exhausted.
  * Sets error_msg on TOK_ERROR.
  *)
-export function TLexer::next(ref lexer: TLexer): TToken forward
+// export function TLexer::next(ref lexer: TLexer): TToken forward
 
 
 (**
  * Debug: return human-readable string for a TokenKind.
  *)
-export function TokenKind::string(k: TokenKind): const ^char forward
+// export function TokenKind::string(k: TokenKind): const ^char forward
 
 
 (**
  * Debug print a token (kind, location, text snippet).
  * For debugging and error reporting.
  *)
-export procedure TToken::print(ref tok: TToken) forward
+// export procedure TToken::print(ref tok: TToken) forward
 
 
 (* Number of entries in keyword list. *)

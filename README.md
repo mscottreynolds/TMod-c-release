@@ -91,53 +91,24 @@ Features (Early Design Goals)
 
 Status
 ------
-This is an early-stage personal project (started around February 2026). The language is under active design and partial implementation. Expect frequent changes to syntax and semantics as the grammar and compiler evolve.
+This is an early-stage personal project (started around February 2026). The language is under active design and implementation. Expect frequent changes to syntax and semantics as the grammar and compiler evolve.
 
-**Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make tar` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
+**Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
-- **0.27.4.228** (26 October 2026): anonymous nested `UNION`. A field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate. C is an unnamed `union { ... };`. `.mh` spells `union (a: Arm, b: integer)`. `@format` stays 1. Tests `tests/test_anon_union.mc` and `tests/test3_anon_union.mc`. Branch **`main`**. Stem **0.27.4**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`. `src/c/node.c` and `src/c/node.h` stay hand-written. The port is unblocked
-- **0.27.3.227** (26 October 2026): `FOR` index type. On `for i =`, an omitted type is the type of the start. A numeric literal stays `integer`. The declaring form accepts a type C can step with `++` or `--`. Branch **`main`**. Stem **0.27.3**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
+- **0.27.6.237** (2 November 2026): `forward` keyword is optional.
+- **0.27.5.232** (30 October 2026):  **`BOUND`** — optional on `WHILE`, `REPEAT`, and `LOOP`, before any `INVARIANT`. One const-expression. `FOR` does not take it. An omitted bound leaves the loop as it is. 
+- **0.27.4.228** (26 October 2026): anonymous nested `UNION`. A field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate. C is an unnamed `union { ... };`. `.mh` spells `union (a: Arm, b: integer)`. `@format` stays 1. Tests `tests/test_anon_union.mc` and `tests/test3_anon_union.mc`. Branch **`main`**. Stem **0.27.4**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`. `src/c/node.c` and `src/c/node.h` stay hand-written. The port is unblocked
+- **0.27.3.227** (26 October 2026): `FOR` index type. On `for i =`, an omitted type is the type of the start. A numeric literal stays `integer`. The declaring form accepts a type C can step with `++` or `--`. Branch **`main`**. Stem **0.27.3**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
 - **0.27.2.226**: `src/tmodc/lib/` wrappers `String`, `Cardinal`, `Integer`, and `Real`. Each module entry returns a small struct. Commit `e4eb090`. Stem **0.27.2**
-- **0.27.2.225**: `FOR` end temporary has the index type. The test is a direct `<=` or `>=`. The user reported `make clean-all all test-all selfhost bootstrap promote` clean, with no warnings. Branch **`main`**. Stem **0.27.2**
+- **0.27.2.225**: `FOR` end temporary has the index type. The test is a direct `<=` or `>=`. Reported `make clean-all all test-all selfhost bootstrap promote` clean, with no warnings. Branch **`main`**. Stem **0.27.2**
 - **0.27.2.223**: compiler `.mc` and `.mh` moved under `src/tmodc/` as package `tmodc`. Generated C mirrors that path under `src/c/tmodc/`. Hand-written `node.c`, `node.h`, and `version.h` stay in `src/c/`. Commit `3c2a043`. Stem **0.27.2**
-- **0.27.2.222** (20 October 2026): generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`. `-M` is required to write an `.mh`. `make version` writes `src/c/version.h`. Branch **`main`**. Stem **0.27.2**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
-- **0.27.2.221** (19 October 2026): dual `FOR`. `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. Existing `for i :=` loops stay. Branch **`TMod-c_0.27`**. Stem **0.27.2**. The user reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
-- **0.27.1.219** (19 October 2026): slice formals. An open-array parameter (`T[]`, `array[] of T`, `^char[]`, a one-step alias) lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it. Hosted `main` stays `(int argc, char **argv)`. `program modc(args: ^char[])` and `program kilo(args: ^char[])` are called as `name(argv, argc)`. Fixed arrays, `^T`, and `^array[] of T` stay one parameter. A module `main` uses `^pchar`. Branch **`TMod-c_0.27`**. The user reported that self-host succeeds and that gcc, clang, and tcc each pass
+- **0.27.2.222** (20 October 2026): generated and hand-written C live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`. `-M` is required to write an `.mh`. `make version` writes `src/c/version.h`. Branch **`main`**. Stem **0.27.2**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
+- **0.27.2.221** (19 October 2026): dual `FOR`. `for i :=` assigns a predeclared variable. `for i =` and `for i: integer =` declare a loop-scoped `integer`. `cardinal` is not an index type. Existing `for i :=` loops stay. Branch **`TMod-c_0.27`**. Stem **0.27.2**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`
+- **0.27.1.219** (19 October 2026): slice formals. An open-array parameter (`T[]`, `array[] of T`, `^char[]`, a one-step alias) lowers to a pointer plus a hidden `integer` `{name}_length`. `countof` on that formal reads it. Hosted `main` stays `(int argc, char **argv)`. `program modc(args: ^char[])` and `program kilo(args: ^char[])` are called as `name(argv, argc)`. Fixed arrays, `^T`, and `^array[] of T` stay one parameter. A module `main` uses `^pchar`. Branch **`TMod-c_0.27`**. Reported that self-host succeeds and that gcc, clang, and tcc each pass
 - **0.27.1.218**: lexer, mh, parser, and semantic units moved into package directories (`src/lexer/`, `src/mh/`, `src/parser/`, `src/semantic/`)
 - **0.27.1.217** (16 October 2026): `.mh` array type-specs. An exported `^Node[]`, `T[]`, `integer[4]`, or `^array[] of T` round-trips. `@format` stays 1. A line with no array suffix still parses. Branch **`TMod-c_0.27`**. The user reported the `test_mh_array` / `test2_mh_array` round-trip compiles
-- **0.27.1.216** (16 October 2026): `DEFINE` requires `=`. `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from `#define`. A raw `#define` stays unbound. The 0.26.5.188 rest-of-line form is a parse error. Branch **`TMod-c_0.27`**. Promoted **0.27.1.216**. The user reported that gcc, clang, and tcc each pass
-- **0.26.12.213** (15 October 2026): `src/` tree build. Codegen units are `module codegen.…` in `src/codegen/`. Several `.mc` inputs use each file's own path for `.mh` lookup and output names. Last planned build on `mod-c_0.26`. Promoted **0.26.12.213**
-- **0.26.12.212** (14 October 2026): package path and type call. A unit name may be a qualident; the last identifier is the unit. An unquoted import is `<root>/dots/as/slashes.mh`. `Ident(...)` on a declared type calls `Ident::Ident`. Prelude names and the keyword `opaque` do not. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc. Promoted **0.26.12.212**
-- **0.26.11.208** (13 October 2026): `HEADER` unit. `header Name` … `end`. No parameters, no return type, no `BEGIN`. Prototypes only. No `.c` file. `-C` still writes `.h` and `.mh`. No unit-entry export. `src/tmodc.mc` generates `tmodc.h` and `tmodc.mh`. Bootstrap treats a missing `.c` pair as agreement. Promoted **0.26.11.208**
-- **0.26.10.206** (12 October 2026): `@` binds tighter than `as`. `@e as T` is `(@e) as T`. The operand of `@` is a postfix. `as` stays tighter than `&` and arithmetic. A same-line nested `FOR` names its end temporary `__for_end_l{line}_c{column}`. Kilo status-bar ternaries cast the pointer arm to `string`. User reported `make all` after those casts. Stem stays **0.26.10**
-- **0.26.10.204** (12 October 2026): `VAR` / `REF` of a named open-array alias decays like a written `integer[]` (element pointer, call passes the array). The method owner stays the written name. No hidden length. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
-- **0.26.10.203** (12 October 2026): ternary `cond ? a : b` has the type of the then arm when both arms share one static type (one alias step, then name, width, pointer, array, and `const`). A string literal has type `string`. Brace lists still take their type from a written target. The condition is unchecked. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
-- **0.26.9.201** (10 October 2026): `codegen_c.mc` self-host (statements and the full program). Generated `codegen_c.c` / `.h` / `.mh`. Expressions stay in `codegen_common.mc`. No new language behavior. `node.c` / `node.h` and `tmodc.h` stay hand-written C. **test-all** / selfhost / bootstrap / promote on gcc, clang, and tcc
-- **0.26.9.200** (6 October 2026): `^opaque` and `POINTER TO opaque` are type-specifiers (`void *`; `const ^opaque` is `const void *`). Bare `opaque` stays a TYPE RHS. Named `type Handle = opaque` stays `typedef void *Name`. Tests green on gcc, clang, and tcc
-- **0.26.9.199** (3 October 2026): `codegen_common.mc` self-host (shared emitter). `codegen_c.c` and `node.c` / `node.h` stay hand-written C. Tests green on gcc, clang, and tcc
-- **0.26.9.198** (2 October 2026): `countof(designator | type)` replaces interim `LEN`. Outermost bound of a complete fixed array; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays are errors. Compiler tests pass
-- **0.26.8.196** (30 September 2026): named type is the method owner (`sds::free(s: sds)` / `x.free()` even if `sds = ^char`); C-index of written `^Named` (`tokens[0].length()`); unreachable after `RETURN`/`BREAK`/`CONTINUE` is a warning. **TSDSLib 2.0** (`examples/sds/`). Kilo `ABuffer` grow-by-doubling. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.8.194** (22 September 2026): `.mh` alias RHS (`export type integer complete integer 64`); in-tree `lp64`/`ilp32` packs; `LEN(n)` → `sizeof(n)/sizeof((n)[0])`. **#11** build-time defaults deferred. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.7.192** (21 September 2026): several `.mc` inputs — `tmodc -C -d dir *.mc`; one unit per arena; bare `-C`/`-H`/`-M` or `-d`; not a dep walker. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **Kilo example (19 September 2026; ABuffer 0.26.8.196):** full snaptoken [Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/index.html) port in `examples/kilo/kilo.mc` — `EditorConfig::` / `ERow::` / `ABuffer::`; `DEFINE`, `...`, `DEFER`, C-index `p[i]`. `ABuffer` prealloc / doubling (**196**)
-- **TSDSLib 2.0 (0.26.8.196):** TMod-c port of [antirez SDS](https://github.com/antirez/sds) 2.0 in `examples/sds/Tsds.mc` — type-bound wrappers, `var` grow, extra `sdsTest` cases. Not an official SDS/Redis release
-- **0.26.7.191** (18 September 2026): C-index `p[i]` on `^T` — type `T`, C `p[i]` (not a pointer-to-array peel). `p[i].method()` / `E.row[at].updateRow()`. Kilo `ERow::` and `EditorConfig::`. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.7.190** (17 September 2026): `...` last-formal pass-through — emit C `, ...`; extras via `stdarg.h` FFI (`vprintf` / `vsnprintf`). PROGRAM/MODULE reject `...`. Kilo `define CTRL_KEY` + `editorSetStatusMessage(fmt: string, ...)`. C `unsigned char *` is `^unsigned char` / `^uchar`
-- **0.26.5.188** (14 September 2026): `[EXPORT] DEFINE identifier RestOfLine` — bind like untyped `IMPORT`; emit `#define`; `#define` pass-through stays unbound
-- **0.26.5.186** (8 September 2026): `extern type Name = struct [tag]`; char `'\x1b'`; `parse_primary` errors on `&` (use `@`); array `{ a, b, }` trailing comma. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.5.183** (7 September 2026): drop C `const` on LET; `@` of `LET`/`CONST` illegal; unbound `string` is `const ^char` for static text. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.5.181** (7 September 2026): `LET` write-forbid — bare `n :=` / `INC(n)` / `DEC(n)` on a `LET` is a semantic error; through-writes stay legal (same body rule as `REF`). **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.5.180** (4 September 2026): parent-chain instance methods — `c.show()` / `pc.show()` bind `Parent::show`; C `.base` × N after peel; `Parent::show(pc)` when `pc` is `^Child`. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.5.179** (4 September 2026): `Type::m(p)` peel when `p` is `^Owner` — `Point::print(pp)` → `(*pp)`; do not peel `@x`. **test-all** / selfhost / bootstrap / promote on gcc, clang, tcc
-- **0.26.5.178** (4 September 2026): Oberon `p[i]` peel (not `^char[]` `argv[i]`) and instance method on `^T` — `(*(p))[i]`; `Type__m((*p))` / `&(*p)` for `REF`. `p^[i]` caret is parenthesized. `Type::m(p)` closed in **179**
-- **0.26.5.177** (4 September 2026): light refactor; `examples/Shapes.mc`
-- **0.26.5.176** (3 September 2026): Oberon `p.x` auto-deref — `(*(p)).field`; `p^.x` still valid. `p[i]` / `p.method` on `^T` closed in **178**
-- **0.26.5.175** (2 September 2026): EXTENDS polish — `p^.x` parent fields; `g as Parent` → `.base`; pointer/`REF` upcast
-- **0.26.5.174** (28 August 2026): #11 import as the one unit bind; `.mh` width tails on fields/formals/results
-- **0.26.5** promoted (27 August 2026): width forms `integer N` / `cardinal N` / `real N`; generated `.h` owns the C prelude (`-C` companion header)
-- **0.26 closes at 213.** No soft language item left on this stem. **Subdirectory build** (**0.26.12.213**), **package path** and **`Ident()` → `Ident::Ident`** (**0.26.12.212**), **`HEADER`** (**0.26.11.208**), **21a-ternary** (**0.26.10.203**), named open-array alias formals (**0.26.10.204**), and `@` vs `as` (**0.26.10.206**) are finished. **24** discard `_` dropped (12 October 2026); `(f())` is the discard. **#11** build-time defaults (`TMODC_ARCH`) parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`. Several `.mc` inputs, packs, `countof` (interim `LEN` retired), `codegen_common.mc`, `codegen_c.mc`, `^opaque` as a type-specifier, and the Kilo tutorial are finished. `CONST` codegen remains later. First formal `^Owner` as instance later. Item **18** is done (**0.27.2.225**): the `FOR` end temporary has the index type. Item **28** is done (**0.27.3.227**): an omitted `for i =` type is the type of the start. Anonymous nested `UNION` is done (**0.27.4.228**). Item **17** (struct forward / deferred `p*` typedefs) stays open. **`DEFINE` with `=`** is done (**0.27.1.216**). **`.mh` array type-specs** are done (**0.27.1.217**). Package directories are done (**0.27.1.218**). **Slice formals** are done (**0.27.1.219**). **Dual `FOR`** is done (**0.27.2.221**). Compiler `.mc` lives under `src/tmodc/` (**0.27.2.223**). `tmodc.lib` wrappers for `String`, `Cardinal`, `Integer`, and `Real` are **0.27.2.226**. Remaining hand-written compiler C is `src/c/node.c` / `src/c/node.h`. That port is unblocked by **0.27.4.228**. `src/c/tmodc/tmodc.h` is generated from `src/tmodc/tmodc.mc`
-- Later: cyclic TMod-c `IMPORT` policy. The directory build landed in **0.26.12.213**. The language rule is still later. Self-host of remaining compiler units continues in the background
+- **0.27.1.216** (16 October 2026): `DEFINE` requires `=`. `define Name = replacement` and `define Name(params) = replacement`. The `=` is omitted from `#define`. A raw `#define` stays unbound. The 0.26.5.188 rest-of-line form is a parse error. Branch **`TMod-c_0.27`**. Promoted **0.27.1.216**. Reported that gcc, clang, and tcc each pass.
 
 Credits & Acknowledgments
 -------------------------
@@ -185,116 +156,11 @@ gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```
 
-`make clean` before changing `CC` so objects in `build/c` are not mixed. `Makefile.clang` / `Makefile.tcc` live in `archive/` only.
+`make clean` before changing `CC` so objects in `build/c` are not mixed.
 
 ---
 
-### VM Preparation (Future Phase 3)
-
-TMod-c is currently targeting C as its primary backend. A **bytecode Virtual Machine** backend is planned for **Phase 3**. This will allow TMod-c programs to be compiled to compact, portable bytecode that runs on a small, efficient interpreter.
-
-#### Why a VM?
-- Faster compilation and smaller executables
-- Easier porting to new platforms
-- Potential for JIT later
-- Educational and runtime flexibility
-
-#### Current Preparation Status
-
-The compiler architecture is already being gently prepared for multiple backends:
-
-- The AST is kept relatively semantic (not overly tied to C)
-- Code generation is being abstracted
-- Types and constants are being centralized
-
-#### Lightweight Codegen Abstraction (Already Added)
-
-A minimal abstraction layer has been introduced so that adding a VM backend later will require minimal refactoring.
-
-**File:** `codegen.h`
-
-```c
-/**
- * TMod-c Code Generator Abstraction
- * Allows multiple backends (C, VM, etc.) without major rewrites.
- */
-
-#ifndef MODC_CODEGEN_H
-#define MODC_CODEGEN_H
-
-#include "node.h"
-#include "dynbuf.h"
-
-/**
- * Target backend selection
- */
-typedef enum {
-    TARGET_C,           // Current C backend (default)
-    TARGET_VM,          // Future bytecode VM
-    TARGET_WASM         // Future WebAssembly (optional)
-} CodegenTarget;
-
-/**
- * Generate code for the given AST using the selected target.
- * Output is written into the provided DynBuf.
- */
-void codegen_generate(const Node *ast, DynBuf *out, CodegenTarget target);
-
-#endif /* MODC_CODEGEN_H */
-```
-
-**Update in `codegen.c`** (minimal change to existing function):
-
-```c
-void codegen_generate(const Node *ast, DynBuf *out, CodegenTarget target)
-{
-    if (ast == NULL or out == NULL) {
-        fprintf(stderr, "FATAL ERROR: codegen_generate: NULL argument\n");
-        exit(1);
-    }
-
-    switch (target) {
-        case TARGET_C:
-            codegen_program(ast, out);          // existing C backend
-            break;
-
-        case TARGET_VM:
-            /* TODO: call vm_codegen_generate(ast, out); */
-            dynbuf_append(out, "/* VM backend not yet implemented */\n");
-            break;
-
-        default:
-            fprintf(stderr, "ERROR: Unknown codegen target\n");
-            exit(1);
-    }
-}
-```
-
-And update the call site in `modc.mc` / `modc.c`:
-
-```c
-// Old call
-// codegen_generate(ast, &c_out);
-
-// New call (with default)
-codegen_generate(ast, &c_out, TARGET_C);
-```
-
----
-
-### Next Steps Toward VM (When Ready)
-
-- Design a clean bytecode instruction set
-- Implement a small stack-based VM interpreter in C
-- Add `codegen_vm.c` backend
-- Add `--target=vm` command-line option
-- Port small demos (`FizzBuzz`, `FibonacciDemo`) to run on the VM
-
-This preparation keeps the current C backend completely stable while making the future VM backend much easier to implement without large-scale refactoring.
-
----
-
-### Notes
+### Other Notes
 
 - [(Un)portable defer in C](https://antonz.org/defer-in-c/) Interesting article on `defer` in C.
 

@@ -473,7 +473,7 @@ end resolve_output_path
                 exit(1)
 
             else
-                // INput .mc (or any leftover non-option).
+                // Input .mc (or any leftover non-option).
                 if results.mc_input_count >= MAX_MC_INPUTS then
                     fprintf(stderr, "Mod-c: Error: too many input files (max %d)\n", MAX_MC_INPUTS)
                     exit(1)

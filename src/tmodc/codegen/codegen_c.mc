@@ -73,19 +73,19 @@ import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
 // export procedure codegen_c(ctx: CodegenContext) forward
 
 
-procedure codegen_c_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_block(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_if_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_while_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_for_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_repeat_until_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_loop_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_switch_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_defer_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_assert_stmt(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_program(n: const ^Node, ctx: CodegenContext) forward
-procedure codegen_c_type_decl(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_block(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_if_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_while_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_for_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_repeat_until_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_loop_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_switch_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_defer_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_assert_stmt(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_program(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_type_decl(n: const ^Node, ctx: CodegenContext) forward
 
 
 (* ================================================

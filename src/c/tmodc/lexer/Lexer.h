@@ -230,32 +230,20 @@ typedef struct TLexer {
  * @param source 			Null-terminated source code buffer.
  */
 
-/* === PROC/FUNC EXPORT === */
-void TLexer__init(TLexer* lexer, const char* source);
-
 /**
  * Get the next token from the source.
  * Advance internal position; returns TOK_EOF when exhausted.
  * Sets error_msg on TOK_ERROR.
  */
 
-/* === PROC/FUNC EXPORT === */
-TToken TLexer__next(TLexer* lexer);
-
 /**
  * Debug: return human-readable string for a TokenKind.
  */
-
-/* === PROC/FUNC EXPORT === */
-const char* TokenKind__string(TokenKind k);
 
 /**
  * Debug print a token (kind, location, text snippet).
  * For debugging and error reporting.
  */
-
-/* === PROC/FUNC EXPORT === */
-void TToken__print(TToken* tok);
 
 /**
  * Lookup keyword by case-insensitive comparison.

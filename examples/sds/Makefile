@@ -13,7 +13,7 @@ clean:
 	rm -f Tsds-test
 
 Tsds.c: Tsds.mc
-	../../bin/tmodc -a Tsds.mc -C	
+	../../bin/tmodc -a Tsds.mc -M -C -H
 
 Tsds: Tsds.c
 	$(CC) -c Tsds.c -Wall -std=c11 -pedantic -O2

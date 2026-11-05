@@ -96,23 +96,23 @@ end
 type pcchar = const ^char
 
 (* forward declare semantic_resolve_expr *)
-recursive function semantic_type_of_designator(ctx: pTSemanticContext, n: pNode): pTType forward
-recursive function semantic_type_of_expr(ctx: pTSemanticContext, n: pNode): pTType forward
-function semantic_eval_const_expr(ctx: pTSemanticContext, n: pNode): integer forward
-function semantic_try_eval_const_expr(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool forward
-procedure semantic_resolve_expr(ctx: pTSemanticContext, n: pNode) forward
-procedure semantic_analyze_block_body(ctx: pTSemanticContext, block: pNode) forward
-function semantic_mangle_method(arena: ^Arena, owner: const ^char, owner_len: size_t,
-	method: const ^char, method_len: size_t): ^char forward
-function semantic_proc_sym_name(ctx: pTSemanticContext, decl: pNode): TProcSymName forward
-function semantic_method_is_instance(ctx: pTSemanticContext, decl: pNode): bool forward
-procedure semantic_verify_method_self(ctx: pTSemanticContext, decl: pNode) forward
-function semantic_method_type_node(ctx: pTSemanticContext, ty: pTType): pNode forward
-function semantic_field_type_on(ctx: pTSemanticContext, recv_ty: pTType,
-		fname: const ^char, flen: size_t): pTType forward
-function semantic_sym_is_method_value(ctx: pTSemanticContext, sym: pTSymbol): bool forward
-recursive function semantic_find_struct_member(st: pNode, name: const ^char, name_len: size_t): pNode forward
-function semantic_type_is_pointer(ty: pTType): bool forward
+// recursive function semantic_type_of_designator(ctx: pTSemanticContext, n: pNode): pTType forward
+// recursive function semantic_type_of_expr(ctx: pTSemanticContext, n: pNode): pTType forward
+// function semantic_eval_const_expr(ctx: pTSemanticContext, n: pNode): integer forward
+// function semantic_try_eval_const_expr(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool forward
+// procedure semantic_resolve_expr(ctx: pTSemanticContext, n: pNode) forward
+// procedure semantic_analyze_block_body(ctx: pTSemanticContext, block: pNode) forward
+// function semantic_mangle_method(arena: ^Arena, owner: const ^char, owner_len: size_t,
+// 	method: const ^char, method_len: size_t): ^char forward
+// function semantic_proc_sym_name(ctx: pTSemanticContext, decl: pNode): TProcSymName forward
+// function semantic_method_is_instance(ctx: pTSemanticContext, decl: pNode): bool forward
+// procedure semantic_verify_method_self(ctx: pTSemanticContext, decl: pNode) forward
+// function semantic_method_type_node(ctx: pTSemanticContext, ty: pTType): pNode forward
+// function semantic_field_type_on(ctx: pTSemanticContext, recv_ty: pTType,
+// 		fname: const ^char, flen: size_t): pTType forward
+// function semantic_sym_is_method_value(ctx: pTSemanticContext, sym: pTSymbol): bool forward
+// recursive function semantic_find_struct_member(st: pNode, name: const ^char, name_len: size_t): pNode forward
+// function semantic_type_is_pointer(ty: pTType): bool forward
 
 
 (**

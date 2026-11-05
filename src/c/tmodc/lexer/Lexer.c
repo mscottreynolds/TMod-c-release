@@ -41,6 +41,21 @@ typedef struct TKeywordTable {
     TokenKind kind;
 } TKeywordTable;
 static TKeywordTable keyword_table[] = {{"AND", TOK_KEYWORD_AND}, {"ARRAY", TOK_KEYWORD_ARRAY}, {"AS", TOK_KEYWORD_AS}, {"ASSERT", TOK_KEYWORD_ASSERT}, {"BEGIN", TOK_KEYWORD_BEGIN}, {"BOUND", TOK_KEYWORD_BOUND}, {"BREAK", TOK_KEYWORD_BREAK}, {"BY", TOK_KEYWORD_BY}, {"CASE", TOK_KEYWORD_CASE}, {"CAST", TOK_KEYWORD_CAST}, {"CONST", TOK_KEYWORD_CONST}, {"CONTINUE", TOK_KEYWORD_CONTINUE}, {"COUNTOF", TOK_KEYWORD_COUNTOF}, {"DEBUG", TOK_KEYWORD_DEBUG}, {"DEC", TOK_KEYWORD_DEC}, {"DEFAULT", TOK_KEYWORD_DEFAULT}, {"DEFER", TOK_KEYWORD_DEFER}, {"DEFINE", TOK_KEYWORD_DEFINE}, {"DIV", TOK_KEYWORD_DIV}, {"DO", TOK_KEYWORD_DO}, {"DOWNTO", TOK_KEYWORD_DOWNTO}, {"ELSE", TOK_KEYWORD_ELSE}, {"ELSIF", TOK_KEYWORD_ELSIF}, {"END", TOK_KEYWORD_END}, {"ENSURE", TOK_KEYWORD_ENSURE}, {"ENUM", TOK_KEYWORD_ENUM}, {"EXPORT", TOK_KEYWORD_EXPORT}, {"EXTENDS", TOK_KEYWORD_EXTENDS}, {"EXTERN", TOK_KEYWORD_EXTERN}, {"FOR", TOK_KEYWORD_FOR}, {"FORWARD", TOK_KEYWORD_FORWARD}, {"FROM", TOK_KEYWORD_FROM}, {"FUNCTION", TOK_KEYWORD_FUNCTION}, {"HEADER", TOK_KEYWORD_HEADER}, {"IF", TOK_KEYWORD_IF}, {"IMPORT", TOK_KEYWORD_IMPORT}, {"IN", TOK_KEYWORD_IN}, {"INC", TOK_KEYWORD_INC}, {"INVARIANT", TOK_KEYWORD_INVARIANT}, {"IS", TOK_KEYWORD_IS}, {"LET", TOK_KEYWORD_LET}, {"LOOP", TOK_KEYWORD_LOOP}, {"MOD", TOK_KEYWORD_MOD}, {"MODULE", TOK_KEYWORD_MODULE}, {"NOT", TOK_KEYWORD_NOT}, {"OF", TOK_KEYWORD_OF}, {"OPAQUE", TOK_KEYWORD_OPAQUE}, {"OR", TOK_KEYWORD_OR}, {"PACKED", TOK_KEYWORD_PACKED}, {"POINTER", TOK_KEYWORD_POINTER}, {"PROCEDURE", TOK_KEYWORD_PROCEDURE}, {"PROGRAM", TOK_KEYWORD_PROGRAM}, {"RECURSIVE", TOK_KEYWORD_RECURSIVE}, {"REF", TOK_KEYWORD_REF}, {"REPEAT", TOK_KEYWORD_REPEAT}, {"REQUIRE", TOK_KEYWORD_REQUIRE}, {"RETURN", TOK_KEYWORD_RETURN}, {"SIZEOF", TOK_KEYWORD_SIZEOF}, {"STATIC", TOK_KEYWORD_STATIC}, {"STRUCT", TOK_KEYWORD_STRUCT}, {"SWITCH", TOK_KEYWORD_SWITCH}, {"THEN", TOK_KEYWORD_THEN}, {"TO", TOK_KEYWORD_TO}, {"TYPE", TOK_KEYWORD_TYPE}, {"UNION", TOK_KEYWORD_UNION}, {"UNTIL", TOK_KEYWORD_UNTIL}, {"VAR", TOK_KEYWORD_VAR}, {"WHILE", TOK_KEYWORD_WHILE}, {"XOR", TOK_KEYWORD_XOR}};
+/**
+ * Initialize lexer state with source buffer.
+ * Source must remain valid for the lifetime of the lexer.
+ *
+ * @param lexer 			Lexer state to initialize
+ * @param source 			Null-terminated source code buffer.
+ */
+/**
+ * Get the next token from the source.
+ * Advance internal position; returns TOK_EOF when exhausted.
+ * Sets error_msg on TOK_ERROR.
+ */
+/**
+ * Debug: return human-readable string for a TokenKind.
+ */
 static const size_t KEYWORD_MAX_LEN = 255;
 static const size_t IDENT_MAX_LEN = 255;
 typedef unsigned char uchar;
@@ -59,6 +74,10 @@ static bool scan_char_escape(TLexer* l);
 static TToken make_token(TLexer* l, TokenKind kind, pcchar start);
 static TToken make_token_len(TLexer* l, TokenKind kind, pcchar start, size_t length);
 static TToken error_token(TLexer* l, pcchar msg);
+/**
+ * Debug print a token (kind, location, text snippet).
+ * For debugging and error reporting.
+ */
 static integer NUM_KEYWORDS(void)
 {
     /* return value captured before defers */

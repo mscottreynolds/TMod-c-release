@@ -1,14 +1,14 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 2 November 2026
+**Last updated:** 3 November 2026.  
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
 Notation is EBNF as used in the productions below. Keywords are case-insensitive; identifiers are case-sensitive (see productions and the Language Report). An identifier is at most 255 characters (Language Report §2.2).
 
 ```ebnf
-(*
+(**
  * TMod-c — complete formal EBNF (single source of truth for productions)
  *
  * Builtin types (lowercase reserved type-identifiers):
@@ -38,6 +38,7 @@ header-unit = "HEADER" module-name EOS
    The last identifier is the unit name. A prefix is the package path.
    The end tag repeats that unit name, not the whole qualident.
    Unquoted import search: Language Report §3.1.1. *)
+   
 module-name = qualident ;
 
 (**** Imports ******************************************************)
@@ -67,6 +68,7 @@ var-decl    = [ "EXPORT" ] [ "EXTERN" ] var-def     (* top level. *)
             | [ "STATIC" ] var-def ;                (* block level *)
 
 (* DEFINE requires '='. It is TMod-c punctuation and is not emitted. *)
+
 define-decl     = [ "EXPORT" ] "DEFINE" identifier [ "(" define-params ")" ] "=" [ replacement-list ] ;
 define-params   = "..."
                 | identifier { "," identifier } [ "," "..." ] ;
@@ -84,9 +86,11 @@ var-def     = "VAR" var-item { "," var-item } EOS ;
 
 type-item   = identifier "=" type-expression 
 			| identifier "FORWARD" ;
+			
     (* "FORWARD" (0.24.17.135) is an incomplete struct or union tag.
        As of 0.27.5.234 a same-file body may omit it. The marker stays legal.
        Generated C order: Language Report §4.4. *)
+       
 const-item  = identifier [ ":" type-specifier ] "=" const-expression ;
 let-item    = identifier [ ":" type-specifier ] "=" ( initializer | expression ) ;
 var-item    = identifier [ ":" type-specifier ] [ "=" ( initializer | expression ) ] ;
@@ -117,6 +121,7 @@ opaque-type-expression = "OPAQUE"
    Further levels: name the inner type, or ^T[]  — not ^^T.
    ARRAY OF may nest; the element type may itself include one ^.
    Language Report §5.1–§5.3. *)
+   
 type-specifier = [ "CONST" ] type-name [ array-suffix ]
 			   | [ "CONST" ] ( "^" | "POINTER" "TO" ) type-name [ array-suffix ]
 			   | [ "CONST" ] ( "^" | "POINTER" "TO" ) "OPAQUE" [ array-suffix ]
@@ -136,6 +141,7 @@ type-name = type-identifier { type-identifier }   (* "int", "long long", etc. *)
           | width-type ;
 
 width-type = ( "integer" | "cardinal" | "real" ) decimal-integer ;
+
     (* Exact width. Closed N: integer/cardinal 8|16|32|64; real 32|64.
        Decimal digits only (no 0x, no '_', no leading zeros).
        Not a rebindable name; typical use is TYPE RHS or a type-specifier.
@@ -143,6 +149,7 @@ width-type = ( "integer" | "cardinal" | "real" ) decimal-integer ;
        exclusive with extra C words ("long long"). *)
 
 type-identifier = identifier ;
+
     (* lowercase builtins: bool, byte, char, integer, cardinal, real, string. *)
 
 (* Planned? `type Foo = struct Bar`. `type Foo = struct of`... *)
@@ -170,6 +177,7 @@ method-type = ( "PROCEDURE" | "FUNCTION" ) formal-parameters ;
    Named field: type-specifier (name a nested struct first).
    Anonymous UNION (0.27.4.228): members promote into the enclosing
    struct or named union. Anonymous STRUCT is not a field. *)
+   
 field-decl  = identifier ":" type-specifier [ "=" const-expression ]
             | anon-union ;
 
@@ -178,6 +186,7 @@ anon-union  = "UNION" [ EOS ] { field-decl EOS } "END" ;
 return-type = [ "CONST" ] [ "^" | "POINTER" "TO" ] type-identifier ;
 
 (* Placeholder for full template/generic definition support *)
+
 template-decl = "TEMPLATE" "<" template-parameter { "," template-parameter } ">"
                 ( type-decl | struct-decl | method-prototype ) ;
 
@@ -188,6 +197,7 @@ template-parameter = type-identifier [ ":" type-specifier ] ;   (* T: Type or ju
 method-decl = [ "EXPORT" ] [ "EXTERN" ] method-prototype ;
 
 (* Foreign symbols — see "Modules, imports, exports, and foreign symbols" *)
+
 extern-type-decl = "EXTERN" "TYPE" identifier [ "=" extern-type-rhs ] EOS ;
 extern-type-rhs  = type-expression
                  | "STRUCT" [ type-identifier ] ;   (* C tag alias; no fields, no END *)
@@ -197,6 +207,7 @@ extern-func-decl = "EXTERN" [ "EXPORT" ] "FUNCTION" identifier formal-parameters
 
 method-prototype = [ "RECURSIVE" ] ( "PROCEDURE" | "FUNCTION" )
     qualified-method-name formal-parameters [ "FORWARD" ] EOS ;
+    
     (* [ "FORWARD" ] stays optional in the grammar.
        As of 0.27.6.237 a later top-level procedure or function may be
        called without it. EXTERN, and a forward with no body, stay prototypes.
@@ -208,6 +219,7 @@ method-def = method-prototype
     block;
 
 formal-parameters = "(" [ parameter-def { "," parameter-def } [ "," "..." ] ] ")" [ ":" return-type ] ;
+
     (* C varargs pass-through (0.26.7). At least one named formal; "..." last.
        Emit ", ..." in C. No TMod-c va_list. Not on PROGRAM/MODULE. *)
 
@@ -226,6 +238,7 @@ block =
 end-tag = identifier [ "::" identifier ] ;
 
 (* Design by Contract clauses *)
+
 require-clause      = "REQUIRE" expression EOS ;
 ensure-clause       = "ENSURE" expression EOS ;
 invariant-clause    = "INVARIANT" expression EOS ; (* allowed only in loop bodies *)
@@ -266,6 +279,7 @@ if-then-statement =
 (* No fallthrough between arms. ELSE is required and is the last arm.
    "ELSE" [ "CASE" case-labels ] is planned (not parsed yet): those
    constants share the else body. Bare "ELSE" ":" stays valid. *)
+   
 switch-statement =
     "SWITCH" expression "OF"
         { "CASE" case-labels ":" statement-sequence }
@@ -334,16 +348,19 @@ selector = "." identifier       (* field access; call => instance method sugar *
                                  * also C-index of ^T when T is not an array (0.26.7.191);
                                  * written ^Named first: ^sds[i] is sds (0.26.8.196) *)
     | "^" ;                     (* Pascal-style dereference *)
+    
     (* C-index p[i] on ^T has type T (same strip as p^); C is p[i], not (*p)[i].
      * Written ^ is stripped before alias chase (^sds[i] is sds, not char).
      * Pointer-to-array p[i] peels: C (*(p))[i]. argv: ^char[] is not a peel. *)
 
 (*** INC / DEC - both statement and expression forms ***)
+
 inc-dec-expr = "INC" "(" designator [ "," expression ] ")"
              | "DEC" "(" designator [ "," expression ] ")" ;
 
 qualident = identifier { "." identifier } ;
 identifier = (letter | "_") , { letter | digit | "_" } ;
+
     (* Length: at most 255 characters (Language Report §2.2). Not encoded in the production. *)
 
 (************** Expressions ****************************)
@@ -413,6 +430,7 @@ primary-expression = identifier
 range-expression = additive-expression ".." additive-expression ; (* inclusive *)
 
 array-literal = "{" [ expression { "," expression } ] [","] "}" ;
+
     (* Also the Planned set constructor (SET OF enum). Semantic: set vs array by type. *)
 
 literal = integer-literal | real-literal | char-literal | string-literal
@@ -460,16 +478,16 @@ countof-expression = "COUNTOF" "(" type-specifier | designator ")" ;
 (* Keywords are case-insensitive: "IF", "if", "If", "iF" are recognized as the same *)
 (* Identifiers are case-sensitive: "MyVar", "myvar", "MYVAR" are distinct. *)
 
-keyword = "ALIAS" | "AND" | "ARRAY" | "AS" | "ASSERT" | "BEGIN" | "BOUND" | "BREAK" |
-        "BY" | "CASE" | "CAST" | "CONST" | "CONTINUE" | "COUNTOF" | "DEBUG" | "DEC" | 
-        "DEFAULT" | "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" | "ELSIF" |
-        "END" | "ENSURE" | "ENUM" | "EXPORT" | "EXTENDS" | "EXTERN"| "FALSE" | "FOR" |
+keyword = "AND" | "ARRAY" | "AS" | "ASSERT" | "BEGIN" | "BOUND" | "BREAK" | "BY" |
+        "CASE" | "CAST" | "CONST" | "CONTINUE" | "COUNTOF" | "DEBUG" | "DEC" | 
+        "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" | "ELSIF" | "END" |
+        "ENSURE" | "ENUM" | "EXPORT" | "EXTENDS" | "EXTERN"| "FALSE" | "FOR" |
         "FORWARD" | "FROM" | "FUNCTION" | "HEADER" | "IF" | "IMPORT" | "IN" | "INC" |
-        "INLINE" | INVARIANT" | "LET" | "LOOP" | "MOD" | "MODULE" | "NIL" | "NOT" |
-        "OF" | "OPAQUE" | "OR" | "PACKED" | "POINTER" | "PROCEDURE" | "PROGRAM" |
-        "RECORD" | "RECURSIVE" | "REF" | "REPEAT" | "REQUIRE" | "RETURN" | "SET" |
-        "SIZEOF" | "STATIC" | "STRUCT" | "SWITCH" | "THEN" | "TO" | "TRUE" | "TYPE" |
-        "UNION" | "UNTIL" | "VAR" | "WHILE" | "XOR" | "TEMPLATE" ;
+        "INVARIANT" | "LET" | "LOOP" | "MOD" | "MODULE" | "NIL" | "NOT" | "OF" |
+        "OPAQUE" | "OR" | "PACKED" | "POINTER" | "PROCEDURE" | "PROGRAM" |
+        "RECURSIVE" | "REF" | "REPEAT" | "REQUIRE" | "RETURN" | "SET" | "SIZEOF" |
+        "STATIC" | "STRUCT" | "SWITCH" | "THEN" | "TO" | "TRUE" | "TYPE" | "UNION" |
+        "UNTIL" | "VAR" | "WHILE" | "XOR" | "TEMPLATE" ;
 
 (**** End-of-Statement ****************************)
 
@@ -505,7 +523,6 @@ newline-when-eos = NEWLINE (* unless any of:
 import-stmt EOS placement: IMPORT … FROM import-source EOS
   (EOS is after the import-source operand, not after each import-item). *)
 
-
 (******* Comments *****************************************************)
 
 comment = { single-line-comment | c-style-comment | pascal-style-comment } ;
@@ -513,7 +530,6 @@ comment = { single-line-comment | c-style-comment | pascal-style-comment } ;
 single-line-comment = "//" ... newline
 c-style-comment = "/*" ... "*/"
 pascal-style-comment = "(*" ... { pascal-style-comment } ... "*)"    
-
 
 (***************************************************************************)
 ```

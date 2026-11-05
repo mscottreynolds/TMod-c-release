@@ -126,101 +126,14 @@ typedef struct CodegenContext {
  * Creae a child context for a nested node.
  */
 
-/* === PROC/FUNC EXPORT === */
-CodegenContext ctx_push(const CodegenContext* ctx, const Node* new_parent);
-
-/* === PROC/FUNC EXPORT === */
-void emit_indent(pDynBuf out, int indent);
-
-/* === PROC/FUNC EXPORT === */
-bool codegen_unit_binds_portable(const Node* prog, const char* name, size_t name_len);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_emit_c_prelude(pDynBuf out, const Node* prog);
-
-/* === PROC/FUNC EXPORT === */
-void emit_return_type(pDynBuf out, const TType* t);
-
-/* === PROC/FUNC EXPORT === */
-void emit_array_type(pDynBuf out, const TType* t, const char* name, size_t name_len);
-
-/* === PROC/FUNC EXPORT === */
-void emit_type_specifier(pDynBuf out, const TType* t, const char* name, size_t length, bool is_param, bool is_var, bool is_ref, bool is_const);
-
-/* === PROC/FUNC EXPORT === */
-void emit_param_list(pDynBuf out, pNode* params, size_t count, bool is_parameter, bool has_ellipsis);
-
-/* === PROC/FUNC EXPORT === */
-bool codegen_type_is_open_slice(const TType* t);
-
-/* === PROC/FUNC EXPORT === */
-void emit_var_decl(pDynBuf out, const char* name, size_t name_len, const TType* t);
-
-/* === PROC/FUNC EXPORT === */
-void emit_doc_comment_as_c(pDynBuf out, const Node* n);
-
 /**
  * Emit a LET binding name: name_l{line}_c{col}
  * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
  */
 
-/* === PROC/FUNC EXPORT === */
-void emit_let_binding_name(pDynBuf out, const char* name, size_t name_len, const Node* binding_decl);
-
 /**
  * Emit an identifier expression (mangles LET uses via resolved_sym).
  */
-
-/* === PROC/FUNC EXPORT === */
-void emit_let_ident(pDynBuf out, const Node* n);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_type_decl(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_proc_or_func(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_struct_decl(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_union_decl(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_enum_type(const Node* n, const char* type_name, size_t type_name_len, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_method_type(const Node* method, const Node* type_decl, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_expr(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_emit_literal(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_array_literal(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_preprocessor(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_field_access(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_sizeof_expr(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_countof_expr(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_inc_dec(const Node* n, CodegenContext ctx, bool as_statement);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_module_prototype(const Node* n, CodegenContext ctx);
-
-/* === PROC/FUNC EXPORT === */
-void codegen_common_import(const Node* n, CodegenContext ctx);
 
 /**
  * Create a child context for a nested node.

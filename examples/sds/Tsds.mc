@@ -405,58 +405,6 @@ begin
 end sds::setAlloc
 
 
-(* ==== Forwards ==== *)
-
-
-
-export function sdsnewlen(init: const ^VOID, initlen: size_t): sds forward
-export function sdsnew(init: const ^char): sds forward
-export function sdsempty(): sds forward
-export function sdsdup(const s: sds): sds forward
-export procedure sdsfree(s: sds) forward
-export function sdsgrowzero(s: sds, length: size_t): sds forward
-export function sdscatlen(s: sds, t: const ^VOID, length: size_t): sds forward
-export function sdscat(s: sds, t: const ^char): sds forward
-export function sdscatsds(s: sds, t: const sds): sds forward
-export function sdscpylen(s: sds, t: const ^char, length: size_t): sds forward
-export function sdscpy(s: sds, t: const ^char): sds forward
-
-export function sdscatvprintf(s: sds, fmt: const ^char, ap: va_list): sds forward
-
-(* __GNUC__ had this defined: __attribute__((format(printf, 2, 3))); *)
-export function sdscatprintf(s: sds, fmt: const ^char, ...): sds forward
-
-export function sdscatfmt(s: sds, fmt: const ^char, ...): sds forward
-export function sdstrim(s: sds, cset: const ^char): sds forward
-export procedure sdsrange(s: sds, start: ssize_t, end_: ssize_t) forward
-export procedure sdsupdatelen(s: sds) forward
-export procedure sdsclear(s: sds) forward
-export function sdscmp(s1: const sds, s2: const sds): int forward
-export function sdssplitlen(s: const ^char, length: ssize_t, sep: const ^char, seplen: int, count: ^int): ^sds forward
-export procedure sdsfreesplitres(tokens: ^sds, count: int) forward
-export procedure sdstolower(s: sds) forward
-export procedure sdstoupper(s: sds) forward
-export function sdsfromlonglong(value: llong): sds forward
-export function sdscatrepr(s: sds, p: const ^char, length: size_t): sds forward
-export function sdssplitargs(line: const ^char, argc: ^int): ^sds forward
-export function sdsmapchars(s: sds, from_: const ^char, to_: const ^char, setlen: size_t): sds forward
-export function sdsjoin(argv: ^char[], argc: int, sep: ^char): sds forward
-export function sdsjoinsds(argv: ^sds, argc: int, sep: const ^char, seplen: size_t): sds forward
-
-(* Low level functions exposed to the user API *)
-export function sdsMakeRoomFor(s: sds, addlen: size_t): sds forward
-export procedure sdsIncrLen(s: sds, incr: ssize_t) forward
-export function sdsRemoveFreeSpace(s: sds): sds forward
-export function sdsAllocSize(s: sds): size_t forward
-export function sdsAllocPtr(s: sds): ^VOID forward
-
-(* Export the allocator used by SDS to the program using SDS.
- * Sometimes the program SDS is linked to, may use a different set of
- * allocators, but may want to allocate or free things that SDS will
- * respectively free or allocate. *)
-export function sds_malloc(size: size_t): ^VOID forward
-export function sds_realloc(ptr: ^VOID, size: size_t): ^VOID forward
-export procedure sds_free(ptr: ^VOID) forward
 
 
 (* ==== static inlined sds.c functions ==== *)

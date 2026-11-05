@@ -223,14 +223,6 @@ var HLDB: array of EditorSyntax = {
 define HLDB_ENTRIES = (sizeof(HLDB) / sizeof(HLDB[0]))
 
 
-(* =========== Prototypes =========== *)
-
-
-procedure EditorConfig::setStatusMessage(ref E: EditorConfig, fmt: string, ...) forward
-procedure EditorConfig::refreshScreen(ref E: EditorConfig) forward
-function EditorConfig::prompt(ref E: EditorConfig, prompt: pchar, callback: fnCallback): pchar forward
-
-
 (* =========== Terminal =========== *)
 
 

@@ -213,7 +213,6 @@ Node* parse_import_stmt(pParser p)
     assert(p != nil); /* precondition */
     TToken import_token = ((*p)).current;
     Node* imp = nil;
-    bool has_item = false;
     advance(p);
     imp = node_create(((*p)).arena, NODE_IMPORT, import_token);
     (((*imp)).import_stmt).items = nil;
@@ -231,18 +230,26 @@ Node* parse_import_stmt(pParser p)
                                 /* INVARIANT (on loop exit) */
                 break;
             }
+            if ((((*p)).current).kind != TOK_IDENT)
+            {
+                error_at(p, "parse_import_stmt: expected identifier in IMPORT", true);
+            }
             item = parse_import_item(p);
             if (item == nil)
             {
-                if (!has_item)
-                {
-                    error_at(p, "parse_import_stmt: expected identifier in IMPORT", true);
-                }
+                error_at(p, "parse_import_stmt: expected identifier in IMPORT", true);
+            }
+            arena_append_ptr(((*p)).arena, (ppvoid)(&(((*imp)).import_stmt).items), &(((*imp)).import_stmt).count, &(((*imp)).import_stmt).capacity, item);
+            skip_layout_breaks(p);
+            if (check(p, TOK_KEYWORD_FROM) || isEOF(p))
+            {
                                 /* INVARIANT (on loop exit) */
                 break;
             }
-            arena_append_ptr(((*p)).arena, (ppvoid)(&(((*imp)).import_stmt).items), &(((*imp)).import_stmt).count, &(((*imp)).import_stmt).capacity, item);
-            match(p, TOK_COMMA);
+            if (!match(p, TOK_COMMA))
+            {
+                error_at(p, "parse_import_stmt: expected ',' or FROM in IMPORT", true);
+            }
         }
     }
     if (!match(p, TOK_KEYWORD_FROM))
@@ -266,8 +273,8 @@ Node* parse_import_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*imp)).kind == NODE_IMPORT); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l310 = imp;
-    return __ret_l310;
+    Node* __ret_l317 = imp;
+    return __ret_l317;
 }
 
 /**
@@ -288,10 +295,10 @@ Node* parse_import_item(pParser p)
     if ((((*p)).current).kind != TOK_IDENT)
     {
         /* ENSURE (on return) */
-    assert(((*item)).kind == NODE_IMPORT_ITEM); /* postcodition */
+    assert(item == nil || ((*item)).kind == NODE_IMPORT_ITEM); /* postcodition */
 /* return value captured before defers */
-        Node* __ret_l334 = nil;
-        return __ret_l334;
+        Node* __ret_l341 = nil;
+        return __ret_l341;
     }
     qual_start = (((*p)).current).start;
     qual_len = (((*p)).current).length;
@@ -340,10 +347,10 @@ Node* parse_import_item(pParser p)
     (((*item)).import_item).import_alias = alias_start;
     (((*item)).import_item).import_alias_len = alias_len;
     /* ENSURE (on return) */
-    assert(((*item)).kind == NODE_IMPORT_ITEM); /* postcodition */
+    assert(item == nil || ((*item)).kind == NODE_IMPORT_ITEM); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l380 = item;
-    return __ret_l380;
+    Node* __ret_l387 = item;
+    return __ret_l387;
 }
 
 /**
@@ -363,8 +370,8 @@ Node* parse_break_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_BREAK); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l405 = n;
-    return __ret_l405;
+    Node* __ret_l412 = n;
+    return __ret_l412;
 }
 
 /**
@@ -384,8 +391,8 @@ Node* parse_continue_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_CONTINUE); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l429 = n;
-    return __ret_l429;
+    Node* __ret_l436 = n;
+    return __ret_l436;
 }
 
 /**
@@ -411,8 +418,8 @@ Node* parse_return_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_RETURN); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l460 = n;
-    return __ret_l460;
+    Node* __ret_l467 = n;
+    return __ret_l467;
 }
 
 /**
@@ -470,8 +477,8 @@ Node* parse_if_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_IF); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l528 = n;
-    return __ret_l528;
+    Node* __ret_l535 = n;
+    return __ret_l535;
 }
 
 /**
@@ -485,8 +492,8 @@ static Node* parse_optional_bound(pParser p)
     if (!match(p, TOK_KEYWORD_BOUND))
     {
         /* return value captured before defers */
-        Node* __ret_l545 = nil;
-        return __ret_l545;
+        Node* __ret_l552 = nil;
+        return __ret_l552;
     }
     expr = TParser__parse_const_expression(&(*p));
     if (expr == nil)
@@ -503,8 +510,8 @@ static Node* parse_optional_bound(pParser p)
         error_at(p, "parse_optional_bound: only one BOUND is allowed", true);
     }
     /* return value captured before defers */
-    Node* __ret_l561 = expr;
-    return __ret_l561;
+    Node* __ret_l568 = expr;
+    return __ret_l568;
 }
 
 /**
@@ -564,8 +571,8 @@ Node* parse_while_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_WHILE); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l639 = n;
-    return __ret_l639;
+    Node* __ret_l646 = n;
+    return __ret_l646;
 }
 
 /**
@@ -624,8 +631,8 @@ Node* parse_for_stmt(pParser p)
         error_at(p, "parse_for_stmt: expected expression after FOR index", true);
     }
     skip_layout_breaks(p);
-    bool is_downto_l703_c15 = match(p, TOK_KEYWORD_DOWNTO);
-    if (!is_downto_l703_c15)
+    bool is_downto_l710_c15 = match(p, TOK_KEYWORD_DOWNTO);
+    if (!is_downto_l710_c15)
     {
         consume(p, TOK_KEYWORD_TO, "parse_for_stmt: expected TO or DOWNTO after start expression");
     }
@@ -662,7 +669,7 @@ Node* parse_for_stmt(pParser p)
     (((*n)).for_stmt).var_len = var_len;
     (((*n)).for_stmt).start_ = start_expr;
     (((*n)).for_stmt).end_ = end_expr;
-    (((*n)).for_stmt).step = (is_downto_l703_c15 ? -step : step);
+    (((*n)).for_stmt).step = (is_downto_l710_c15 ? -step : step);
     (((*n)).for_stmt).declares = declares;
     (((*n)).for_stmt).index_type = index_type;
     (((*n)).for_stmt).invariants = nil;
@@ -699,8 +706,8 @@ Node* parse_for_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_FOR); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l786 = n;
-    return __ret_l786;
+    Node* __ret_l793 = n;
+    return __ret_l793;
 }
 
 /**
@@ -749,8 +756,8 @@ Node* parse_repeat_until_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_REPEAT_UNTIL); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l846 = n;
-    return __ret_l846;
+    Node* __ret_l853 = n;
+    return __ret_l853;
 }
 
 /**
@@ -792,8 +799,8 @@ Node* parse_loop_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_LOOP); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l899 = n;
-    return __ret_l899;
+    Node* __ret_l906 = n;
+    return __ret_l906;
 }
 
 /**
@@ -840,8 +847,8 @@ Node* parse_inc_dec_stmt(pParser p)
     /* ENSURE (on return) */
     assert(((*n)).kind == NODE_INC || ((*n)).kind == NODE_DEC); /* postcodition */
 /* return value captured before defers */
-    Node* __ret_l952 = n;
-    return __ret_l952;
+    Node* __ret_l959 = n;
+    return __ret_l959;
 }
 
 

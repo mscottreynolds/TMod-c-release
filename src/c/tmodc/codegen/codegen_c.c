@@ -38,6 +38,12 @@ void codegen_c(CodegenContext ctx);
 #include "../ttype.h"
 #include "codegen_common.h"
 #include "codegen_dbc.h"
+/**
+ * Generate C source code from the given AST in the CodegenContext.
+ * The output is written into the provided DynBuf (which must be initialized),
+ * also set in the CodegenContext.
+ * Exits program on fatal error.
+ */
 static void codegen_c_proc_or_func(const Node* n, CodegenContext ctx);
 static void codegen_c_defer_stmt(const Node* n, CodegenContext ctx);
 static void codegen_c_debug_stmt(const Node* n, CodegenContext ctx);

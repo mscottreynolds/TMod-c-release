@@ -2,6 +2,18 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.6.240
+- **Import list separator** — a `:` where an import list expects `,` is a parse error. `parse_import_item` may return nil when the token is not an identifier. Its postcondition is `item == nil or item^.kind == NODE_IMPORT_ITEM`. The old `ensure` read `item^.kind` on that nil return and aborted. After an item, the next token must be `,` or `FROM`. The message is `parse_import_stmt: expected ',' or FROM in IMPORT`.
+- A newline before `from`, and a trailing comma before `from`, stay legal.
+- The user applied the change, tested it, and promoted **0.27.6.240**. Stem **0.27.6**. `Makefile` `VERSION` is **0.27.6**. Branch **`TMod-c_0.27`**. Build **240**.
+- Docs this round: `changelog.md`.
+
+## Version 0.27.6.239
+- **Package root** — an unquoted import finds its root from the compiling file's directory and the declared package path. The filename is not part of that match. `src/tmodc/node.mc.inprogress` declared `module tmodc.node` has the same root as `src/tmodc/node.mc`.
+- The import still names one file. `from tmodc.arena` opens `<root>/tmodc/arena.mh`, the export table beside a finished `tmodc/arena.mc`. No other suffix is tried.
+- The user promoted **0.27.6.239**. Stem **0.27.6**. `Makefile` `VERSION` is **0.27.6**. Branch **`TMod-c_0.27`**. Build **239**.
+- Docs this round: `changelog.md`, `docs/language-report.md`.
+
 ## Version 0.27.6.237
 - **Optional procedure `FORWARD`** — a top-level procedure or function may call one defined later in the same file. The keyword stays legal. Semantic analysis already registers every top-level procedure before bodies. Generated C writes one `static` prototype for each non-exported procedure or function that has a body, after the other declarations, then the bodies in source order. An exported procedure is prototyped in the `.h`. A `forward` line completed by a later body is not emitted again. A `forward` with no body, and `EXTERN`, stay where they are written. A function that returns a struct by value is emitted after that struct's body. `RECURSIVE` is unchanged. A header unit is unchanged.
 - A doc comment `(** … *)` above a moved body, or above the program or module `begin`, is emitted with that body. The program entry comment sits above `int modc(...)`. An ordinary `(* *)` comment is not a node and stays where the source walk leaves it. A comment above an import, a type, or `EXTERN` stays in place.

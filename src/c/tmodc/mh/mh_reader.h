@@ -170,9 +170,6 @@ bool mh_strip_string_literal(const char* path, size_t path_len, pcchar* inner, s
 /* === PROC/FUNC EXPORT === */
 bool mh_path_is_mh(const char* path, size_t path_len);
 
-/* === PROC/FUNC EXPORT === */
-bool mh_resolve_import_path(const char* source_path, const char* package_path, size_t package_path_len, const char* unit_name, size_t unit_name_len, const char* from_path, size_t from_len, char* out, size_t out_cap);
-
 /**
  * Format the C #include path for a Mod-c import source (.mh symtab world).
  * Quoted "*.mh" -> the written path with .h.
@@ -189,13 +186,11 @@ bool mh_format_h_include(const char* source_path, const char* package_path, size
  */
 
 /**
- * package + '.' + unit, or unit alone. Writes a trailing NUL.
- */
-
-/**
  * Package root as a prefix of source_path. Length 0 means the current directory.
- * Directory layout (.../tmodc/lib/String.mc for tmodc.lib.String) peels to the
- * directory above tmodc/. Any other file uses the directory that contains it.
+ * The directory that contains the file is matched to the package path
+ * (tmodc/lib for module tmodc.lib.String). The filename is not part of the match.
+ * The root is the directory above that package path.
+ * Any other file uses the directory that contains it.
  */
 
 /**

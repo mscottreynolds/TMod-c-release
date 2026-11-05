@@ -46,6 +46,13 @@ typedef Node* pNode;
  * This eliminates long parameter lists and makes future extensions (symbol table,
  * defer lists, etc.) trivial. This is setup by the main codegen_generate function.
  */
+/**
+ * Creae a child context for a nested node.
+ */
+/**
+ * Emit a LET binding name: name_l{line}_c{col}
+ * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
+ */
 static void emit_type_leaf_name(pDynBuf out, const TType* t);
 static const TType* codegen_param_array_view(const TType* t);
 static const Node* codegen_bare_slice_ident(const Node* d);
@@ -65,6 +72,9 @@ static void codegen_emit_incomplete(CodegenContext ctx, bool for_header, bool is
 static void codegen_emit_alias(const Node* n, CodegenContext ctx, bool for_header);
 static void codegen_flush_pointer_aliases(const Node* prog, CodegenContext ctx, bool for_header, bool* flags, size_t cap);
 static void codegen_emit_anon_union(const Node* n, CodegenContext ctx);
+/**
+ * Emit an identifier expression (mangles LET uses via resolved_sym).
+ */
 static void emit_type_leaf_name(pDynBuf out, const TType* t)
 {
     const char* s = nil;

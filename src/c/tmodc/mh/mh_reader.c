@@ -37,7 +37,6 @@ static char* mh_strdup_n(const char* s, size_t length);
 static void mh_fatal(const char* path, size_t line_no, const char* msg);
 static char* mh_dirname_copy(const char* path);
 static size_t mh_dirname_len(const char* path);
-static bool mh_build_qualident(const char* package_path, size_t package_path_len, const char* unit_name, size_t unit_name_len, char* out, size_t out_cap, size_t* out_len);
 static bool mh_package_root_len(const char* source_path, const char* package_path, size_t package_path_len, const char* unit_name, size_t unit_name_len, size_t* root_len);
 static bool mh_join_path(const char* root, size_t root_len, const char* rel, size_t rel_len, char* out, size_t out_cap);
 static bool mh_include_from_mh(const char* source_path, const char* resolved, char* out, size_t out_cap);
@@ -362,174 +361,88 @@ static size_t mh_dirname_len(const char* path)
 }
 
 /**
- * package + '.' + unit, or unit alone. Writes a trailing NUL.
- */
-static bool mh_build_qualident(const char* package_path, size_t package_path_len, const char* unit_name, size_t unit_name_len, char* out, size_t out_cap, size_t* out_len)
-{
-    size_t n = 0;
-    if (unit_name == nil || unit_name_len == 0 || out == nil || out_len == nil || out_cap == 0)
-    {
-        /* return value captured before defers */
-        bool __ret_l387 = false;
-        return __ret_l387;
-    }
-    if (package_path_len > 0)
-    {
-        if (package_path == nil)
-        {
-            /* return value captured before defers */
-            bool __ret_l391 = false;
-            return __ret_l391;
-        }
-        n = package_path_len + 1 + unit_name_len;
-    }
-    else
-    {
-        n = unit_name_len;
-    }
-    if (n + 1 > out_cap)
-    {
-        /* return value captured before defers */
-        bool __ret_l398 = false;
-        return __ret_l398;
-    }
-    if (package_path_len > 0)
-    {
-        memcpy(out, package_path, package_path_len);
-        out[package_path_len] = '.';
-        memcpy(out + package_path_len + 1, unit_name, unit_name_len);
-    }
-    else
-    {
-        memcpy(out, unit_name, unit_name_len);
-    }
-    out[n] = '\0';
-    (*out_len) = n;
-    /* return value captured before defers */
-    bool __ret_l409 = true;
-    return __ret_l409;
-}
-
-/**
  * Package root as a prefix of source_path. Length 0 means the current directory.
- * Directory layout (.../tmodc/lib/String.mc for tmodc.lib.String) peels to the
- * directory above tmodc/. Any other file uses the directory that contains it.
+ * The directory that contains the file is matched to the package path
+ * (tmodc/lib for module tmodc.lib.String). The filename is not part of the match.
+ * The root is the directory above that package path.
+ * Any other file uses the directory that contains it.
  */
 static bool mh_package_root_len(const char* source_path, const char* package_path, size_t package_path_len, const char* unit_name, size_t unit_name_len, size_t* root_len)
 {
-    char qual[1024] = {0};
-    size_t qual_len = 0;
     char form[2048] = {0};
     size_t form_len = 0;
-    size_t path_len = 0;
-    size_t off = 0;
+    size_t dir_len = 0;
     size_t i = 0;
-    size_t last_dot = 0;
-    size_t ext_len = 0;
     size_t cut = 0;
     if (root_len == nil)
     {
         /* return value captured before defers */
-        bool __ret_l435 = false;
-        return __ret_l435;
+        bool __ret_l395 = false;
+        return __ret_l395;
     }
     (*root_len) = 0;
     if (source_path == nil || source_path[0] == '\0')
     {
         /* return value captured before defers */
-        bool __ret_l439 = true;
-        return __ret_l439;
+        bool __ret_l399 = true;
+        return __ret_l399;
     }
+    dir_len = mh_dirname_len(source_path);
     if (package_path_len == 0 || package_path == nil || unit_name == nil || unit_name_len == 0)
     {
-        (*root_len) = mh_dirname_len(source_path);
+        (*root_len) = dir_len;
         /* return value captured before defers */
-        bool __ret_l444 = true;
-        return __ret_l444;
+        bool __ret_l405 = true;
+        return __ret_l405;
     }
-    if (!mh_build_qualident(package_path, package_path_len, unit_name, unit_name_len, &qual[0], ((integer)sizeof(qual)), &qual_len))
+    if (package_path_len + 1 > ((integer)sizeof(form)))
     {
+        (*root_len) = dir_len;
         /* return value captured before defers */
-        bool __ret_l448 = false;
-        return __ret_l448;
+        bool __ret_l409 = true;
+        return __ret_l409;
     }
-    path_len = strlen(source_path);
-    off = 0;
     i = 0;
-    while (i < path_len)
+    while (i < package_path_len)
     {
         {
-            if (source_path[i] == '/')
+            char c = package_path[i];
+            if (c == '.')
             {
-                off = i + 1;
+                c = '/';
             }
-            i = i + 1;
+            form[i] = c;
+            i++;
         }
     }
-    last_dot = path_len;
-    i = off;
-    while (i < path_len)
+    form_len = package_path_len;
+    form[form_len] = '\0';
+    if (dir_len == form_len && memcmp(source_path, &form[0], form_len) == 0)
     {
-        {
-            if (source_path[i] == '.')
-            {
-                last_dot = i;
-            }
-            i = i + 1;
-        }
+        (*root_len) = 0;
+        /* return value captured before defers */
+        bool __ret_l426 = true;
+        return __ret_l426;
     }
-    if (last_dot < path_len)
+    if (dir_len > form_len && source_path[dir_len - form_len - 1] == '/' && memcmp(source_path + (dir_len - form_len), &form[0], form_len) == 0)
     {
-        ext_len = path_len - last_dot;
+        cut = dir_len - form_len - 1;
+        if (cut == 0)
+        {
+            (*root_len) = 1;
+        }
+        else
+        {
+            (*root_len) = cut;
+        }
+        /* return value captured before defers */
+        bool __ret_l437 = true;
+        return __ret_l437;
     }
-    if (qual_len + ext_len + 1 <= ((integer)sizeof(form)))
-    {
-        i = 0;
-        while (i < qual_len)
-        {
-            {
-                char c = qual[i];
-                if (c == '.')
-                {
-                    c = '/';
-                }
-                form[i] = c;
-                i = i + 1;
-            }
-        }
-        if (ext_len > 0)
-        {
-            memcpy(&form[qual_len], source_path + last_dot, ext_len);
-        }
-        form_len = qual_len + ext_len;
-        form[form_len] = '\0';
-        if (path_len == form_len && memcmp(source_path, &form[0], form_len) == 0)
-        {
-            (*root_len) = 0;
-            /* return value captured before defers */
-            bool __ret_l488 = true;
-            return __ret_l488;
-        }
-        if (path_len > form_len && source_path[path_len - form_len - 1] == '/' && memcmp(source_path + (path_len - form_len), &form[0], form_len) == 0)
-        {
-            cut = path_len - form_len - 1;
-            if (cut == 0)
-            {
-                (*root_len) = 1;
-            }
-            else
-            {
-                (*root_len) = cut;
-            }
-            /* return value captured before defers */
-            bool __ret_l499 = true;
-            return __ret_l499;
-        }
-    }
-    (*root_len) = mh_dirname_len(source_path);
+    (*root_len) = dir_len;
     /* return value captured before defers */
-    bool __ret_l503 = true;
-    return __ret_l503;
+    bool __ret_l440 = true;
+    return __ret_l440;
 }
 
 /**
@@ -541,28 +454,28 @@ static bool mh_join_path(const char* root, size_t root_len, const char* rel, siz
     if (rel == nil || out == nil || out_cap == 0)
     {
         /* return value captured before defers */
-        bool __ret_l517 = false;
-        return __ret_l517;
+        bool __ret_l454 = false;
+        return __ret_l454;
     }
     if (root_len == 0)
     {
         if (rel_len + 1 > out_cap)
         {
             /* return value captured before defers */
-            bool __ret_l521 = false;
-            return __ret_l521;
+            bool __ret_l458 = false;
+            return __ret_l458;
         }
         memcpy(out, rel, rel_len);
         out[rel_len] = '\0';
         /* return value captured before defers */
-        bool __ret_l525 = true;
-        return __ret_l525;
+        bool __ret_l462 = true;
+        return __ret_l462;
     }
     if (root == nil)
     {
         /* return value captured before defers */
-        bool __ret_l528 = false;
-        return __ret_l528;
+        bool __ret_l465 = false;
+        return __ret_l465;
     }
     if (root_len == 1 && root[0] == '/')
     {
@@ -570,30 +483,30 @@ static bool mh_join_path(const char* root, size_t root_len, const char* rel, siz
         if (n + 1 > out_cap)
         {
             /* return value captured before defers */
-            bool __ret_l533 = false;
-            return __ret_l533;
+            bool __ret_l470 = false;
+            return __ret_l470;
         }
         out[0] = '/';
         memcpy(out + 1, rel, rel_len);
         out[n] = '\0';
         /* return value captured before defers */
-        bool __ret_l538 = true;
-        return __ret_l538;
+        bool __ret_l475 = true;
+        return __ret_l475;
     }
     n = root_len + 1 + rel_len;
     if (n + 1 > out_cap)
     {
         /* return value captured before defers */
-        bool __ret_l542 = false;
-        return __ret_l542;
+        bool __ret_l479 = false;
+        return __ret_l479;
     }
     memcpy(out, root, root_len);
     out[root_len] = '/';
     memcpy(out + root_len + 1, rel, rel_len);
     out[n] = '\0';
     /* return value captured before defers */
-    bool __ret_l548 = true;
-    return __ret_l548;
+    bool __ret_l485 = true;
+    return __ret_l485;
 }
 
 /**
@@ -619,8 +532,8 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
     if (resolved == nil || out == nil || out_cap == 0)
     {
         /* return value captured before defers */
-        bool __ret_l575 = false;
-        return __ret_l575;
+        bool __ret_l512 = false;
+        return __ret_l512;
     }
     res_len = strlen(resolved);
     if (source_path != nil)
@@ -717,8 +630,8 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
             if (j + 3 >= out_cap)
             {
                 /* return value captured before defers */
-                bool __ret_l641 = false;
-                return __ret_l641;
+                bool __ret_l578 = false;
+                return __ret_l578;
             }
             out[j] = '.';
             out[j + 1] = '.';
@@ -730,8 +643,8 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
     if (rest > res_len)
     {
         /* return value captured before defers */
-        bool __ret_l650 = false;
-        return __ret_l650;
+        bool __ret_l587 = false;
+        return __ret_l587;
     }
     tail_len = res_len - rest;
     if (tail_len >= 3 && resolved[res_len - 3] == '.' && resolved[res_len - 2] == 'm' && resolved[res_len - 1] == 'h')
@@ -739,8 +652,8 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
         if (j + tail_len > out_cap)
         {
             /* return value captured before defers */
-            bool __ret_l656 = false;
-            return __ret_l656;
+            bool __ret_l593 = false;
+            return __ret_l593;
         }
         if (tail_len > 3)
         {
@@ -751,14 +664,14 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
         out[j + 1] = 'h';
         out[j + 2] = '\0';
         /* return value captured before defers */
-        bool __ret_l665 = true;
-        return __ret_l665;
+        bool __ret_l602 = true;
+        return __ret_l602;
     }
     if (j + tail_len + 1 > out_cap)
     {
         /* return value captured before defers */
-        bool __ret_l668 = false;
-        return __ret_l668;
+        bool __ret_l605 = false;
+        return __ret_l605;
     }
     if (tail_len > 0)
     {
@@ -767,8 +680,8 @@ static bool mh_include_from_mh(const char* source_path, const char* resolved, ch
     }
     out[j] = '\0';
     /* return value captured before defers */
-    bool __ret_l675 = true;
-    return __ret_l675;
+    bool __ret_l612 = true;
+    return __ret_l612;
 }
 
 /**
@@ -786,14 +699,14 @@ bool mh_resolve_import_path(const char* source_path, const char* package_path, s
     if (out == nil || out_cap == 0)
     {
         /* return value captured before defers */
-        bool __ret_l697 = false;
-        return __ret_l697;
+        bool __ret_l634 = false;
+        return __ret_l634;
     }
     if (!mh_strip_string_literal(from_path, from_len, &inner, &inner_len))
     {
         /* return value captured before defers */
-        bool __ret_l701 = false;
-        return __ret_l701;
+        bool __ret_l638 = false;
+        return __ret_l638;
     }
     if (mh_import_source_is_quoted(from_path, from_len))
     {
@@ -801,8 +714,8 @@ bool mh_resolve_import_path(const char* source_path, const char* package_path, s
         if (rel_len + 1 > ((integer)sizeof(rel)))
         {
             /* return value captured before defers */
-            bool __ret_l709 = false;
-            return __ret_l709;
+            bool __ret_l646 = false;
+            return __ret_l646;
         }
         memcpy(&rel[0], inner, rel_len);
         rel[rel_len] = '\0';
@@ -810,8 +723,8 @@ bool mh_resolve_import_path(const char* source_path, const char* package_path, s
     else if (!mh_qualident_to_mh_relpath(inner, inner_len, &rel[0], ((integer)sizeof(rel))))
     {
         /* return value captured before defers */
-        bool __ret_l714 = false;
-        return __ret_l714;
+        bool __ret_l651 = false;
+        return __ret_l651;
     }
     else
     {
@@ -819,33 +732,33 @@ bool mh_resolve_import_path(const char* source_path, const char* package_path, s
         if (!mh_package_root_len(source_path, package_path, package_path_len, unit_name, unit_name_len, &root_len))
         {
             /* return value captured before defers */
-            bool __ret_l720 = false;
-            return __ret_l720;
+            bool __ret_l657 = false;
+            return __ret_l657;
         }
         /* return value captured before defers */
-        bool __ret_l722 = mh_join_path(source_path, root_len, &rel[0], strlen(&rel[0]), out, out_cap);
-        return __ret_l722;
+        bool __ret_l659 = mh_join_path(source_path, root_len, &rel[0], strlen(&rel[0]), out, out_cap);
+        return __ret_l659;
     }
     if (rel_len > 0 && rel[0] == '/')
     {
         if (rel_len + 1 > out_cap)
         {
             /* return value captured before defers */
-            bool __ret_l730 = false;
-            return __ret_l730;
+            bool __ret_l667 = false;
+            return __ret_l667;
         }
         memcpy(out, &rel[0], rel_len);
         out[rel_len] = '\0';
         /* return value captured before defers */
-        bool __ret_l734 = true;
-        return __ret_l734;
+        bool __ret_l671 = true;
+        return __ret_l671;
     }
     dir = mh_dirname_copy(source_path);
     if (dir == nil)
     {
         /* return value captured before defers */
-        bool __ret_l739 = false;
-        return __ret_l739;
+        bool __ret_l676 = false;
+        return __ret_l676;
     }
     /* DEFER begin */
     if (dir[strlen(dir) - 1] != '/')
@@ -857,11 +770,11 @@ bool mh_resolve_import_path(const char* source_path, const char* package_path, s
         snprintf(out, out_cap, "%s%s", dir, &rel[0]);
     }
     /* return value captured before defers */
-    bool __ret_l751 = true;
+    bool __ret_l688 = true;
     /* DEFER cleanup (unwinding to function) */
     /* DEFER end */
     free(dir);
-    return __ret_l751;
+    return __ret_l688;
 }
 
 static void mh_module_grow(MhModule* m)
@@ -896,57 +809,57 @@ SymbolKind mh_export_to_symkind(MhExportKind kind)
         case MH_KIND_PROCEDURE:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l786 = SYM_KIND_PROC;
-            return __ret_l786;
+            SymbolKind __ret_l723 = SYM_KIND_PROC;
+            return __ret_l723;
         }
         break;
         case MH_KIND_FUNCTION:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l787 = SYM_KIND_FUNC;
-            return __ret_l787;
+            SymbolKind __ret_l724 = SYM_KIND_FUNC;
+            return __ret_l724;
         }
         break;
         case MH_KIND_TYPE:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l788 = SYM_KIND_TYPE;
-            return __ret_l788;
+            SymbolKind __ret_l725 = SYM_KIND_TYPE;
+            return __ret_l725;
         }
         break;
         case MH_KIND_ENUM:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l789 = SYM_KIND_TYPE;
-            return __ret_l789;
+            SymbolKind __ret_l726 = SYM_KIND_TYPE;
+            return __ret_l726;
         }
         break;
         case MH_KIND_VAR:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l790 = SYM_KIND_VAR;
-            return __ret_l790;
+            SymbolKind __ret_l727 = SYM_KIND_VAR;
+            return __ret_l727;
         }
         break;
         case MH_KIND_CONST:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l791 = SYM_KIND_CONST;
-            return __ret_l791;
+            SymbolKind __ret_l728 = SYM_KIND_CONST;
+            return __ret_l728;
         }
         break;
         case MH_KIND_DEFINE:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l792 = SYM_KIND_IMPORT;
-            return __ret_l792;
+            SymbolKind __ret_l729 = SYM_KIND_IMPORT;
+            return __ret_l729;
         }
         break;
         default:
         {
             /* return value captured before defers */
-            SymbolKind __ret_l793 = SYM_KIND_UNKNOWN;
-            return __ret_l793;
+            SymbolKind __ret_l730 = SYM_KIND_UNKNOWN;
+            return __ret_l730;
         }
         break;
     }
@@ -958,27 +871,27 @@ const MhExport* mh_module_find(const MhModule* m, const char* name, size_t name_
     if (m == nil || name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        const MhExport* __ret_l804 = nil;
-        return __ret_l804;
+        const MhExport* __ret_l741 = nil;
+        return __ret_l741;
     }
     {
-        const size_t __for_end_l807_c5 = (((*m)).count);
-        for (i = 1; i <= __for_end_l807_c5; i++)
+        const size_t __for_end_l744_c5 = (((*m)).count);
+        for (i = 1; i <= __for_end_l744_c5; i++)
         {
             {
                 MhExport* exp = &((*m)).exports[i - 1];
                 if (((*exp)).name_len == name_len && memcmp(((*exp)).name, name, name_len) == 0)
                 {
                     /* return value captured before defers */
-                    const MhExport* __ret_l810 = exp;
-                    return __ret_l810;
+                    const MhExport* __ret_l747 = exp;
+                    return __ret_l747;
                 }
             }
         }
     }
     /* return value captured before defers */
-    const MhExport* __ret_l814 = nil;
-    return __ret_l814;
+    const MhExport* __ret_l751 = nil;
+    return __ret_l751;
 }
 
 static void mh_type_spec_free_tree(MhTypeSpec* spec)
@@ -1003,15 +916,15 @@ void mh_module_free(MhModule* m)
     ((*m)).module_name = nil;
     ((*m)).module_name_len = 0;
     {
-        const size_t __for_end_l842_c5 = (((*m)).count);
-        for (i = 1; i <= __for_end_l842_c5; i++)
+        const size_t __for_end_l779_c5 = (((*m)).count);
+        for (i = 1; i <= __for_end_l779_c5; i++)
         {
             {
                 if ((((*m)).exports[i - 1]).formals != nil)
                 {
                     {
-                        const size_t __for_end_l845_c7 = ((((*m)).exports[i - 1]).formal_count);
-                        for (j = 1; j <= __for_end_l845_c7; j++)
+                        const size_t __for_end_l782_c7 = ((((*m)).exports[i - 1]).formal_count);
+                        for (j = 1; j <= __for_end_l782_c7; j++)
                         {
                             {
                                 mh_type_spec_free_tree(&((((*m)).exports[i - 1]).formals[j - 1]).spec);
@@ -1025,8 +938,8 @@ void mh_module_free(MhModule* m)
                 if ((((*m)).exports[i - 1]).fields != nil)
                 {
                     {
-                        const size_t __for_end_l853_c7 = ((((*m)).exports[i - 1]).field_count);
-                        for (j = 1; j <= __for_end_l853_c7; j++)
+                        const size_t __for_end_l790_c7 = ((((*m)).exports[i - 1]).field_count);
+                        for (j = 1; j <= __for_end_l790_c7; j++)
                         {
                             {
                                 mh_type_spec_free_tree(&((((*m)).exports[i - 1]).fields[j - 1]).spec);
@@ -1086,14 +999,14 @@ static bool mh_match_word(pchar* p, char* end_, const char* word)
     if ((size_t)(end_ - (*p)) < wlen)
     {
         /* return value captured before defers */
-        bool __ret_l904 = false;
-        return __ret_l904;
+        bool __ret_l841 = false;
+        return __ret_l841;
     }
     if (memcmp((*p), word, wlen) != 0)
     {
         /* return value captured before defers */
-        bool __ret_l907 = false;
-        return __ret_l907;
+        bool __ret_l844 = false;
+        return __ret_l844;
     }
     if ((size_t)(end_ - (*p)) > wlen)
     {
@@ -1101,14 +1014,14 @@ static bool mh_match_word(pchar* p, char* end_, const char* word)
         if (isalnum((int)next) || next == '_')
         {
             /* return value captured before defers */
-            bool __ret_l912 = false;
-            return __ret_l912;
+            bool __ret_l849 = false;
+            return __ret_l849;
         }
     }
     (*p) = (*p) + wlen;
     /* return value captured before defers */
-    bool __ret_l916 = true;
-    return __ret_l916;
+    bool __ret_l853 = true;
+    return __ret_l853;
 }
 
 static bool mh_read_ident(pchar* p, char* end_, pchar* name, size_t* name_len)
@@ -1118,14 +1031,14 @@ static bool mh_read_ident(pchar* p, char* end_, pchar* name, size_t* name_len)
     if ((*p) >= end_)
     {
         /* return value captured before defers */
-        bool __ret_l927 = false;
-        return __ret_l927;
+        bool __ret_l864 = false;
+        return __ret_l864;
     }
     if (!isalpha((int)(*(*p))) && (*(*p)) != '_')
     {
         /* return value captured before defers */
-        bool __ret_l930 = false;
-        return __ret_l930;
+        bool __ret_l867 = false;
+        return __ret_l867;
     }
     start = (*p);
     (*p) = (*p) + 1;
@@ -1142,8 +1055,8 @@ static bool mh_read_ident(pchar* p, char* end_, pchar* name, size_t* name_len)
         mh_fatal(nil, 0, "mh_read_ident: identifier longer than 255 characters");
     }
     /* return value captured before defers */
-    bool __ret_l942 = (*name_len) > 0;
-    return __ret_l942;
+    bool __ret_l879 = (*name_len) > 0;
+    return __ret_l879;
 }
 
 static bool mh_match_char(pchar* p, char* end_, char ch)
@@ -1152,13 +1065,13 @@ static bool mh_match_char(pchar* p, char* end_, char ch)
     if ((*p) >= end_ || (*(*p)) != ch)
     {
         /* return value captured before defers */
-        bool __ret_l950 = false;
-        return __ret_l950;
+        bool __ret_l887 = false;
+        return __ret_l887;
     }
     (*p) = (*p) + 1;
     /* return value captured before defers */
-    bool __ret_l953 = true;
-    return __ret_l953;
+    bool __ret_l890 = true;
+    return __ret_l890;
 }
 
 static bool mh_peek_char(pchar peek, pchar end_, char ch)
@@ -1171,8 +1084,8 @@ static bool mh_peek_char(pchar peek, pchar end_, char ch)
         }
     }
     /* return value captured before defers */
-    bool __ret_l965 = p < end_ && (*p) == ch;
-    return __ret_l965;
+    bool __ret_l902 = p < end_ && (*p) == ch;
+    return __ret_l902;
 }
 
 static int mh_parse_width_number(const char* path, size_t line_no, pchar* p, pchar end_)
@@ -1187,8 +1100,8 @@ static int mh_parse_width_number(const char* path, size_t line_no, pchar* p, pch
             mh_fatal(path, line_no, "mh_parse_width_number: width must be a decimal integer");
         }
         /* return value captured before defers */
-        int __ret_l984 = 0;
-        return __ret_l984;
+        int __ret_l921 = 0;
+        return __ret_l921;
     }
     while ((*p) < end_ && isdigit((int)(*(*p))))
     {
@@ -1207,8 +1120,8 @@ static int mh_parse_width_number(const char* path, size_t line_no, pchar* p, pch
         mh_fatal(path, line_no, "mh_parse_width_number: expected width");
     }
     /* return value captured before defers */
-    int __ret_l998 = n;
-    return __ret_l998;
+    int __ret_l935 = n;
+    return __ret_l935;
 }
 
 static void mh_type_spec_clear(MhTypeSpec* spec)
@@ -1232,8 +1145,8 @@ static MhTypeSpec* mh_type_spec_alloc(const char* path, size_t line_no)
     }
     mh_type_spec_clear(s);
     /* return value captured before defers */
-    MhTypeSpec* __ret_l1023 = s;
-    return __ret_l1023;
+    MhTypeSpec* __ret_l960 = s;
+    return __ret_l960;
 }
 
 static void mh_type_spec_apply_suffix(const char* path, size_t line_no, MhTypeSpec* spec, size_t bound_)
@@ -1262,15 +1175,15 @@ static bool mh_parse_array_suffix(const char* path, size_t line_no, pchar* p, pc
     if (!mh_match_char(p, end_, '['))
     {
         /* return value captured before defers */
-        bool __ret_l1059 = false;
-        return __ret_l1059;
+        bool __ret_l996 = false;
+        return __ret_l996;
     }
     mh_skip_ws(p, end_);
     if (mh_match_char(p, end_, ']'))
     {
         /* return value captured before defers */
-        bool __ret_l1063 = true;
-        return __ret_l1063;
+        bool __ret_l1000 = true;
+        return __ret_l1000;
     }
     if ((*p) >= end_ || !isdigit((int)(*(*p))) || (*(*p)) == '0')
     {
@@ -1294,8 +1207,8 @@ static bool mh_parse_array_suffix(const char* path, size_t line_no, pchar* p, pc
     }
     (*out_size) = n;
     /* return value captured before defers */
-    bool __ret_l1080 = true;
-    return __ret_l1080;
+    bool __ret_l1017 = true;
+    return __ret_l1017;
 }
 
 static bool mh_parse_type_spec(const char* path, size_t line_no, pchar* p, pchar end_, MhTypeSpec* out)
@@ -1330,8 +1243,8 @@ static bool mh_parse_type_spec(const char* path, size_t line_no, pchar* p, pchar
         }
         ((*out)).element = mh_type_spec_alloc(path, line_no);
         /* return value captured before defers */
-        bool __ret_l1119 = mh_parse_type_spec(path, line_no, p, end_, ((*out)).element);
-        return __ret_l1119;
+        bool __ret_l1056 = mh_parse_type_spec(path, line_no, p, end_, ((*out)).element);
+        return __ret_l1056;
     }
     if (!mh_read_ident(p, end_, &name, &name_len))
     {
@@ -1393,8 +1306,8 @@ static bool mh_parse_type_spec(const char* path, size_t line_no, pchar* p, pchar
         mh_type_spec_apply_suffix(path, line_no, out, bound_);
     }
     /* return value captured before defers */
-    bool __ret_l1167 = true;
-    return __ret_l1167;
+    bool __ret_l1104 = true;
+    return __ret_l1104;
 }
 
 static bool mh_parse_formal(const char* path, size_t line_no, pchar* p, pchar end_, MhFormal* out)
@@ -1413,8 +1326,8 @@ static bool mh_parse_formal(const char* path, size_t line_no, pchar* p, pchar en
         }
         ((*out)).is_ellipsis = true;
         /* return value captured before defers */
-        bool __ret_l1193 = true;
-        return __ret_l1193;
+        bool __ret_l1130 = true;
+        return __ret_l1130;
     }
     save = (*p);
     if (mh_match_word(p, end_, "var"))
@@ -1437,8 +1350,8 @@ static bool mh_parse_formal(const char* path, size_t line_no, pchar* p, pchar en
         }
     }
     /* return value captured before defers */
-    bool __ret_l1209 = mh_parse_type_spec(path, line_no, p, end_, &((*out)).spec);
-    return __ret_l1209;
+    bool __ret_l1146 = mh_parse_type_spec(path, line_no, p, end_, &((*out)).spec);
+    return __ret_l1146;
 }
 
 static void mh_parse_signature(const char* path, size_t line_no, pchar* p, pchar end_, MhExport* exp)
@@ -1937,8 +1850,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
     if (resolved_path == nil || out == nil)
     {
         /* return value captured before defers */
-        bool __ret_l1673 = false;
-        return __ret_l1673;
+        bool __ret_l1610 = false;
+        return __ret_l1610;
     }
     ((*out)).module_name = nil;
     ((*out)).module_name_len = 0;
@@ -1953,8 +1866,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
     {
         fprintf(stderr, "ERROR: mh_reader_load: cannot open .mh file: %s\n", resolved_path);
         /* return value captured before defers */
-        bool __ret_l1688 = false;
-        return __ret_l1688;
+        bool __ret_l1625 = false;
+        return __ret_l1625;
     }
     file_pos = ftell(fp);
     if (file_pos < 0 || fseek(fp, 0, SEEK_END) != 0)
@@ -1962,8 +1875,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
         fclose(fp);
         fprintf(stderr, "ERROR: mh_reader_load: cannot size .mh file: %s\n", resolved_path);
         /* return value captured before defers */
-        bool __ret_l1695 = false;
-        return __ret_l1695;
+        bool __ret_l1632 = false;
+        return __ret_l1632;
     }
     file_end = ftell(fp);
     fseek(fp, file_pos, SEEK_SET);
@@ -1972,8 +1885,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
         fclose(fp);
         fprintf(stderr, "ERROR: mh_reader_load: cannot size .mh file: %s\n", resolved_path);
         /* return value captured before defers */
-        bool __ret_l1702 = false;
-        return __ret_l1702;
+        bool __ret_l1639 = false;
+        return __ret_l1639;
     }
     fsize = (size_t)file_end;
     ((*out)).source = (char*)malloc(fsize + 1);
@@ -1982,8 +1895,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
         fclose(fp);
         fprintf(stderr, "ERROR: mh_reader_load: out of memory reading %s\n", resolved_path);
         /* return value captured before defers */
-        bool __ret_l1710 = false;
-        return __ret_l1710;
+        bool __ret_l1647 = false;
+        return __ret_l1647;
     }
     nread = fread(((*out)).source, 1, fsize, fp);
     fclose(fp);
@@ -2019,8 +1932,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
         fprintf(stderr, "ERROR: mh_reader_load: %s: missing @module line\n", resolved_path);
         mh_module_free(out);
         /* return value captured before defers */
-        bool __ret_l1739 = false;
-        return __ret_l1739;
+        bool __ret_l1676 = false;
+        return __ret_l1676;
     }
     if (((*out)).format_version != 1)
     {
@@ -2028,8 +1941,8 @@ bool mh_reader_load(const char* resolved_path, MhModule* out)
         mh_module_free(out);
     }
     /* return value captured before defers */
-    bool __ret_l1747 = true;
-    return __ret_l1747;
+    bool __ret_l1684 = true;
+    return __ret_l1684;
 }
 
 
