@@ -1015,6 +1015,9 @@ void node_print(const Node *n, int indent)
 			print_line_column(n);
 			node_indent_dots(indent + 1);
 			printf("ELSE\n");
+			for (size_t k = 0; k < n->switch_stmt.else_label_count; k++) {
+				node_print(n->switch_stmt.else_labels[k], indent + 2);
+			}
 			node_print(n->switch_stmt.else_body, indent + 1);
 			break;
 

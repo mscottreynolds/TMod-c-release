@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 3 November 2026.  
+**Last updated:** 6 November 2026.  
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -277,16 +277,21 @@ if-then-statement =
     "END" ;
 
 (* No fallthrough between arms. ELSE is required and is the last arm.
-   "ELSE" [ "CASE" case-labels ] is planned (not parsed yet): those
-   constants share the else body. Bare "ELSE" ":" stays valid. *)
-   
+   Else labels are parsed (0.27.7.242). Bare "ELSE" ":" is the
+   residual alone. "ELSE" "DEFAULT" ":" is the same arm. A list that
+   names a constant ends with "DEFAULT". "DEFAULT" is last.
+   "DEFAULT" is a lexer keyword. *)
+
 switch-statement =
     "SWITCH" expression "OF"
         { "CASE" case-labels ":" statement-sequence }
-        "ELSE" [ "CASE" case-labels ] ":" statement-sequence
+        "ELSE" [ else-labels ] ":" statement-sequence
     "END" ;
 
 case-labels = const-expression { "," const-expression } ;
+
+else-labels = "DEFAULT"
+            | const-expression { "," const-expression } "," "DEFAULT" ;
 
 while-statement =
     "WHILE" expression "DO" 
@@ -478,9 +483,11 @@ countof-expression = "COUNTOF" "(" type-specifier | designator ")" ;
 (* Keywords are case-insensitive: "IF", "if", "If", "iF" are recognized as the same *)
 (* Identifiers are case-sensitive: "MyVar", "myvar", "MYVAR" are distinct. *)
 
+(* "DEFAULT" marks the residual on an else arm (0.27.7.242). *)
 keyword = "AND" | "ARRAY" | "AS" | "ASSERT" | "BEGIN" | "BOUND" | "BREAK" | "BY" |
-        "CASE" | "CAST" | "CONST" | "CONTINUE" | "COUNTOF" | "DEBUG" | "DEC" | 
-        "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" | "ELSIF" | "END" |
+        "CASE" | "CAST" | "CONST" | "CONTINUE" | "COUNTOF" | "DEBUG" | "DEC" |
+        "DEFAULT" | "DEFINE" | "DEFER" | "DIV" | "DO" | "DOWNTO" | "ELSE" |
+        "ELSIF" | "END" |
         "ENSURE" | "ENUM" | "EXPORT" | "EXTENDS" | "EXTERN"| "FALSE" | "FOR" |
         "FORWARD" | "FROM" | "FUNCTION" | "HEADER" | "IF" | "IMPORT" | "IN" | "INC" |
         "INVARIANT" | "LET" | "LOOP" | "MOD" | "MODULE" | "NIL" | "NOT" | "OF" |

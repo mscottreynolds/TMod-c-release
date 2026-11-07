@@ -28,13 +28,14 @@ import TParser::parse_const_expression, TParser::parse_designator, TParser::pars
 
 import TToken, TOK_KEYWORD_DEFER, TOK_KEYWORD_DEBUG, TOK_KEYWORD_SWITCH,
 	TOK_KEYWORD_OF, TOK_KEYWORD_CASE, TOK_COMMA, TOK_COLON, TOK_KEYWORD_ELSE,
-	TOK_KEYWORD_END, TOK_IDENT, TOK_DOT, TOK_KEYWORD_FROM, TOK_STRING,
-	TOK_KEYWORD_AS, TOK_KEYWORD_BREAK, TOK_KEYWORD_CONTINUE, TOK_KEYWORD_RETURN,
-	TOK_KEYWORD_IF, TOK_KEYWORD_THEN, TOK_KEYWORD_ELSIF, TOK_KEYWORD_DO,
-	TOK_KEYWORD_INVARIANT, TOK_KEYWORD_BOUND, TOK_KEYWORD_FOR, TOK_COLON_EQ, 
-	TOK_EQ, TOK_KEYWORD_DOWNTO, TOK_KEYWORD_TO, TOK_KEYWORD_BY, TOK_NUMBER, 
-	TOK_KEYWORD_REPEAT, TOK_KEYWORD_UNTIL, TOK_KEYWORD_LOOP, TOK_KEYWORD_INC, 
-	TOK_KEYWORD_DEC, TOK_LPAREN, TOK_RPAREN, TOK_ADD, TOK_SUB, TOK_COLON_COLON,
+	TOK_KEYWORD_DEFAULT, TOK_KEYWORD_END, TOK_IDENT, TOK_DOT, TOK_KEYWORD_FROM, 
+	TOK_STRING, TOK_KEYWORD_AS, TOK_KEYWORD_BREAK, TOK_KEYWORD_CONTINUE, 
+	TOK_KEYWORD_RETURN, TOK_KEYWORD_IF, TOK_KEYWORD_THEN, TOK_KEYWORD_ELSIF, 
+	TOK_KEYWORD_DO, TOK_KEYWORD_INVARIANT, TOK_KEYWORD_BOUND, TOK_KEYWORD_FOR, 
+	TOK_COLON_EQ, TOK_EQ, TOK_KEYWORD_DOWNTO, TOK_KEYWORD_TO, TOK_KEYWORD_BY, 
+	TOK_NUMBER, TOK_KEYWORD_REPEAT, TOK_KEYWORD_UNTIL, TOK_KEYWORD_LOOP, 
+	TOK_KEYWORD_INC, TOK_KEYWORD_DEC, TOK_LPAREN, TOK_RPAREN, TOK_ADD, TOK_SUB, 
+	TOK_COLON_COLON,
 	from tmodc.lexer.Lexer
 
 import TType 
@@ -112,12 +113,14 @@ end parse_debug_stmt
  * Grammar:
  * 	"SWITCH" expression "OF"
  * 		{ "CASE" case-labels ":" statement-sequence }
- *		"ELSE" ":" statement-sequence
+ *		"ELSE" [ ELSE-LABLES] ":" statement-sequence
  * 	"END" ;
  *
  * 	case-labels = const-expression { "," const-expression } ;
+ * 	else-lables = "DEFAULT" | const-expression { "," const-expression } "," "DEFAULT";
  *
- * No fallthrough. ELSE is required.
+ * No fallthrough. ELSE is required and last. else: is the residual alone.
+ * else default: is that same arm. A list that names a constant ends with default.
  *)
 export function parse_switch_stmt(p: pParser): ^Node
 begin
@@ -142,6 +145,9 @@ begin
 	n^.switch_stmt.cases := nil
 	n^.switch_stmt.case_count := 0
 	n^.switch_stmt.case_capacity := 0
+	n^.switch_stmt.else_labels := nil
+	n^.switch_stmt.else_label_count := 0
+	n^.switch_stmt.else_label_capacity := 0
 	n^.switch_stmt.else_body := nil
 
 	skip_empty_statements(p)
@@ -192,10 +198,63 @@ begin
 		skip_empty_statements(p)
 	end
 
-	// ELSE is required
+	// ELSE is required and last.
 	consume(p, TOK_KEYWORD_ELSE, "parse_switch_stmt: expected ELSE (required)")
-	consume(p, TOK_COLON, "parse_switch_stmt: expected ':' after ELSE")
+	skip_layout_breaks(p)
 
+	if match(p, TOK_COLON) then
+		; // else: residual alone
+	elsif check(p, TOK_KEYWORD_DEFAULT) then
+		// else default: same arm, no const labels
+		advance(p)
+		skip_layout_breaks(p)
+		consume(p, TOK_COLON, "parse_switch_stmt: expected ':' after DEFAULT")
+	else
+		var else_labels: ^pNode = nil
+		var else_count: size_t = 0
+		var else_cap: size_t = 0
+		var else_lab: pNode = nil
+		var ended: bool = false
+
+		if check(p, TOK_KEYWORD_CASE) then
+			error_at(p, "parse_switch_stmt: ELSE lables do not use CASE", true)
+		end
+
+		else_lab := TParser::parse_const_expression(p^)
+		if else_lab == nil then
+			error_at(p, "parse_switch_stmt: expected const-expression in ELSE", true)
+		end
+		arena_append_ptr(p^.arena, (@else_labels) as ppvoid, @else_count, @else_cap, else_lab as pvoid)
+
+		while match(p, TOK_COMMA) do
+			skip_layout_breaks(p)
+			if check(p, TOK_KEYWORD_DEFAULT) then
+				advance(p)
+				ended := true
+				break
+			end
+			else_lab := TParser::parse_const_expression(p^)
+			if else_lab == nil then
+				error_at(p, "parse_switch_stmt: expected const-expression after ',' in ELSE", true)
+			end
+			arena_append_ptr(p^.arena, (@else_labels) as ppvoid, @else_count, @else_cap, else_lab as pvoid)
+		end
+
+		if not ended then
+			skip_layout_breaks(p)
+			if check(p, TOK_KEYWORD_DEFAULT) then
+				error_at(p, "parse_switch_stmt: expected ',' before DEFAULT", true)
+			else
+				error_at(p, "parse_switch_stmt: ELSE lables must end with DEFAULT", true)
+			end
+		end
+
+		skip_layout_breaks(p)
+		consume(p, TOK_COLON, "parse_switch_stmt: expected ':' after DEFAULT")
+		n^.switch_stmt.else_labels := else_labels
+		n^.switch_stmt.else_label_count := else_count
+		n^.switch_stmt.else_label_capacity := else_cap
+	end
 	n^.switch_stmt.else_body := TParser::parse_statement_sequence(p^)
 
 	consume(p, TOK_KEYWORD_END, "parse_switch_stmt: expected END after SWITCH")

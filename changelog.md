@@ -2,6 +2,14 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.7.242
+- **Else labels (item 10d)** — `else A, B, default:` shares one body with the required `else`. `else` stays the last arm. `else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is last. `else A, B:`, `else A default:`, `else default, A:`, and `else case A, default:` are parse errors.
+- `default` is a keyword. Generated C lists the names and ends the arm with `default:`, then the body and `break`.
+- A folded integer value appears once in the switch, on a `case` arm or on the else arm. A character literal matches another character literal with the same token text. The error is `semantic_switch_note: duplicate switch label`. A label that does not fold is left to the C compiler.
+- **Tests:** `tests/test_else_label.mc`. `tests/test3_else_label_tail.mc`, `tests/test3_else_label_comma.mc`, `tests/test3_else_label_order.mc`, `tests/test3_else_label_case.mc`, `tests/test3_else_label_dup.mc`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` clean on gcc, clang, and tcc, and promoted **0.27.7.242**. Stem **0.27.7**. `Makefile` `VERSION` is **0.27.7**. Branch **`TMod-c_0.27`**. Build **242**. `src/c/version.h` is `0.27.7.242`. This promote is in the tree with these docs.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261106-1854.md`, and an append in `docs/project_bible.md`.
+
 ## Version 0.27.6.240
 - **Import list separator** — a `:` where an import list expects `,` is a parse error. `parse_import_item` may return nil when the token is not an identifier. Its postcondition is `item == nil or item^.kind == NODE_IMPORT_ITEM`. The old `ensure` read `item^.kind` on that nil return and aborted. After an item, the next token must be `,` or `FROM`. The message is `parse_import_stmt: expected ',' or FROM in IMPORT`.
 - A newline before `from`, and a trailing comma before `from`, stay legal.
@@ -13,6 +21,11 @@
 - The import still names one file. `from tmodc.arena` opens `<root>/tmodc/arena.mh`, the export table beside a finished `tmodc/arena.mc`. No other suffix is tried.
 - The user promoted **0.27.6.239**. Stem **0.27.6**. `Makefile` `VERSION` is **0.27.6**. Branch **`TMod-c_0.27`**. Build **239**.
 - Docs this round: `changelog.md`, `docs/language-report.md`.
+
+## Version 0.27.6.238
+- **`forward` lines** — compiler sources comment out procedure `forward` declarations now that a later procedure can be called without the marker. `examples/kilo/kilo.mc` and `examples/sds/Tsds.mc` drop theirs. The keyword stays. `tests/test_forward.mc` still has `procedure ProcD() forward`.
+- Stem **0.27.6**. `Makefile` `VERSION` is **0.27.6**. Branch **`TMod-c_0.27`**. Build **238**. Commit `b95bd9b`. No suite result is in the commit message.
+- Docs this round: this entry, with **0.27.7.242**.
 
 ## Version 0.27.6.237
 - **Optional procedure `FORWARD`** — a top-level procedure or function may call one defined later in the same file. The keyword stays legal. Semantic analysis already registers every top-level procedure before bodies. Generated C writes one `static` prototype for each non-exported procedure or function that has a body, after the other declarations, then the bodies in source order. An exported procedure is prototyped in the `.h`. A `forward` line completed by a later body is not emitted again. A `forward` with no body, and `EXTERN`, stay where they are written. A function that returns a struct by value is emitted after that struct's body. `RECURSIVE` is unchanged. A header unit is unchanged.

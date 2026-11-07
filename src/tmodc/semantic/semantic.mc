@@ -8,7 +8,7 @@ module tmodc.semantic.semantic()
  *)
 
 
-import Arena, arena_alloc, arena_append_ptr, ppvoid 
+import Arena, arena_alloc, arena_append_ptr, pvoid, ppvoid 
 	from tmodc.arena
 import TSymbol, symbol_create, pTSymbol 
 	from tmodc.symbol
@@ -91,6 +91,15 @@ type TMethodChainHit = struct
 	owner_len: 	size_t
 	depth: 		size_t
 	is_static: 	bool
+end
+
+
+(* One switch label alreayd accepted. Character literals keep their token text. *)
+type SwitchSeen = struct
+	value: 		integer
+	is_char:	bool
+	text:		const ^char
+	text_len:	size_t
 end
 
 type pcchar = const ^char
@@ -3906,6 +3915,66 @@ begin
 end semantic_bind_loop_bound
 
 
+(*
+ * A switch label may appear once. Folded integers share one value space.
+ * Character literals match by token text. A label that does not fold is
+ * left for the C compiler. default is not a label.
+ *)
+procedure semantic_switch_note(ctx: pTSemanticContext, lab: pNode,
+		seen: ppvoid, seen_count: ^size_t, seen_cap: ^size_t)
+begin
+	var folded: integer = 0
+	var is_char: bool = false
+	var text: const ^char = nil
+	var text_len: size_t = 0
+	var i: size_t = 0
+	var prev: ^SwitchSeen = nil
+	var note: ^SwitchSeen = nil
+	var arr: ppvoid = nil
+
+	if ctx == nil or lab == nil or seen == nil or seen_count == nil or seen_cap == nil then
+		return
+	end
+
+	if lab^.kind == NODE_LITERAL and lab^.token.kind == TOK_CHAR then
+		is_char := true
+		text := lab^.token.start
+		text_len := lab^.token.length
+	elsif semantic_try_eval_const_expr(ctx, lab, @folded, nil) then
+		is_char := false
+	else
+		return
+	end
+
+	if seen_count^ > 0 then
+		arr := seen^ as ppvoid
+		for i := 1 to seen_count^ do
+			prev := (arr[i - 1]) as ^SwitchSeen
+			if prev == nil then
+				continue
+			end
+			if is_char then
+				if prev^.is_char and text_len == prev^.text_len and
+						memcmp(text, prev^.text, text_len) == 0 then
+					semantic_error_at(lab, "semantic_switch_note: duplicate switch label")
+				end
+			else
+				if prev^.is_char == false and folded == prev^.value then
+					semantic_error_at(lab, "semantic_switch_note: duplicate switch label")
+				end
+			end
+		end
+	end
+
+	note := arena_alloc(ctx^.arena, sizeof(SwitchSeen))
+	note^.value := folded
+	note^.is_char := is_char
+	note^.text := text
+	note^.text_len := text_len
+	arena_append_ptr(ctx^.arena, seen, seen_count, seen_cap, note)
+end semantic_switch_note
+
+
 (**
  * Resolve uses in one statement (no declaration registration).
  *)
@@ -4054,17 +4123,28 @@ begin
 
 		case NODE_SWITCH:
 			semantic_resolve_expr(ctx, n^.switch_stmt.expr)
-			for i := 1 to n^.switch_stmt.case_count do
-				sc := n^.switch_stmt.cases[i-1]
-				if sc <> nil then
-					for j := 1 to sc^.label_count do
-						semantic_resolve_expr(ctx, sc^.labels[j-1])
-					end
-					semantic_analyze_stmt_or_block(ctx, sc^.body)
-				end
-			end
-			semantic_analyze_stmt_or_block(ctx, n^.switch_stmt.else_body)
+			begin
+				var seen: pvoid = nil
+				var seen_count: size_t = 0
+				var seen_cap: size_t = 0
 
+				for i := 1 to n^.switch_stmt.case_count do
+					sc := n^.switch_stmt.cases[i-1]
+					if sc <> nil then
+						for j := 1 to sc^.label_count do
+							semantic_resolve_expr(ctx, sc^.labels[j-1])
+							semantic_switch_note(ctx, sc^.labels[j-1], @seen, @seen_count, @seen_cap)
+						end
+						semantic_analyze_stmt_or_block(ctx, sc^.body)
+					end
+				end
+				for j := 1 to n^.switch_stmt.else_label_count do
+					semantic_resolve_expr(ctx, n^.switch_stmt.else_labels[j-1])
+					semantic_switch_note(ctx, n^.switch_stmt.else_labels[j-1], @seen, @seen_count, @seen_cap)
+				end
+				semantic_analyze_stmt_or_block(ctx, n^.switch_stmt.else_body)
+			end
+		
 		case NODE_BREAK, NODE_CONTINUE, NODE_DOC_COMMENT, NODE_PREPROCESSOR, NODE_DEFINE:
 			// nothing to resolve
 

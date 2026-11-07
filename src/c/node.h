@@ -427,6 +427,9 @@ struct Node {
 			SwitchCase **cases;		// array of switch_cases
 			size_t case_count;		
 			size_t case_capacity;
+			Node **else_labels;		// consts before default; empty for else: and else default:
+			size_t else_label_count;
+			size_t else_label_capacity;
 			Node *else_body;		// the required ELSE statement-sequence
 		} switch_stmt;
 

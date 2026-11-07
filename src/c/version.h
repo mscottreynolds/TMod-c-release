@@ -1,4 +1,4 @@
 // DO NOT EDIT: This is generated via the Makefile
-#define VERSION "0.27.6.240"
-#define VERSION_BASE "0.27.6"
-#define BUILD_NUMBER 240
+#define VERSION "0.27.7.242"
+#define VERSION_BASE "0.27.7"
+#define BUILD_NUMBER 242

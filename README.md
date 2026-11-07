@@ -74,6 +74,7 @@ Features (Early Design Goals)
 - Optional type inference with required annotations when ambiguous
 - Pascal/Modula-style `PROCEDURE` / `FUNCTION`, `BEGIN` / `END` blocks
 - `RECURSIVE` keyword required on a procedure/function that directly calls itself (0.25.4)
+- Optional postfix `FORWARD` (0.27.6.237): a top-level procedure or function may call one defined later in the same file. The keyword stays legal
 - Free calls must resolve: every `name(...)` / `Type::name(...)` is a declaration, `IMPORT`, or `EXTERN` (0.26.0)
 - Type names must resolve: every non-builtin type is a declaration, `IMPORT`, or `EXTERN` (0.26.1)
 - Newline-aware statement termination with implied continuation inside delimiters
@@ -82,11 +83,12 @@ Features (Early Design Goals)
 - Subdirectory build (0.26.12.213): sources may live under `src/`. `src/codegen/` is package `codegen`. Several `.mc` inputs each keep their own source path
 - Compiler C tree (0.27.2.222): generated and hand-written `.c` / `.h` live under `src/c/`, mirroring the `.mc` path. `.mh` stays beside the `.mc`
 - Compiler sources (0.27.2.223): `.mc` and `.mh` live under `src/tmodc/` as package `tmodc`. Generated C mirrors that path under `src/c/tmodc/`. Hand-written `node.c`, `node.h`, and `version.h` stay in `src/c/`
-- Package path (0.26.12.212): `module tmodc.lib.String()` is the unit `String` in `tmodc/lib/String.mc`. An unquoted import is one directory path from that unit's package root
+- Package path (0.26.12.212; root match 0.27.6.239): `module tmodc.lib.String()` is the unit `String` in `tmodc/lib/String.mc`. An unquoted import is one directory path from that unit's package root. The root is the compiling file's directory matched to the declared package path. The filename is not part of that match
 - Type call (0.26.12.212): `Ident(...)` on a declared type is `Ident::Ident(...)`. The keyword `opaque` is not a type name
 - Open-array formals (0.27.1.219): `T[]`, `array[] of T`, and `^char[]` lower to a pointer plus a hidden `integer` length. `countof` on that formal reads it. Fixed `T[N]`, `^T`, and `^array[] of T` stay one parameter
 - Counted `FOR` (0.27.2.221; index type 0.27.3.227): `for i :=` assigns a predeclared variable. `for i =` and `for i: T =` declare a loop-scoped index. On `for i =`, an omitted type is the type of the start. A numeric literal stays `integer`. The declaring form accepts a type C can step, including `cardinal`, `char`, `size_t`, `byte`, an enumeration, and a pointer
 - Anonymous nested `UNION` (0.27.4.228): a field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate (`box.a`, `box.b`). C is an unnamed `union { ... };`. A nested struct stays a named type
+- Else labels (0.27.7.242): `else A, B, default:` shares one body with the required `else`. `else:` is the residual alone. `else default:` is that same arm. `default` is last and is a keyword
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -96,6 +98,10 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.7.242** (6 November 2026): else labels. `else A, B, default:` shares the required else body. `else:` is the residual alone. `else default:` is that same arm. `default` is a keyword. Branch **`TMod-c_0.27`**. Stem **0.27.7**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`.
+- **0.27.6.240**: a `:` in an import list is a parse error (`parse_import_stmt: expected ',' or FROM in IMPORT`).
+- **0.27.6.239**: an unquoted import's root comes from the compiling file's directory and the declared package path. The filename is not part of that match.
+- **0.27.6.238** (`b95bd9b`): compiler `forward` lines are commented out. The keyword stays. `examples/kilo/kilo.mc` and `examples/sds/Tsds.mc` drop theirs.
 - **0.27.6.237** (2 November 2026): `forward` keyword is optional.
 - **0.27.5.232** (30 October 2026):  **`BOUND`** — optional on `WHILE`, `REPEAT`, and `LOOP`, before any `INVARIANT`. One const-expression. `FOR` does not take it. An omitted bound leaves the loop as it is. 
 - **0.27.4.228** (26 October 2026): anonymous nested `UNION`. A field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate. C is an unnamed `union { ... };`. `.mh` spells `union (a: Arm, b: integer)`. `@format` stays 1. Tests `tests/test_anon_union.mc` and `tests/test3_anon_union.mc`. Branch **`main`**. Stem **0.27.4**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`. `src/c/node.c` and `src/c/node.h` stay hand-written. The port is unblocked
@@ -151,7 +157,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.27.6 hello.mc -C hello.c
+./bin/modc.0.27.7 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```

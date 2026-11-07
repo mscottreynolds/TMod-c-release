@@ -525,8 +525,9 @@ end codegen_c_loop_stmt
  * Emit SWITCH ... OF ... CASE ... ELSE ... END
  * Maps to a C switch. No fallthrough (we emit explic break; after each arm's body).
  * Comma lables become successive "case X:" (they share the following body until the break)
- * ELSE (required in source) becomes "default:". A break; is emitted after the default arm
- * for symetry.
+ * ELSE (required in source) becomes "default". Labels written on ELSE are case
+ * labels before that default, so default stays last. A break; is emitted after
+ * the defualt arm for symetry.
  *)
 procedure codegen_c_switch_stmt(n: const ^Node, ctx: CodegenContext)
 begin
@@ -549,6 +550,7 @@ begin
     begin
         var arm_ctx: CodegenContext = ctx_push(@ctx, n)
         var i: size_t
+        var k: size_t
 
         arm_ctx.indent := ctx.indent + 1
 
@@ -578,7 +580,15 @@ begin
             dynbuf_append(ctx.out, "break;\n")
         end
 
-        // ELSE (required) -> default
+        // ELSE labels, then default. else: and else default: have no labels.
+        for k := 1 to n.switch_stmt.else_label_count do
+            emit_indent(ctx.out, arm_ctx.indent)
+            dynbuf_append(ctx.out, "case ")
+            codegen_common_expr(n.switch_stmt.else_labels[k-1], arm_ctx)
+            dynbuf_append(ctx.out, ":\n")
+        end
+
+        // Else (required) -> default
         emit_indent(ctx.out, arm_ctx.indent)
         dynbuf_append(ctx.out, "default:\n")
         codegen_c_stmt(n.switch_stmt.else_body, arm_ctx)

@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.6** (see `CURRENT.md` for implementation status).  
-**Last updated:** 3 November 2026  
+**Version alignment:** Compiler **0.27.7** (see `CURRENT.md` for implementation status).  
+**Last updated:** 6 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -107,6 +107,7 @@ Illustrative fragments in this report are **non-normative** if they disagree wit
 - **Identifiers** are **case-sensitive** (`MyVar` ≠ `myvar`).  
 - **Length *Implemented (0.26.3.170)*** — an identifier is at most **255** characters. Longer is a compile-time error (lexer / `.mh` reader). Mangled export / C names `Owner__name` may be 512; they are not source identifiers.  
 - Full keyword list: EBNF production `keyword`.
+- `default` is a keyword (**0.27.7.242**). It marks the residual on an else arm (§7.1).
 
 **Examples:**
 
@@ -1007,18 +1008,20 @@ end
 
 `ELSE` is mandatory and is the last arm. Comma labels on one `CASE` share one body. There is no fallthrough from one arm into the next. Each arm lowers to its labels, the body, and one C `break`. `ELSE` lowers to `default:`.
 
-**`ELSE CASE` *Planned* (not parsed yet).** Constants that share the else body are written after `else`, so a scan still sees `else` first:
+**Else labels *Implemented (0.27.7.242)*.** Constants that share the else body are written after `else`. The list ends with `default`. A scan still sees `else` first:
 
 ```mod-c
 switch kind of
 	case Node_Inc, Node_Dec:
 		emit_inc_dec()
-	else case Node_Paren, Node_Call:
+	else Node_Paren, Node_Call, default:
 		emit_unhandled()
 end
 ```
 
-Those constants and every unnamed value select that one arm. A label on `ELSE CASE` is not also a label on a `CASE` arm. Generated C lists the names and ends the arm with `default:`, so the default label is last in the switch (MISRA C:2012 Rule 16.5; MISRA C:2004 Rule 15.3):
+`else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is the last item. `else Node_Paren, Node_Call:` and `else default, Node_Paren:` are errors.
+
+Those constants and every unnamed value select that one arm. A folded integer value appears once among the `CASE` labels and these labels. A character literal matches another character literal with the same token text. The error is `semantic_switch_note: duplicate switch label`. A label that does not fold is left to the C compiler. `default` is a keyword (`default`, `Default`, and `DEFAULT`) and is not looked up as a constant. Generated C lists the names and ends the arm with `default:`, so the default label is last in the switch (MISRA C:2012 Rule 16.5; MISRA C:2004 Rule 15.3):
 
 ```c
 case Node_Paren:
@@ -1646,6 +1649,8 @@ Do not maintain a second full EBNF elsewhere.
 | 2 November 2026 | **§4.4 struct and union order (0.27.5.234):** a same-file struct or union may omit `type Name FORWARD`. Generated C emits one incomplete tag per aggregate this file owns, then ready pointer aliases, then the rest in source order. The body keeps the tag. `.mh` stays source order. `type Name FORWARD` remains for an incomplete tag with no body. A pointer-alias cycle remains an error. |
 | 2 November 2026 | **§2.3 / §4.4 optional procedure `FORWARD` (0.27.6.237):** a later top-level procedure or function may be called without postfix `FORWARD`. The keyword stays. Generated C writes `static` prototypes for non-exported bodies, then the bodies. A doc comment above a moved body, or above the program `begin`, is emitted with that body. `EXTERN`, `RECURSIVE`, and a header prototype are unchanged. |
 | 3 November 2026 | **§3.1.1 / §3.2 package root (0.27.6.239):** the directory that contains the compiling file is matched to the declared package path. The filename is not part of that match. `src/tmodc/node.mc.inprogress` declared `module tmodc.node` has the same root as `src/tmodc/node.mc`. An unquoted import still names one file, `<root>/tmodc/arena.mh`, beside a finished `tmodc/arena.mc`. |
+| 5 November 2026 | **§2.2 / §7.1 else labels (planned):** `else A, B, default:` shares the else body. `else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is last. `default` is a keyword in this plan. The lexer does not reserve it yet. Not parsed yet. |
+| 6 November 2026 | **§2.2 / §7.1 else labels (0.27.7.242):** the 5 November spelling is parsed. `default` is a keyword. A folded integer appears once in the switch. A character literal matches by token text. A label that does not fold is left to the C compiler. Generated C lists the names and ends the arm with `default:`. |
 
 ---
 
