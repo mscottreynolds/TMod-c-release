@@ -31,8 +31,8 @@ import TParser
 import TParser::init, TParser::parse 
     from tmodc.parser.parser_main
 
-import NODE_PROGRAM, node_print, Node, 
-    from "node.h"
+import NODE_PROGRAM, node_print, TNode, pNode,
+    from tmodc.node
 import VERSION, VERSION_BASE, BUILD_NUMBER 
     from "version.h"
 
@@ -59,7 +59,6 @@ import utils_strndup
 
 type pchar = ^char
 type pFILE = ^FILE
-type pNode = ^Node
 type pbool = ^bool
 type array_of_pchar = ^char[]
 

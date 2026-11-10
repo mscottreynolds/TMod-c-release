@@ -1,4 +1,4 @@
-program test_array(argc: int, argv: ^char[]): int
+program test_array(args: ^char[]): int
 
 import printf from "stdio.h"
 import memcpy from "string.h"
@@ -24,7 +24,7 @@ type pInt = pointer to int
 
 begin
     var arg: String
-    var args: String[]
+    // var args: String[]
     var Args: ^String
     var Args5: String[5]
     let n = 3
@@ -49,7 +49,8 @@ begin
     if i <> j then
         printf("i <> j\n")
     end
-    printf("args: %s\n", argv[0])
+    printf("countof(argv): %d\n", countof(args))
+    printf("args: %s\n", args[0])
     printf("done\n")
 
     printf("sizeof(l) = %d, LIMIT=%d\n", sizeof(l), LIMIT)
@@ -60,7 +61,7 @@ begin
     else
         memcpy(v, w, sizeof(w))
     end
-    printf("length of v = %zu\n", sizeof(v) / sizeof(int))
+    printf("length of v = %d\n", sizeof(v) / sizeof(int))
     printf("{")
     for i := 0 to (sizeof(v) / sizeof(int)) - 1 do
         printf("%d,", v[i])

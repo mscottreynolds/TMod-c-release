@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.27.7
+VERSION 	:= 0.27.8
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
@@ -139,17 +139,19 @@ tmodc: $(TARGET)
 all: tmodc string-lib examples
 	@echo "All done."
 
-# Increment BUILD_NUMBER and update src/c/version.h
+# Increment BUILD_NUMBER and update src/tmodc/version.mc
 version:
 	@build=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0);			\
 	build=$$((build + 1)); 										\
 	echo $$build > $(BUILD_FILE); 								\
 	printf '%s\n'												\
-		'// DO NOT EDIT: This is generated via the Makefile' 	\
-		"#define VERSION \"$(VERSION).$$build\"" 				\
-		"#define VERSION_BASE \"$(VERSION)\""					\
-		"#define BUILD_NUMBER $$build"							\
-		> $(C_SRC_DIR)/version.h
+		"header version"										\
+		"// DO NOT EDIT: This is generated via the Makefile" 	\
+		"export define VERSION = \"$(VERSION).$$build\"" 		\
+		"export define VERSION_BASE = \"$(VERSION)\""			\
+		"export define BUILD_NUMBER = $$build"					\
+		"end"													\
+		> $(SRC_DIR)/tmodc/version.mc
 	@echo VERSION=$(VERSION)
 	@echo BUILD_NUMBER=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
@@ -325,17 +327,17 @@ test: $(TARGET)
 			echo "FAIL (file not found)";										\
 			continue;															\
 		fi;																		\
-		if ! ./$(TARGET) "$$src" -C "$$c_file" -H "$$h_file" >/dev/null; then	\
+		if ! ./$(TARGET) "$$src" -C "$$c_file" -H "$$h_file" >>$(TEST_BUILD_DIR)/test1_results.out; then	\
 			fail=$$((fail + 1));												\
 			echo "FAIL (modc)";													\
 			continue; 															\
 		fi; 																	\
-		if ! $(CC) $(CFLAGS) -o "$$exec" "$$c_file" >/dev/null 2>&1; then		\
+		if ! $(CC) $(CFLAGS) -o "$$exec" "$$c_file" >>$(TEST_BUILD_DIR)/test1_results.out 2>&1; then		\
 			fail=$$((fail + 1));												\
 			echo "FAIL (cc)";													\
 			continue;															\
 		fi;																		\
-		if ! "$$exec" >/dev/null; then											\
+		if ! "$$exec" >>$(TEST_BUILD_DIR)/test1_results.out; then											\
 			fail=$$((fail + 1));												\
 			echo "FAIL (run exit $$?)";											\
 		else																	\
@@ -358,7 +360,7 @@ test2: $(TARGET)
 	for f in $(TEST2_MC_FILES); do 							\
 		total=$$((total + 1));								\
 		echo -n "[$$total] $$f ";							\
-		if ./$(TARGET) -a "$$f" >/dev/null; then 			\
+		if ./$(TARGET) -a "$$f" >>$(TEST_BUILD_DIR)/test2_results.out; then 			\
 			echo ""; 										\
 		else 												\
 			fail=$$((fail + 1));							\
@@ -374,7 +376,7 @@ test3: $(TARGET)
 	for f in $(TEST3_MC_FILES); do 							\
 		total=$$((total + 1));								\
 		echo -n "[$$total] $$f ";							\
-		if ./$(TARGET) -a "$$f" >/dev/null 2>&1; then		\
+		if ./$(TARGET) -a "$$f" >>$(TEST_BUILD_DIR)/test3_results.out 2>&1; then		\
 			fail=$$((fail + 1)); 							\
 			echo "FAIL (compiled when error expected)";		\
 		else												\
@@ -494,7 +496,7 @@ clean-all: examples-clean string-lib-clean clean
 
 help:
 	@echo "Available targets:"
-	@echo "  version            Increment the BUILD_NUMBER and update $(C_SRC_DIR)/version.h"
+	@echo "  version            Increment the BUILD_NUMBER and update $(SRC_DIR)/tmodc/version.mc"
 	@echo "  all                Build the modc.$(VERSION) binary"
 	@echo "  test               Run all preprocessor, compile, and run tests (test_*)"
 	@echo "  test2              Run just preprocessor tests (test2_*)"
@@ -536,9 +538,6 @@ selfhost: $(TARGET)
 	@rm -rf $(SH_BUILD_DIR)
 	@mkdir -p $(SH_BUILD_DIR)
 	@echo "=== Stage 1: Regenerating compiler sources (src tree) ==="
-	@for f in node.c node.h version.h; do 	\
-		cp -p "$(C_SRC_DIR)/$$f" "$(SH_BUILD_DIR)/$$f" || exit 1;	\
-	done
 	@for mc in $(SRC_MC_FILES); do										\
 		rel=$${mc#$(SRC_DIR)/};											\
 		stem=$${rel%.mc};												\
@@ -555,10 +554,6 @@ selfhost: $(TARGET)
 		inc="$$inc -I$$d";												\
 	done;																\
 	objs=""; 	\
-	c="$(SH_BUILD_DIR)/node.c"; 	\
-	o="$${c%.c}.o"; 	\
-	$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1; 	\
-	objs="$$o"; 	\
 	for mc in $(SRC_MC_FILES); do 	\
 		rel=$${mc#$(SRC_DIR)/}; 	\
 		stem=$${rel%.mc}; 	\
@@ -578,9 +573,6 @@ bootstrap: selfhost
 	@rm -rf $(BS_BUILD_DIR)
 	@mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
 	@echo "=== Stage 3: Regenerating with new compiler ==="
-	@for f in node.c node.h version.h; do 	\
-		cp -p "$(C_SRC_DIR)/$$f" "$(BS_BUILD_DIR)/$$f" || exit 1; 	\
-	done
 	@for mc in $(SRC_MC_FILES); do										\
 		rel=$${mc#$(SRC_DIR)/};											\
 		stem=$${rel%.mc};												\
@@ -597,10 +589,6 @@ bootstrap: selfhost
 		inc="$$inc -I$$d";												\
 	done;																\
 	objs=""; 	\
-	c="$(BS_BUILD_DIR)/node.c"; 	\
-	o="$${c%.c}.o"; 	\
-	$(CC) $$inc $(CFLAGS) -c "$$c" -o "$$o" || exit 1; 	\
-	objs="$$o"; 	\
 	for mc in $(SRC_MC_FILES); do 	\
 		rel=$${mc#$(SRC_DIR)/}; 	\
 		stem=$${rel%.mc}; 	\

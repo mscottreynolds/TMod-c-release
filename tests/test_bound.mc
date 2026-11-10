@@ -2,7 +2,7 @@ program test_bound()
 
 import printf from "stdio.h"
 
-const LIM = 4
+export const LIM = 4
 
 begin
 	var i: integer = 0

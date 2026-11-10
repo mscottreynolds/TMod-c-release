@@ -23,8 +23,8 @@ import stderr, fprintf
     from "stdio.h"
 import exit 
     from "stdlib.h"
-import Node 
-    from "node.h"
+import pNode, TNode,
+    from tmodc.node
 
 import DynBuf 
     from tmodc.dynbuf
@@ -45,7 +45,7 @@ import codegen_mh
 
 export type InitialContext = struct
     out: ^DynBuf
-    ast: const ^Node
+    ast: const ^TNode
     debug_enabled: bool
     assert_off: bool
     dbc_off: bool

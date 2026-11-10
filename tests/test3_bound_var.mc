@@ -1,11 +1,14 @@
 program test3_bound_var()
 
-begin
-	var n: integer = 3
+var LIM = 4
 
-	while n > 0 do
-		bound n
-		n := n - 1
+begin
+	var i: integer = 0
+
+	while i < 3do
+		bound LIM
+		i := i + 1
 	end
-end
+end test3_bound_var
+
 

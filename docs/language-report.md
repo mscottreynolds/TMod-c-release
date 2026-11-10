@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.7** (see `CURRENT.md` for implementation status).  
-**Last updated:** 6 November 2026  
+**Version alignment:** Compiler **0.27.8** (see `CURRENT.md` for implementation status).  
+**Last updated:** 9 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -406,7 +406,7 @@ let msg: string = "done"
 i := 0                (* VAR *)
 ```
 
-`(* C: CONST currently lowers to static const objects. Preprocessor constants are DEFINE (0.26.5.188), not a fold of declaration-CONST (item 19 demoted). LET / VAR are ordinary locals (0.26.5.183). *)`
+`(* C: A folded integer CONST emits the integer and has no C object. A negative value is parenthesized. A string, an array, a record, or a brace list stays static const. An enumeration constant stays its C name. A character literal still lowers to an object. DEFINE (0.26.5.188) is the macro. LET / VAR are ordinary locals (0.26.5.183). *)`
 
 **ISO C constant expressions (C11 §6.6).** A constant expression is evaluated at translation time. An integer constant expression has integer type. Its operands are integer constants, enumeration constants, character constants, `sizeof` and `_Alignof` expressions whose results are integer constants, and floating constants that are the immediate operands of casts. A cast in an integer constant expression converts an arithmetic type to an integer type. In an initializer, a constant expression may also be an arithmetic constant expression, a null pointer constant, or an address constant. An address constant is a pointer to a function, or to an object of static storage duration, written with `&`, with a cast of an integer constant to a pointer type, or with an array or function designator. Forming it does not read an object's value. A static initializer is a constant expression or a string literal (C11 §6.7.9). An implementation may accept further forms (C11 §6.6 paragraph 10).
 
@@ -439,7 +439,7 @@ n + 1                            /* n names an object */
 f()                              /* function call */
 ```
 
-A declaration `CONST` is a `const-expression` in TMod-c. The lowering note above emits it as a `static const` object, which is the second group. A `DEFINE` (§4.1.1) whose replacement list is an integer constant is in the first group after preprocessing.
+A declaration `CONST` whose value folds to an integer is that integer. It is in the first group. Naming it does not read an object, and generated C emits no declaration for it. An exported folded integer is an optional integer after `complete` on the `.mh` line (`export const Limit complete 256`). A line with no integer still parses. The `.h` does not declare a C object. A client folds the imported integer the same way. A value that does not fold still lowers to a `static const` object, which is the second group. A folded integer named in a brace list is the integer when that name is already in scope. A bare name that is not yet in scope keeps its source spelling. An enumeration constant stays its C name. A character literal is a `const-expression` in the grammar. The folder accepts an integer literal, so `const C = 'a'` still lowers to an object. A `DEFINE` (§4.1.1) whose replacement list is an integer constant is in the first group after preprocessing.
 
 ### 4.3 Grouped trailing types
 
@@ -1486,7 +1486,7 @@ Rejected: pointers, scalars, `string`, and an open array that is not a slice for
 
 Interim `LEN(designator)` (*0.26.8.194*) is removed. It accepted a designator only and always emitted the sizeof division.
 
-`SIZEOF(...)` — size in bytes; type **`integer`**; C `((integer)sizeof(...))` — not `size_t` (*0.25.4*).
+`SIZEOF(...)` — size in bytes; type **`integer`**; C `((integer)sizeof(...))` — not `size_t` (*0.25.4*). An imported type name is a type operand (*0.27.8*).
 
 Lengths and indexes are **signed**. `cardinal` is for bits / wrap / C unsigned ABI. `size_t` is an imported C name.
 
@@ -1651,6 +1651,8 @@ Do not maintain a second full EBNF elsewhere.
 | 3 November 2026 | **§3.1.1 / §3.2 package root (0.27.6.239):** the directory that contains the compiling file is matched to the declared package path. The filename is not part of that match. `src/tmodc/node.mc.inprogress` declared `module tmodc.node` has the same root as `src/tmodc/node.mc`. An unquoted import still names one file, `<root>/tmodc/arena.mh`, beside a finished `tmodc/arena.mc`. |
 | 5 November 2026 | **§2.2 / §7.1 else labels (planned):** `else A, B, default:` shares the else body. `else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is last. `default` is a keyword in this plan. The lexer does not reserve it yet. Not parsed yet. |
 | 6 November 2026 | **§2.2 / §7.1 else labels (0.27.7.242):** the 5 November spelling is parsed. `default` is a keyword. A folded integer appears once in the switch. A character literal matches by token text. A label that does not fold is left to the C compiler. Generated C lists the names and ends the arm with `default:`. |
+| 7 November 2026 | **§4.2 folded integer `CONST` (0.27.7.243):** a folded integer emits no C object. An ordinary use emits the integer. A negative value is parenthesized. An exported folded integer is an optional integer after `complete` on the `.mh` line. The `.h` does not declare a C object. A value that does not fold stays `static const`. An enumeration constant stays its C name. A character literal still lowers to an object. `DEFINE` stays the macro. |
+| 9 November 2026 | **§10.2 `SIZEOF` of an imported type (0.27.8.250):** an imported type name is a type operand. The parser type list does not include imports. A builtin name used as a designator is still an error. |
 
 ---
 

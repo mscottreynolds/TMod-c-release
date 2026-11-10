@@ -14,24 +14,23 @@ import memcmp
 	from "string.h"
 import VERSION_BASE 
 	from "version.h"
-import Node, NODE_PROGRAM, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL, 
-	NODE_ENUM_TYPE, NODE_ENUM_ITEM, NODE_VAR_DECL, NODE_CONST_DECL, 
-	NODE_LET_DECL, NODE_PARAM_LIST, NODE_PARAM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
-	NODE_METHOD_TYPE, NODE_DEFINE,
-	from "node.h"
-
 import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
 	from tmodc.dynbuf
 import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
 	from tmodc.lexer.Lexer
+import TNode, pNode, NODE_PROGRAM, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL, 
+	NODE_ENUM_TYPE, NODE_ENUM_ITEM, NODE_VAR_DECL, NODE_CONST_DECL, 
+	NODE_LET_DECL, NODE_PARAM_LIST, NODE_PARAM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
+	NODE_METHOD_TYPE, NODE_DEFINE, TSymbol,
+	from tmodc.node
 import TType 
 	from tmodc.ttype
 
-import CodegenContext 
+import CodegenContext, codegen_const_is_value,
 	from tmodc.codegen.codegen_common
 
 
-function mh_proc_complete(n: const ^Node): bool
+function mh_proc_complete(n: const ^TNode): bool
 begin
 	if n^.proc_decl.is_forward then
 		return false
@@ -43,7 +42,7 @@ begin
 end mh_proc_complete
 
 
-function mh_type_opaque(n: const ^Node): bool
+function mh_type_opaque(n: const ^TNode): bool
 begin
 	var ty: const ^TType = nil
 
@@ -71,10 +70,10 @@ type pcchar = const ^char
  * First formal type name if written named type (not ^ / array).
  * Do not chase resolved_type: `sds = ^char` still counts as name sds.
  *)
-function mh_first_formal_type_name(n: const ^Node, out_name: ^pcchar, out_len: ^size_t): bool
+function mh_first_formal_type_name(n: const ^TNode, out_name: ^pcchar, out_len: ^size_t): bool
 begin
-	var pl: const ^Node = nil
-	var self_param: const ^Node = nil
+	var pl: const ^TNode = nil
+	var self_param: const ^TNode = nil
 	var pt: const ^TType = nil
 
 	out_name^ := nil
@@ -110,7 +109,7 @@ end mh_first_formal_type_name
 
 
 (* True if type-bound and first formal type name equals owner (instance). *)
-function mh_method_is_instance(n: const ^Node): bool
+function mh_method_is_instance(n: const ^TNode): bool
 begin
 	var ft_name: const ^char = nil
 	var ft_len: size_t = 0
@@ -181,7 +180,7 @@ end mh_append_array_suffix
 
 (*
  * Suffix for when the element is a named or opaque leaf and const matches.
- * ^Node[] and Node[] use it. ^array[] of T, a const mismatch, and a nested
+ * pNode[] and Node[] use it. ^array[] of T, a const mismatch, and a nested
  * array use the keyword form.
  *)
 function mh_array_suffix_form(ty: const ^TType): bool
@@ -251,7 +250,7 @@ end mh_append_type_spec
 (*
  * Append one formal: [var|ref|const] type-spec (no parameter name).
  *)
-procedure mh_append_formal(out: ^DynBuf, param: const ^Node)
+procedure mh_append_formal(out: ^DynBuf, param: const ^TNode)
 begin
 	if out == nil or param == nil or param^.kind <> NODE_PARAM then
 		return
@@ -271,11 +270,11 @@ end mh_append_formal
  * Append ( formal { , formal } ) and optional : result-type.
  * param_list is NODE_PARAM_LIST or nil.
  *)
-procedure mh_append_signature(out: ^DynBuf, params_list: const ^Node,
+procedure mh_append_signature(out: ^DynBuf, params_list: const ^TNode,
 		return_type: const ^TType, emit_result: bool)
 begin
 	var i: size_t = 0
-	var p: const ^Node = nil
+	var p: const ^TNode = nil
 	var count: size_t = 0
 
 	if out == nil then
@@ -316,12 +315,12 @@ begin
 end mh_append_signature
 
 
-procedure mh_append_type_signature(out: ^DynBuf, mt: const ^Node)
+procedure mh_append_type_signature(out: ^DynBuf, mt: const ^TNode)
 begin
 	var i: size_t = 0
-	var p: const ^Node = nil
+	var p: const ^TNode = nil
 	var count: size_t = 0
-	var pl: const ^Node = nil
+	var pl: const ^TNode = nil
 
 	if out == nil or mt == nil or mt^.kind <> NODE_METHOD_TYPE then
 		return
@@ -366,10 +365,10 @@ end mh_append_type_signature
 (*
  * Module/program entry: params are a flat array on program_decl, not PARAM_LIST.
  *)
-procedure mh_append_unit_signature(out: ^DynBuf, n: const ^Node)
+procedure mh_append_unit_signature(out: ^DynBuf, n: const ^TNode)
 begin
 	var i: size_t = 0
-	var p: const ^Node = nil
+	var p: const ^TNode = nil
 	var count: size_t = 0
 	var ret: const ^TType = nil
 	var emit_result: bool = false
@@ -420,10 +419,10 @@ begin
 end mh_append_ident
 
 
-recursive procedure mh_append_field_items(out: ^DynBuf, st: const ^Node)
+recursive procedure mh_append_field_items(out: ^DynBuf, st: const ^TNode)
 begin
 	var i: size_t = 0
-	var f: const ^Node = nil
+	var f: const ^TNode = nil
 	var emitted: size_t = 0
 
 	if out == nil or st == nil or st^.kind <> NODE_STRUCT_DECL then
@@ -459,7 +458,7 @@ end mh_append_field_items
  * Append struct/union field tail: struct|union [extends Name] (f: T {, ...})
  * Same physical line as export type. Type-spec may include an array (6b).
  *)
-procedure mh_append_field_list(out: ^DynBuf, st: const ^Node)
+procedure mh_append_field_list(out: ^DynBuf, st: const ^TNode)
 begin
 	var ext: const ^TType = nil
 
@@ -491,7 +490,7 @@ begin
 end mh_append_field_list
 
 
-procedure mh_emit_export_proc(out:^DynBuf, n: const ^Node)
+procedure mh_emit_export_proc(out:^DynBuf, n: const ^TNode)
 begin
 	var name: const ^char = n^.proc_decl.name
 	var name_len: size_t = n^.proc_decl.name_len
@@ -546,10 +545,10 @@ begin
 end mh_emit_export_proc
 
 
-procedure mh_emit_export_enum_members(out: ^DynBuf, en: const ^Node)
+procedure mh_emit_export_enum_members(out: ^DynBuf, en: const ^TNode)
 begin
 	var i: size_t = 0
-	var item: ^Node = nil
+	var item: pNode = nil
 
 	if en == nil or en^.kind <> NODE_ENUM_TYPE then
 		return
@@ -568,7 +567,7 @@ begin
 end mh_emit_export_enum_members
 
 
-procedure mh_emit_export_type(out: ^DynBuf, n: const ^Node)
+procedure mh_emit_export_type(out: ^DynBuf, n: const ^TNode)
 begin
 	var flag: const ^char = "complete"
 
@@ -610,7 +609,7 @@ begin
 end mh_emit_export_type
 
 
-procedure mh_emit_export_binding(out: ^DynBuf, n: const ^Node, kind_word: const ^char)
+procedure mh_emit_export_binding(out: ^DynBuf, n: const ^TNode, kind_word: const ^char)
 begin
 	var i: size_t = 0
 	var complete_word: const ^char = "complete"
@@ -620,13 +619,20 @@ begin
 	end
 
 	for i := 1 to n^.var_decl.count do
-		var item: ^Node = n^.var_decl.items[i - 1]
+		var item: pNode = n^.var_decl.items[i - 1]
 		dynbuf_append(out, "export ")
 		dynbuf_append(out, kind_word)
 		dynbuf_append_char(out, ' ')
 		mh_append_ident(out, item^.var_item.name, item^.var_item.name_len)
 		dynbuf_append_char(out, ' ')
 		dynbuf_append(out, complete_word)
+		if n^.kind == NODE_CONST_DECL and codegen_const_is_value(item) then
+			var num: array[32] of char
+
+			dynbuf_append_char(out, ' ')
+			snprintf(num, sizeof(num), "%d", item^.resolved_sym^.const_value as int)
+			dynbuf_append(out, num)
+		end
 		dynbuf_append_char(out, '\n')
 	end
 end mh_emit_export_binding
@@ -636,7 +642,7 @@ end mh_emit_export_binding
  * Emit MODULE/PROGRAM unit entry (name matches unit; not an EXPORT decl in source).
  * Mirros codegen_common_module_prototype() in generated .h files.
  *)
-procedure mh_emit_unit_entry(out: ^DynBuf, n: const ^Node)
+procedure mh_emit_unit_entry(out: ^DynBuf, n: const ^TNode)
 begin
 	var kind_word: const ^char = "procedure"
 
@@ -653,7 +659,7 @@ begin
 end mh_emit_unit_entry
 
 
-procedure mh_emit_exported_decl(out: ^DynBuf, d: const ^Node)
+procedure mh_emit_exported_decl(out: ^DynBuf, d: const ^TNode)
 begin
 	if d == nil then
 		return
@@ -689,7 +695,7 @@ begin
 end mh_emit_exported_decl
 
 
-export function codegen_mh_has_exports(root: const ^Node): bool
+export function codegen_mh_has_exports(root: const ^TNode): bool
 begin
 	var i: size_t = 0
 
@@ -698,7 +704,7 @@ begin
 	end
 
 	for i := 1 to root^.program_decl.count do
-		var d: ^Node = root^.program_decl.decls[i - 1]
+		var d: pNode = root^.program_decl.decls[i - 1]
 		if d^.kind == NODE_PROC_DECL or d^.kind == NODE_FUNC_DECL then
 			if d^.proc_decl.is_exported then
 				return true
@@ -734,7 +740,7 @@ end codegen_mh_has_exports
  * Main entry point for this module, codegen_mh()
  *)
 begin
-	var n: const ^Node = ctx.ast
+	var n: const ^TNode = ctx.ast
 	var out: ^DynBuf = ctx.out
 	var line_buf: array[256] of char
 	var i: size_t = 0

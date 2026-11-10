@@ -66,7 +66,7 @@ import
     pNode, node_create, NODE_DOC_COMMENT, NODE_PREPROCESSOR, NODE_LITERAL, NODE_FIELD_ACCESS,
     NODE_UNARY, NODE_BLOCK, NODE_DEFER, NODE_RETURN, NODE_BREAK, NODE_CONTINUE, NODE_ASSIGN, 
     NODE_IDENT, NODE_CALL, NODE_EXPR_STMT, NODE_PROGRAM, NODE_ASSERT, NODE_DEFINE,
-    from "node.h"
+    from tmodc.node
 import size_t 
     from "stddef.h"
 import stderr, fprintf 

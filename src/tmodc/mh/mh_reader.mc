@@ -9,7 +9,7 @@ import size_t
 	from "stddef.h"
 import memcpy, strlen, memcmp, strrchr, strchr 
 	from "string.h"
-import malloc, exit, free, realloc, atoi, 
+import malloc, exit, free, realloc, atoi, strtol,
 	from "stdlib.h"
 import isalpha, isalnum, isdigit, 
 	from "ctype.h"
@@ -17,16 +17,15 @@ import FILE, stderr, fclose, fopen, fprintf, snprintf, fread, fseek, ftell,
 	SEEK_END, SEEK_SET, 
 	from "stdio.h"
 
-import 
-	SYM_KIND_PROC, SYM_KIND_FUNC, SYM_KIND_TYPE, SYM_KIND_VAR, SYM_KIND_CONST, 
-	SYM_KIND_UNKNOWN, SymbolKind, SYM_KIND_IMPORT,
-	from tmodc.symkind
-import type_width_allowed 
-	from tmodc.ttype
-
 import MH_KIND_PROCEDURE, MH_KIND_FUNCTION, MH_KIND_TYPE, MH_KIND_ENUM, 
 	MH_KIND_VAR, MH_KIND_CONST, MhExportKind, MH_KIND_DEFINE,
 	from tmodc.mh.mh_exportkind
+import 
+	SYM_KIND_PROC, SYM_KIND_FUNC, SYM_KIND_TYPE, SYM_KIND_VAR, SYM_KIND_CONST, 
+	SYM_KIND_UNKNOWN, SymbolKind, SYM_KIND_IMPORT,
+	from tmodc.node
+import type_width_allowed 
+	from tmodc.ttype
 
 
 export type MhCompleteness = int
@@ -107,6 +106,9 @@ export type MhExport = struct
 	// Optional alias RHS: export type Name complete <type-spec>
 	has_alias: 			bool
 	alias_:				MhTypeSpec	
+	// export const Name complete <integer>. Absent for enum members and non-integers.
+	has_const_value: 	bool
+	const_value: 		int
 end
 
 
@@ -1403,6 +1405,32 @@ begin
 end mh_parse_field_list
 
 
+(*
+ * Optional integer after "export const Name complete". Enum lines omit it.
+ *)
+procedure mh_parse_optional_const_value(path: const ^char, line_no: size_t,
+		p: ^pchar, end_: pchar, exp: ^MhExport)
+begin
+	var endptr: ^char = nil
+	var v: long = 0
+
+	mh_skip_ws(p, end_)
+	if p^ >= end_ then
+		return
+	end
+	if p^^ <> '-' and not isdigit(p^^ as int) then
+		return
+	end
+	v := strtol(p^, @endptr, 10)
+	if endptr == p^ then
+		mh_fatal(path, line_no, "mh_parse_optional_const_value: expected integer")
+	end
+	p^ := endptr
+	exp^.has_const_value := true
+	exp^.const_value := v as int
+end mh_parse_optional_const_value
+
+
 procedure mh_parse_export_line(path: const ^char, line_no: size_t, line: ^char, m: ^MhModule)
 begin
 	var p: ^char = line
@@ -1511,6 +1539,8 @@ begin
 	exp.field_count := 0
 	exp.is_func_type := false
 	exp.has_alias := false
+	exp.has_const_value := false
+	exp.const_value := 0
 	mh_type_spec_clear(@exp.alias_)
 
 	if kind == MH_KIND_PROCEDURE or kind == MH_KIND_FUNCTION then
@@ -1524,6 +1554,9 @@ begin
 		if not exp.is_struct and not exp.is_union and not exp.is_func_type then
 			mh_parse_alias_rhs(path, line_no, @p, end_, @exp)
 		end
+	end
+	if kind == MH_KIND_CONST then
+		mh_parse_optional_const_value(path, line_no, @p, end_, @exp)
 	end
 
 	mh_module_add(m, exp)

@@ -9,8 +9,8 @@ module tmodc.parser.expression()
 
 import NODE_TERNARY, NODE_BINARY, NODE_SIZEOF, NODE_INC, NODE_DEC, NODE_UNARY,
 	NODE_CAST, NODE_FIELD_ACCESS, NODE_CALL, NODE_IDENT, NODE_LITERAL, NODE_PAREN,
-	NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, node_create, Node, NODE_COUNTOF,
-	from "node.h"
+	NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, node_create, pNode, NODE_COUNTOF,
+	from tmodc.node
 
 import TParser, pParser, advance, match, error_at, check, consume, isEOF, matchEOS,
 	skip_layout_breaks,
@@ -34,7 +34,6 @@ import TOK_QUESTION, TOK_COLON, TOK_KEYWORD_OR, TOK_KEYWORD_AND, TOK_EQ_EQ, TOK_
 	from tmodc.lexer.Lexer
 
 
-export type pNode = ^Node
 // export type pParser = ^Parser
 
 
@@ -74,16 +73,16 @@ export type pNode = ^Node
 (**
  * Parse conditional
  *)
-export recursive function parse_conditional(p: pParser): ^Node
+export recursive function parse_conditional(p: pParser): pNode
 begin
 	require p <> nil
 
-	var cond: ^Node = parse_logical_or(p)
+	var cond: pNode = parse_logical_or(p)
 
 	if match(p, TOK_QUESTION) then
-		var then_expr: ^Node = nil
-		var else_expr: ^Node = nil
-		var ternary: ^Node = nil
+		var then_expr: pNode = nil
+		var else_expr: pNode = nil
+		var ternary: pNode = nil
 
 		then_expr := TParser::parse_expr(p^)
 		consume(p, TOK_COLON, "parse_conditional: expected ':' after ternary then branch")
@@ -104,15 +103,15 @@ end parse_conditional
 (**
  * Parse logical OR
  *)
-export function parse_logical_or(p: pParser): ^Node
+export function parse_logical_or(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_logical_and(p)
+	var left: pNode = parse_logical_and(p)
 
 	while match(p, TOK_KEYWORD_OR) do
-		var right: ^Node = nil
-		var binary: ^Node = nil
+		var right: pNode = nil
+		var binary: pNode = nil
 
 		right := parse_logical_and(p)
 		if right == nil then
@@ -134,15 +133,15 @@ end parse_logical_or
 (**
  * Parse logical AND
  *)
-export function parse_logical_and(p: pParser): ^Node
+export function parse_logical_and(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_equality(p)
+	var left: pNode = parse_equality(p)
 
 	while match(p, TOK_KEYWORD_AND) do
-		var right: ^Node = nil
-		var binary: ^Node = nil
+		var right: pNode = nil
+		var binary: pNode = nil
 
 		right := parse_equality(p)
 		if right == nil then
@@ -164,17 +163,17 @@ end parse_logical_end
 (**
  * Parse equality
  *)
-export function parse_equality(p: pParser): ^Node
+export function parse_equality(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_relational(p)
+	var left: pNode = parse_relational(p)
 
 	while true do
 		var op: TokenKind = p^.current.kind
 		if op == TOK_EQ_EQ or op == TOK_NOT_EQ then
-			var right: ^Node = nil
-			var binary: ^Node = nil
+			var right: pNode = nil
+			var binary: pNode = nil
 
 			advance(p)
 
@@ -201,19 +200,19 @@ end parse_equality
 (**
  * Parse relational
  *)
-export function parse_relational(p: pParser): ^Node
+export function parse_relational(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_shift(p)
+	var left: pNode = parse_shift(p)
 
 	while true do
 		var op: TokenKind = p^.current.kind
 
 		if op == TOK_LESS or op == TOK_LESS_EQ or
 				op == TOK_GREATER or op == TOK_GREATER_EQ then
-			var right: ^Node = nil
-			var binary: ^Node = nil
+			var right: pNode = nil
+			var binary: pNode = nil
 
 			advance(p)
 
@@ -240,18 +239,18 @@ end parse_relational
 (**
  * Parse shift
  *)
-export function parse_shift(p: pParser): ^Node
+export function parse_shift(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_additive(p)
+	var left: pNode = parse_additive(p)
 
 	while true do
 		var op: TokenKind = p^.current.kind
 
 		if op == TOK_BITWISE_LSHIFT or op == TOK_BITWISE_RSHIFT then
-			var right: ^Node = nil
-			var binary: ^Node = nil
+			var right: pNode = nil
+			var binary: pNode = nil
 
 			advance(p)
 
@@ -278,18 +277,18 @@ end parse_shift
 (**
  * Parse additive
  *)
-export function parse_additive(p: pParser): ^Node
+export function parse_additive(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_multiplicative(p)
+	var left: pNode = parse_multiplicative(p)
 
 	while true do
 		var op: TokenKind = p^.current.kind
 		if op == TOK_ADD or op == TOK_SUB or
 				op == TOK_BITWISE_OR or op == TOK_KEYWORD_XOR then
-			var right: ^Node = nil
-			var binary: ^Node = nil
+			var right: pNode = nil
+			var binary: pNode = nil
 
 			advance(p)
 
@@ -316,11 +315,11 @@ end parse_additive
 (**
  * Parse multiplicative
  *)
-export function parse_multiplicative(p: pParser): ^Node
+export function parse_multiplicative(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_power(p)
+	var left: pNode = parse_power(p)
 
 	while true do
 		var op: TokenKind = p^.current.kind
@@ -328,8 +327,8 @@ begin
 		if op == TOK_MUL or op == TOK_DIV or
 				op == TOK_MOD or op == TOK_KEYWORD_MOD or 
 				op == TOK_BITWISE_AND or op == TOK_KEYWORD_DIV then
-			var right: ^Node = nil
-			var binary: ^Node = nil
+			var right: pNode = nil
+			var binary: pNode = nil
 
 			advance(p)
 
@@ -356,15 +355,15 @@ end parse_multiplicative
 (**
  * Parse Power
  *)
-export recursive function parse_power(p: pParser): ^Node
+export recursive function parse_power(p: pParser): pNode
 begin
 	require p <> nil
 
-	var left: ^Node = parse_unary(p)
+	var left: pNode = parse_unary(p)
 
 	if match(p, TOK_POWER) then
-		var right: ^Node = parse_power(p)		// right associative
-		var binary: ^Node = nil
+		var right: pNode = parse_power(p)		// right associative
+		var binary: pNode = nil
 
 		if right == nil then
 			error_at(p, "parse_power: expected expression after **", true)
@@ -412,7 +411,7 @@ begin
 	require p <> nil
 
 	var tok: TToken = p^.current
-	var n: ^Node = nil;
+	var n: pNode = nil;
 
 	consume(p, TOK_KEYWORD_SIZEOF, "parse_sizeof: expected SIZEOF")
 	consume(p, TOK_LPAREN, "parse_sizeof: expected '(' afer SIZEOF")
@@ -422,7 +421,7 @@ begin
 		n^.sizeof_expr.is_type := true
 		n^.sizeof_expr.target.sizeof_type := TParser::parse_return_type(p^)
 	else
-		var designator: ^Node = TParser::parse_designator(p^)
+		var designator: pNode = TParser::parse_designator(p^)
 		if designator == nil then
 			error_at(p, "parse_sizeof: expected type or designator inside SIZEOF", true)
 		end
@@ -445,7 +444,7 @@ begin
 	require p <> nil
 
 	var tok: TToken = p^.current
-	var n: ^Node = nil
+	var n: pNode = nil
 
 	consume(p, TOK_KEYWORD_COUNTOF, "parse_countof: expected COUNTOF")
 	consume(p, TOK_LPAREN, "parse_countof: expected '(' after COUNTOF")
@@ -455,7 +454,7 @@ begin
 		n^.sizeof_expr.is_type := true
 		n^.sizeof_expr.target.sizeof_type := TParser::parse_return_type(p^)
 	else
-		var designator: ^Node = TParser::parse_designator(p^)
+		var designator: pNode = TParser::parse_designator(p^)
 		if designator == nil then
 			error_at(p, "parse_countof: expected type or designator inside COUNTOF", true)
 		end
@@ -482,9 +481,9 @@ begin
 
 	var tok: TToken = p^.current
 	var is_inc: bool = match(p, TOK_KEYWORD_INC)
-	var designator: ^Node = nil
-	var step: ^Node = nil
-	var n: ^Node = nil
+	var designator: pNode = nil
+	var step: pNode = nil
+	var n: pNode = nil
 
 	if not is_inc then
 		consume(p, TOK_KEYWORD_DEC, "parse_inc_dec_expr: expected INC or DEC")
@@ -518,7 +517,7 @@ end parse_inc_dec_expr
 (**
  * Parse unary
  *)
-export recursive function parse_unary(p: pParser): ^Node
+export recursive function parse_unary(p: pParser): pNode
 begin
 	require p <> nil
 
@@ -547,8 +546,8 @@ begin
 	// @ binds tighter than AS: @e as T is (@e) as T. Operand is a postfix.
 	if op == TOK_AT then
 		var tok: TToken = {0}
-		var operand: ^Node = nil
-		var unary: ^Node = nil
+		var operand: pNode = nil
+		var unary: pNode = nil
 
 		tok := p^.current
 		advance(p)
@@ -564,7 +563,7 @@ begin
 
 		if match(p, TOK_KEYWORD_AS) then
 			var target: pointer to TType
-			var cast_node: pointer to Node
+			var cast_node: pNode
 
 			target := TParser::parse_parameter_type(p^)
 
@@ -581,8 +580,8 @@ begin
 	if op == TOK_NOT or op == TOK_SUB or op == TOK_ADD or
 			op == TOK_KEYWORD_NOT or op == TOK_BITWISE_NOT then
 		var tok: TToken = {0}
-		var operand: ^Node = nil
-		var unary: ^Node = nil
+		var operand: pNode = nil
+		var unary: pNode = nil
 
 		tok := p^.current
 		advance(p)
@@ -610,16 +609,16 @@ end parse_unary
  * 		| postfix-expression "AS" type-specifier 
  * 		| postfix-expression ;
  *)
-export function parse_cast(p: pParser): ^Node
+export function parse_cast(p: pParser): pNode
 begin
 	require p <> nil
 
-	var expr: pointer to Node
+	var expr: pNode
 
 	if match(p, TOK_KEYWORD_CAST) then
 		var target: pointer to TType
-		var e: pointer to Node
-		var cast_node: pointer to Node
+		var e: pNode
+		var cast_node: pNode
 
 		consume(p, TOK_LPAREN, "parse_cast: expected '(' after CAST")
 
@@ -644,7 +643,7 @@ begin
 
 	if match(p, TOK_KEYWORD_AS) then
 		var target: pointer to TType
-		var cast_node: pointer to Node
+		var cast_node: pNode
 
 		target := TParser::parse_parameter_type(p^)
 

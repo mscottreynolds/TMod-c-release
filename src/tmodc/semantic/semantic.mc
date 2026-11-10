@@ -10,21 +10,10 @@ module tmodc.semantic.semantic()
 
 import Arena, arena_alloc, arena_append_ptr, pvoid, ppvoid 
 	from tmodc.arena
-import TSymbol, symbol_create, pTSymbol 
-	from tmodc.symbol
 import 
 	pTSymbolTable, TSymbolTable, symtab_lookup, symtab_lookup_current, 
 	symtab_define, symtab_refine_symbol, symtab_create, symtab_define_let 
 	from tmodc.semantic.symtab
-import SYM_KIND_LET, SYM_KIND_IMPORT, SYM_KIND_PARAM, SYM_KIND_PROC, SYM_KIND_FUNC,
-	SYM_KIND_VAR, SYM_KIND_CONST, SYM_KIND_TYPE, SYM_KIND_UNKNOWN, SymbolKind,
-	from tmodc.symkind
-import 
-	pTType, type_create_named, type_create_array, type_is_builtin_name, 
-	type_is_portable_rebindable, type_copy_shell, type_create_opaque, type_equals, 
-	TType,
-	from tmodc.ttype
-
 import MhModule, MhExport, MhFormal, MhField, MhTypeSpec, mh_path_is_mh,
 	mh_strip_string_literal, mh_resolve_import_path, mh_reader_load, mh_module_find, 
 	mh_module_free, mh_export_to_symkind, 
@@ -38,14 +27,8 @@ import TOK_NUMBER, TOK_ADD, TOK_SUB, TOK_MUL, TOK_DIV,
 	TOK_GREATER, TOK_GREATER_EQ, TokenKind, TOK_KEYWORD_MODULE, 
 	TOK_KEYWORD_HEADER, TToken,
 	from tmodc.lexer.Lexer
-
-import size_t from "stddef.h"
-import memcmp, memcpy, strlen from "string.h"
-import strtol, exit from "stdlib.h"
-import strncasecmp from "strings.h"
-import fprintf, snprintf, stderr from "stdio.h"
 import 
-	Node, NODE_IMPORT_ITEM, NODE_IMPORT, NODE_PARAM, NODE_IDENT, NODE_CALL,
+	pNode, NODE_IMPORT_ITEM, NODE_IMPORT, NODE_PARAM, NODE_IDENT, NODE_CALL,
 	NODE_BINARY, NODE_UNARY, NODE_PAREN, NODE_CAST, NODE_TERNARY, NODE_ARRAY_INDEX,
 	NODE_FIELD_ACCESS, NODE_SIZEOF, NODE_LITERAL, NODE_ARRAY_LITERAL, NODE_INC,
 	NODE_DEC, NODE_VAR_DECL, NODE_CONST_DECL, NODE_LET_DECL, NODE_EXPR_STMT,
@@ -54,16 +37,26 @@ import
 	NODE_CONTINUE, NODE_DOC_COMMENT, NODE_PREPROCESSOR, NODE_BLOCK, NODE_PROC_DECL,
 	NODE_FUNC_DECL, NODE_PARAM_LIST, NODE_PROGRAM, NODE_TYPE_DECL, NODE_VAR_ITEM,
 	NODE_CONST_ITEM, NODE_LET_ITEM, NODE_STRUCT_DECL, NODE_FIELD_DECL,
-	NODE_METHOD_TYPE, NODE_ARRAY_TYPE, NODE_ELSIF, NODE_ELSE, SwitchCase,
+	NODE_METHOD_TYPE, NODE_ARRAY_TYPE, NODE_ELSIF, NODE_ELSE, TSwitchCase,
 	NODE_ENUM_TYPE, NODE_ENUM_ITEM, node_create, node_print, NodeKind, NODE_DEFINE,
 	NODE_COUNTOF, 
-	from "node.h"
+	TSymbol, symbol_create, pTSymbol,
+	SYM_KIND_LET, SYM_KIND_IMPORT, SYM_KIND_PARAM, SYM_KIND_PROC, SYM_KIND_FUNC,
+	SYM_KIND_VAR, SYM_KIND_CONST, SYM_KIND_TYPE, SYM_KIND_UNKNOWN, SymbolKind,
+	from tmodc.node
+import 
+	pTType, type_create_named, type_create_array, type_is_builtin_name, 
+	type_is_portable_rebindable, type_copy_shell, type_create_opaque, type_equals, 
+	TType,
+	from tmodc.ttype
 
+import size_t from "stddef.h"
+import memcmp, memcpy, strlen from "string.h"
+import strtol, exit from "stdlib.h"
+import strncasecmp from "strings.h"
+import fprintf, snprintf, stderr from "stdio.h"
 
 const SEMANTIC_MH_PATH_MAX: cardinal = 4096u
-
-
-export type pNode = ^Node
 
 
 (** Analysis context *)
@@ -1444,7 +1437,15 @@ begin
 			sym := symtab_lookup(ctx^.scope, n^.token.start, n^.token.length)
 			if sym == nil or sym^.kind <> SYM_KIND_CONST or not sym^.has_const_value then
 				if msg <> nil then
-					msg^ := "semantic_eval_const_expr: expected constant value"
+					if sym <> nil and sym^.decl <> nil and sym^.decl^.kind == NODE_DEFINE then
+						msg^ := "semantic_eval_const_expr: DEFINE is not a constant expression"
+					elsif sym <> nil and sym^.kind == SYM_KIND_VAR then
+						msg^ := "semantic_eval_const_expr: VAR is not a constant expression"
+					elsif sym <> nil and sym^.kind == SYM_KIND_LET then
+						msg^ := "semantic_eval_const_expr: LET is not a constant expression"
+					else
+						msg^ := "semantic_eval_const_expr: expected constant value"
+					end
 				end
 				return false
 			end
@@ -2435,12 +2436,6 @@ begin
 	end
 
 	owned := semantic_arena_strndup(ctx^.arena, bind_name, bind_len)
-	// semantic_define(ctx, kind, owned, bind_len, nil, loc, false)
-
-	// sym := symtab_lookup_current(ctx^.scope, owned, bind_len)
-	// if sym == nil then
-	// 	semantic_error_at(loc, "semantic_bind_mh_export: internal: symbol not defined")
-	// end
 	if kind == SYM_KIND_TYPE and type_is_portable_rebindable(owned, bind_len) then
 		semantic_bind_portable_import(ctx, loc, owned, bind_len)
 	else
@@ -2450,6 +2445,11 @@ begin
 	sym := symtab_lookup_current(ctx^.scope, owned, bind_len)
 	if sym == nil then
 		semantic_error_at(loc, "semantic_bind_mh_export: internal: symbol not defined")
+	end
+
+	if kind == SYM_KIND_CONST and exp^.has_const_value then
+		sym^.has_const_value := true
+		sym^.const_value := exp^.const_value as integer
 	end
 
 	if exp^.has_signature and (kind == SYM_KIND_PROC or kind == SYM_KIND_FUNC) then
@@ -2790,6 +2790,35 @@ begin
 	end
 	n^.resolved_sym := sym
 end semantic_resolve_ident
+
+
+(*
+ * Bind a brace-list ame when it is already in scope.
+ * Enum members are registered after declaration initializers, so a missing
+ * name stays as written fo C.
+ *)
+procedure semantic_bind_ident_if_known(ctx: pTSemanticContext, n: pNode)
+begin
+	var sym: pTSymbol = nil
+	var name: const ^char = nil
+	var name_len: size_t = 0
+
+	if n == nil or n^.kind <> NODE_IDENT then
+		return
+	end
+	name := n^.token.start
+	name_len := n^.token.length
+	if name == nil or name_len == 0 then
+		return
+	end
+	if semantic_is_literal_ident(name, name_len) then
+		return
+	end
+	sym := symtab_lookup(ctx^.scope, name, name_len)
+	if sym <> nil then
+		n^.resolved_sym := sym
+	end
+end semantic_bind_ident_if_known
 
 
 (**
@@ -3545,7 +3574,13 @@ begin
 				end
 				sym := symtab_lookup(ctx^.scope, name, name_len)
 				if sym <> nil and sym^.kind == SYM_KIND_TYPE then
-					semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF: type name is not a designator")
+					// semantic_error_at(n, "semantic_resolve_sizeof: SIZEOF: type name is not a designator")
+					// Imports are not on the parser's sizeof type list.
+					ty := type_create_named(ctx^.arena, name, name_len)
+					n^.sizeof_expr.is_type := true
+					n^.sizeof_expr.target.sizeof_type := ty
+					semantic_resolve_type(ctx, ty,n)
+					return
 				end
 			end
 		end
@@ -3671,13 +3706,6 @@ begin
 				n^.field_access.base_depth := 0
 				n^.field_access.auto_deref := false
 				rec_ty := semantic_type_of_designator(ctx, n^.field_access.record_)
-				// if rec_ty <> nil then
-				// 	if rec_ty^.is_pointer then
-				// 		n^.field_access.auto_deref := true
-				// 	elsif rec_ty^.resolved_type <> nil and rec_ty^.resolved_type^.is_pointer then
-				// 		n^.field_access.auto_deref := true
-				// 	end
-				// end
 				if semantic_type_is_pointer(rec_ty) then
 					n^.field_access.auto_deref := true
 				end
@@ -3699,8 +3727,22 @@ begin
 		case NODE_COUNTOF:
 			semantic_resolve_countof(ctx, n)
 
-		case NODE_LITERAL, NODE_ARRAY_LITERAL:
+		case NODE_LITERAL:
 			// no identifiers
+
+		case NODE_ARRAY_LITERAL:
+			// A folded CONST in a brace list must be bound, or C still names it.
+			var i: size_t = 0
+
+			for i := 1 to n^.array_literal.count do
+				var elem: pNode = n^.array_literal.elements[i - 1]
+
+				if elem <> nil and elem^.kind == NODE_IDENT then
+					semantic_bind_ident_if_known(ctx, elem)
+				else
+					semantic_resolve_expr(ctx, elem)
+				end
+			end
 
 		case NODE_INC, NODE_DEC:
 			semantic_resolve_expr(ctx, n^.binary.left)
@@ -3794,6 +3836,7 @@ begin
 			if semantic_try_eval_const_expr(ctx, item^.var_item.initializer, @cval, nil) then
 				csym^.has_const_value := true
 				csym^.const_value := cval
+				item^.resolved_sym := csym
 			end
 		end
 	end
@@ -3982,7 +4025,7 @@ procedure semantic_resolve_stmt(ctx: pTSemanticContext, n: pNode)
 begin
 	var i: size_t = 0
 	var j: size_t = 0
-	var sc: ^SwitchCase = nil
+	var sc: ^TSwitchCase = nil
 
 	if n == nil then
 		return

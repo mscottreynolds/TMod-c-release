@@ -15,13 +15,8 @@ import memcmp from "string.h"
 
 import Arena, pvoid, ppvoid, arena_alloc, arena_append_ptr 
 	from tmodc.arena
-
-import TSymbol, symbol_kind_name, pTSymbol, ppTSymbol, 
-	from tmodc.symbol
-import SYM_KIND_LET 
-	from tmodc.symkind
-
-import node_print, Node from "node.h"
+import node_print, TSymbol, symbol_kind_name, pTSymbol, ppTSymbol, SYM_KIND_LET
+	from tmodc.node
 
 
 (** One lexical scope *)

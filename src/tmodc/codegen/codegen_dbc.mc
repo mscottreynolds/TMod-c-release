@@ -11,8 +11,8 @@ module tmodc.codegen.codegen_dbc()
 
 import size_t 
 	from "stddef.h"
-import Node, NODE_BLOCK, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP 
-	from "node.h"
+import pNode, TNode, NODE_BLOCK, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP 
+	from tmodc.node
 
 import DynBuf, dynbuf_append 
 	from tmodc.dynbuf
@@ -21,14 +21,10 @@ import CodegenTarget, CodegenContext, codegen_common_expr, emit_indent,
 	from tmodc.codegen.codegen_common
 
 
-(* Pointer to a Node *)
-export type pNode = ^Node
-
-
 (**
  * Generate REQUIRE clauses
  *)
-export procedure codegen_dbc_emit_requires(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_dbc_emit_requires(n: const ^TNode, ctx: CodegenContext)
 begin
 	var i: size_t = 0
 
@@ -55,7 +51,7 @@ end codegen_dbc_emit_requires
 (**
  * Generate ENSURE clauses
  *)
-export procedure codegen_dbc_emit_ensures(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_dbc_emit_ensures(n: const ^TNode, ctx: CodegenContext)
 begin
 	var i: size_t = 0
 
@@ -84,7 +80,7 @@ end codegen_dbc_emit_ensures
 export procedure codegen_dbc_emit_ensures_to_func(ctx: CodegenContext)
 begin
 	var current: CodegenContext = ctx
-	let target_func: const ^Node = ctx.enclosing_func
+	let target_func: const ^TNode = ctx.enclosing_func
 
 	if ctx.dbc_off then
 		return
@@ -113,7 +109,7 @@ end codegen_dbc_emit_ensures_to_func
  * Emit INVARIANT checks for a loop node.
  * Called at the "invariant point" inside the generated loop (before body for most loops).
  *)
-export procedure codegen_dbc_emit_invariants(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_dbc_emit_invariants(n: const ^TNode, ctx: CodegenContext)
 begin
 	var invs: ^pNode = nil
 	var count: size_t = 0

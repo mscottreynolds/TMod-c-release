@@ -13,11 +13,12 @@ import Arena, pvoid, ppvoid, arena_alloc, arena_append_ptr
 import utils_parse_integer_literal 
 	from tmodc.utils
 
-import Node, SwitchCase, NODE_DEFER, NODE_DEBUG, NODE_SWITCH, NODE_IMPORT,
+import pNode, TSwitchCase, NODE_DEFER, NODE_DEBUG, NODE_SWITCH, NODE_IMPORT,
 	NODE_IMPORT_ITEM, NODE_BREAK, NODE_CONTINUE, NODE_RETURN, NODE_IF,
 	NODE_ELSIF, NODE_WHILE, NODE_LITERAL, NODE_FOR, NODE_REPEAT_UNTIL,
 	NODE_LOOP, NODE_INC, NODE_DEC, node_create,
-	from "node.h"
+	from tmodc.node
+	// from "node.h"
 
 import TParser, pParser, advance, match, error_at, check, consume, isEOF, checkEOS, matchEOS,
 	skip_empty_statements, skip_layout_breaks,
@@ -46,7 +47,6 @@ import strtol from "stdlib.h"
 import fprintf, stderr from "stdio.h"
 
 
-export type pNode = ^Node
 type pcchar = const ^char
 
 
@@ -60,7 +60,7 @@ begin
 	require p <> nil
 
 	var defer_tok: TToken
-	var action, n: ^Node
+	var action, n: pNode
 
 	defer_tok := p^.current
 	consume(p, TOK_KEYWORD_DEFER, "parse_defer_stmt: expected DEFER")
@@ -122,7 +122,7 @@ end parse_debug_stmt
  * No fallthrough. ELSE is required and last. else: is the residual alone.
  * else default: is that same arm. A list that names a constant ends with default.
  *)
-export function parse_switch_stmt(p: pParser): ^Node
+export function parse_switch_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
@@ -159,7 +159,7 @@ begin
 		var label_capacity: size_t = 0
 		var lab: pNode = nil
 		var body: pNode = nil
-		var case_arm: ^SwitchCase = nil
+		var case_arm: ^TSwitchCase = nil
 
 		consume(p, TOK_KEYWORD_CASE, "parse_switch_stt: expected CASE")
 
@@ -183,7 +183,7 @@ begin
 		body := TParser::parse_statement_sequence(p^)
 
 		// Allocate the case arm from the arena and append the pointer
-		case_arm := arena_alloc(p^.arena, sizeof(SwitchCase))
+		case_arm := arena_alloc(p^.arena, sizeof(TSwitchCase))
 		case_arm^.labels := labels
 		case_arm^.label_count := label_count
 		case_arm^.label_capacity := label_capacity
@@ -307,12 +307,12 @@ end parse_qualident_span
  *
  * Returns NODE_IMPORT node or nil if no IMPORT seen.
  *)
-export function parse_import_stmt(p: pParser): ^Node
+export function parse_import_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var import_token: TToken = p^.current
-	var imp: ^Node = nil
+	var imp: pNode = nil
 
 	advance(p)
 
@@ -325,7 +325,7 @@ begin
 
 	// Parse import-items until FROM (anchor). Newlines are layout only.
 	while not check(p, TOK_KEYWORD_FROM) and not isEOF(p) do
-		var item: ^Node = nil
+		var item: pNode = nil
 
 		skip_layout_breaks(p)
 		if check(p, TOK_KEYWORD_FROM) then
@@ -384,7 +384,7 @@ end parse_import_stmt
  * 		plain: ident { "." ident } [ AS ident ]
  * 		method: Type "::" name [ AS ident ]
  *)
-export function parse_import_item(p: pParser): ^Node
+export function parse_import_item(p: pParser): pNode
 begin
 	require p <> nil
 
@@ -394,7 +394,7 @@ begin
 	var owner_len: size_t = 0
 	var alias_start: pcchar = nil
 	var alias_len: size_t = 0
-	var item: ^Node = nil
+	var item: pNode = nil
 
 	if p^.current.kind <> TOK_IDENT then
 		return nil
@@ -452,12 +452,12 @@ end parse_import_item
 (**
  * Parse break statement
  *)
-export function parse_break_stmt(p: pParser): ^Node
+export function parse_break_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var break_tok: TToken = p^.current
-	var n: ^Node = nil
+	var n: pNode = nil
 
 	consume(p, TOK_KEYWORD_BREAK, "parse_break_stmt: expected BREAK")
 
@@ -477,12 +477,12 @@ end parse_break_stmt
 (**
  * Parse CONTINUE statement
  *)
-export function parse_continue_stmt(p: pParser): ^Node
+export function parse_continue_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var cont_tok: TToken = p^.current
-	var n: ^Node = nil
+	var n: pNode = nil
 
 	consume(p, TOK_KEYWORD_CONTINUE, "parse_continue_stmt: expected CONTINUE")
 
@@ -501,13 +501,13 @@ end parse_continue_stmt
 (**
  * Parse RETURN statement
  *)
-export function parse_return_stmt(p: pParser): ^Node
+export function parse_return_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var ret_tok: TToken = p^.current
-	var expr: ^Node = nil
-	var n: ^Node = nil
+	var expr: pNode = nil
+	var n: pNode = nil
 
 	consume(p, TOK_KEYWORD_RETURN, "parse_return_stmt: expected RETURN")
 
@@ -532,15 +532,15 @@ end parse_return_stmt
 (**
  * Parse IF statement
  *)
-export function parse_if_stmt(p: pParser): ^Node
+export function parse_if_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var if_tok: TToken = p^.current
-	var cond: ^Node = nil
-	var then_block: ^Node = nil
-	var last_elsif: ^Node = nil
-	var n: ^Node = nil
+	var cond: pNode = nil
+	var then_block: pNode = nil
+	var last_elsif: pNode = nil
+	var n: pNode = nil
 
 	consume(p, TOK_KEYWORD_IF, "parse_if_stmt: expected IF")
 
@@ -562,9 +562,9 @@ begin
 	// ELSIF chaining (opitonal)
 	last_elsif := n
 	while match(p, TOK_KEYWORD_ELSIF) do
-		var elsif_cond: ^Node = TParser::parse_expr(p^)
-		var elsif_then: ^Node = nil
-		var elsif_node: ^Node = nil
+		var elsif_cond: pNode = TParser::parse_expr(p^)
+		var elsif_then: pNode = nil
+		var elsif_node: pNode = nil
 
 		if elsif_cond == nil then
 			error_at(p, "parse_if_stmt: expected condition after ELSIF", true)
@@ -585,7 +585,7 @@ begin
 
 	// optional ELSE
 	if match(p, TOK_KEYWORD_ELSE) then
-		var else_block: ^Node = TParser::parse_statement_sequence(p^)
+		var else_block: pNode = TParser::parse_statement_sequence(p^)
 		last_elsif^.if_stmt.else_ := else_block
 	end
 
@@ -601,11 +601,11 @@ end parse_if_stmt
  * One optional BOUND const-expression, then EOS.
  * A second BOUND is an error. Nil when omitted.
  *)
-function parse_optional_bound(p: pParser): ^Node
+function parse_optional_bound(p: pParser): pNode
 begin
 	require p <> nil
 
-	var expr: ^Node = nil
+	var expr: pNode = nil
 
 	if not match(p, TOK_KEYWORD_BOUND) then
 		return nil
@@ -636,12 +636,12 @@ end parse_optional_bound
  * Returns NODE_WHILE node
  * Exits on fatal error (missing DO, END, etc).
  *)
-export function parse_while_stmt(p: pParser): ^Node
+export function parse_while_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var while_token: TToken = p^.current
-	var n: ^Node = nil
+	var n: pNode = nil
 
 	advance(p)
 
@@ -666,7 +666,7 @@ begin
 
 	// Optional invariant clauses
 	while check(p, TOK_KEYWORD_INVARIANT) do
-		var expr: ^Node = nil
+		var expr: pNode = nil
 
 		advance(p)
 
@@ -714,17 +714,17 @@ end parse_while_stmt
  * 		"FOR" identifier ( ":=" | [ ":" type ] "=") expression ( "TO" | "DOWNTO" ) expression
  *			[ "BY" const-expression ] "DO" statement-sequence "END"
  *)
-export function parse_for_stmt(p: pParser): ^Node
+export function parse_for_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var for_tok: TToken = p^.current
 	var var_name: pcchar = nil
 	var var_len: size_t = 0
-	var start_expr: ^Node = nil
-	var end_expr: ^Node = nil
+	var start_expr: pNode = nil
+	var end_expr: pNode = nil
 	var step: int = 0
-	var n: ^Node = nil
+	var n: pNode = nil
 	var declares: bool = false
 	var index_type: ^TType = nil
 
@@ -780,7 +780,7 @@ begin
 
 	skip_layout_breaks(p)
 	if match(p, TOK_KEYWORD_BY) then
-		var step_expr: ^Node = TParser::parse_const_expression(p^)
+		var step_expr: pNode = TParser::parse_const_expression(p^)
 		if step_expr == nil then
 			error_at(p, "parse_for_stmt: expected constant expession after BY", true)
 		end
@@ -816,7 +816,7 @@ begin
 	// Optional invariant clauses
 	skip_empty_statements(p)
 	while check(p, TOK_KEYWORD_INVARIANT) do
-		var expr: ^Node = nil
+		var expr: pNode = nil
 		advance(p)
 
 		expr := TParser::parse_expr(p^)
@@ -858,13 +858,13 @@ end parse_for_stmt
 (**
  * Parse REPEAT ... UNTIL statement
  *)
-export function parse_repeat_until_stmt(p: pParser): ^Node
+export function parse_repeat_until_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
 	var repeat_tok: TToken = p^.current
-	var n: ^Node = nil
-	var cond: ^Node = nil
+	var n: pNode = nil
+	var cond: pNode = nil
 
 	consume(p, TOK_KEYWORD_REPEAT, "parse_repeat_until_stmt: expected REPEAT")
 
@@ -878,7 +878,7 @@ begin
 	n^.repeat_until.bound_expr := parse_optional_bound(p)
 	skip_empty_statements(p)
 	while check(p, TOK_KEYWORD_INVARIANT) do
-		var expr: ^Node = nil
+		var expr: pNode = nil
 
 		advance(p)
 		expr := TParser::parse_expr(p^)
@@ -918,11 +918,11 @@ end parse_repeat_until_stmt
 (**
  * Parse LOOP statement
  *)
-export function parse_loop_stmt(p: pParser): ^Node
+export function parse_loop_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
-	var n: ^Node = nil
+	var n: pNode = nil
 	var loop_tok: TToken = p^.current
 
 	consume(p, TOK_KEYWORD_LOOP, "parse_loop_stmt: expected LOOP")
@@ -937,7 +937,7 @@ begin
 	n^.loop_stmt.bound_expr := parse_optional_bound(p)
 	skip_empty_statements(p)
 	while check(p, TOK_KEYWORD_INVARIANT) do
-		var expr: ^Node = nil
+		var expr: pNode = nil
 
 		advance(p)
 
@@ -974,14 +974,14 @@ end parse_loop_stmt
  * 		inc-stmt = "INC" "(" designator [ "," expression ] ")"
  * 		dec-stmt = "DEC" "(" designator [ "," expression ] ")"
  *)
-export function parse_inc_dec_stmt(p: pParser): ^Node
+export function parse_inc_dec_stmt(p: pParser): pNode
 begin
 	require p <> nil
 
-	var n: ^Node = nil
+	var n: pNode = nil
 	var tok: TToken = p^.current
-	var designator: ^Node = nil
-	var step: ^Node = nil
+	var designator: pNode = nil
+	var step: pNode = nil
 	var is_inc: bool = match(p, TOK_KEYWORD_INC)
 
 	if not is_inc then

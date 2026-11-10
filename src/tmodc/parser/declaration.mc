@@ -17,8 +17,8 @@ import from "string.h"
 import NODE_CONST_ITEM, NODE_CONST_DECL, NODE_LET_ITEM, NODE_VAR_DECL, NODE_VAR_ITEM, 
     NODE_LET_DECL, NODE_TYPE_DECL, NODE_PARAM, NODE_PARAM_LIST, NODE_FUNC_DECL, NODE_PROC_DECL,
     NODE_STRUCT_DECL, NODE_FIELD_DECL, NODE_METHOD_TYPE, NODE_ENUM_TYPE, NODE_ENUM_ITEM,
-    node_create, Node, NodeKind,
-    from "node.h"
+    node_create, pNode, NodeKind,
+    from tmodc.node
 
 import TParser, advance, match, error_at, check, consume, isEOF, matchEOS, pParser, skip_empty_statements, 
     skip_layout_breaks,
@@ -38,7 +38,6 @@ import TToken, TOK_IDENT, TOK_COLON, TOK_EQ, TOK_COMMA, TOK_KEYWORD_PACKED, TOK_
 import type_create_named, pTType 
     from tmodc.ttype
 
-export type pNode = ^Node
 // export type pParser = ^Parser
 
 export function parse_item(p: pParser, node_kind: NodeKind): pNode

@@ -1,4 +1,4 @@
-program test_Pi(argc: int, argv: ^char[]): int
+program test_Pi(args: ^char[]): int
 
 (** Mod-C
  This program computes Pi by the formula:
@@ -236,24 +236,25 @@ end computePi
  *  -o outfile = ouput to file
  * @returns TCommandLine with values found.
  *)
-function parse_command_line(argc: int, argv: ^char[]): TCommandLine
+function parse_command_line(args: ^char[]): TCommandLine
 begin
-    require argc > 0 and argv <> nil
+    require args <> nil and countof(args) > 0
 
     var results: TCommandLine = { false, false, DEFAULT_DIGITS, nil } // = { .help=false, .format_out=false, .max_digits=DEFAULT_DIGITS, .output_file=nil}
     var i: integer
+    var argc: integer = countof(args)
 
     i := 1
     while i < argc do
-        if strcmp(argv[i], "-h") == 0 or strcmp(argv[i], "--help") == 0 then
+        if strcmp(args[i], "-h") == 0 or strcmp(args[i], "--help") == 0 then
             results.help := true
-        elsif strcmp(argv[i], "-f") == 0 or strcmp(argv[i], "--format") == 0 then
+        elsif strcmp(args[i], "-f") == 0 or strcmp(args[i], "--format") == 0 then
             results.format_output := true
-        elsif strcmp(argv[i], "-o") == 0 and i+1 < argc then
-            results.output_file := argv[i+1]
+        elsif strcmp(args[i], "-o") == 0 and i+1 < argc then
+            results.output_file := args[i+1]
             inc(i)
         else
-            results.max_digits := strtol(argv[i], nil, 10)
+            results.max_digits := strtol(args[i], nil, 10)
         end
         inc(i)
     end
@@ -270,8 +271,8 @@ procedure display_help()
 begin
     fprintf(stderr, "Pi (Mod-C version): Calculates upto specified number of digits of Pi.\n")
     fprintf(stderr, "usage: pi [options] max_digits_of_pi\n")
-    fprintf(stderr, "   max_digits_of_pi must be greater than %ld and less than %ld.\n", MIN_DIGITS-1, MAX_DIGITS+1);
-    fprintf(stderr, "   default = %ld\n", DEFAULT_DIGITS)
+    fprintf(stderr, "   max_digits_of_pi must be greater than %d and less than %d.\n", MIN_DIGITS-1, MAX_DIGITS+1);
+    fprintf(stderr, "   default = %d\n", DEFAULT_DIGITS)
     fprintf(stderr, "   options:\n")
     fprintf(stderr, "   -f, --format = Format output.\n")
     fprintf(stderr, "   -h, --help   = display this help.\n")
@@ -285,10 +286,10 @@ begin
     var i: integer
     var fp: pFILE = nil
 
-    let options: TCommandLine = parse_command_line(argc, argv)
-    if options.help == true                         \
-        or options.max_digits < MIN_DIGITS          \
-        or options.max_digits > MAX_DIGITS then
+    let options: TCommandLine = parse_command_line(args)
+    if options.help == true or
+            options.max_digits < MIN_DIGITS or
+            options.max_digits > MAX_DIGITS then
         display_help()
         exit(1)
     end

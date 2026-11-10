@@ -2,6 +2,30 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.8.250
+- **Complete self-host** — `src/tmodc/version.mc` is `header version`. `make version` increments `src/build.number` and rewrites that file. The exports are `VERSION`, `VERSION_BASE`, and `BUILD_NUMBER`. `BUILD_NUMBER` is an integer `define`. The compiler lowers the unit to `src/c/tmodc/version.h`. No hand-written compiler C remains.
+- `src/tmodc/parser/statement.mc` imports `from tmodc.node`.
+- **`SIZEOF` of an imported type** — the parser's type list does not include imports, so `sizeof(TSwitchCase)` arrived as a designator and stopped with `semantic_resolve_sizeof: SIZEOF: type name is not a designator`. A name whose symbol is `SYM_KIND_TYPE` is promoted to a type operand. A builtin name on that arm is still an error. A `.h` import stays a designator. `COUNTOF` of an imported type name is unchanged.
+- The user promoted **0.27.8.250**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **250**. A three-compiler suite was not restated for this promote. The suite named under **0.27.8.247** is the one on record. This promote is in the working tree. HEAD is `2eba890` (**0.27.7.243**).
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, `docs/grok_report-20261109-2011.md`, and an append in `docs/project_bible.md`. `docs/syntax-ebnf.md` is unchanged. `AGENTS.md` still describes hand-written `node.c`.
+
+## Version 0.27.8.247
+- **Node port** — the live AST is `src/tmodc/node.mc` (`module tmodc.node`). Generated C is `src/c/tmodc/node.c` and `src/c/tmodc/node.h`. The struct is `TNode`. `export type Node = TNode`. `node_create` returns `^TNode`. `src/c/node.c` and `src/c/node.h` are archived.
+- `symbol` and `symkind` moved into `node.mc`, which avoids an import cycle. `SymbolKind` order is unchanged. Item **15a** stays open. This merge is the workaround. `src/tmodc/symbol.mc` and `src/tmodc/symkind.mc` are archived.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` succeeds on gcc, clang, and tcc, and promoted **0.27.8.247**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **247**. At that promote, `statement.mc` still imported `from "node.h"`.
+- Docs this round: with **0.27.8.250**.
+
+## Version 0.27.7.243
+- **Folded integer `CONST` (item 19)** — a declaration `CONST` whose initializer folds to an integer emits no C object in the `.c` and none in the `.h`. A use that already folded stays a number. An ordinary use emits the integer. A negative value is parenthesized. `DEFINE` stays the macro. A value that does not fold (a string, an array, a record, or a brace list) still lowers to `static const`. An enumeration constant stays its C name.
+- An exported folded integer is published as `export const LIM complete 4`. A line with no integer still parses (`export const Red complete` for an enum member). A client folds the imported integer the same way.
+- A bare name in a brace list binds when it is already in scope. A name that is not yet in scope keeps its source spelling, so a top-level keyword table can still name an enumeration constant. A nested expression inside a brace still resolves strictly.
+- A local `DEFINE`, `VAR`, or `LET` used as a constant expression reports `semantic_eval_const_expr: DEFINE is not a constant expression`, `VAR is not a constant expression`, or `LET is not a constant expression`. A character literal still lowers to an object. The folder accepts an integer literal.
+- **Tests:** `tests/test_bound.mc` exports `const LIM = 4`. `tests/test3_bound_define.mc` rejects `define LIM = 4` as a `BOUND`. `tests/test3_bound_var.mc` rejects `var LIM = 4`. `tests/test_array.mc` prints `LIMIT`, so a dropped object without the integer fails the C compile.
+- `make test`, `make test2`, and `make test3` append to `build/test/test1_results.out`, `test2_results.out`, and `test3_results.out`. A few gcc warnings in those logs are still being cleaned up.
+- Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked.
+- The user reported that all tests pass and that `make selfhost bootstrap` passes on gcc, clang, and tcc, and promoted **0.27.7.243**. Stem **0.27.7**. `Makefile` `VERSION` is **0.27.7**. Branch **`TMod-c_0.27`**. Build **243**. `src/c/version.h` is `0.27.7.243`.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, and `docs/language-report.md`. `docs/syntax-ebnf.md` is unchanged. The grok report and the `docs/project_bible.md` append wait until **0.27.8**.
+
 ## Version 0.27.7.242
 - **Else labels (item 10d)** — `else A, B, default:` shares one body with the required `else`. `else` stays the last arm. `else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is last. `else A, B:`, `else A default:`, `else default, A:`, and `else case A, default:` are parse errors.
 - `default` is a keyword. Generated C lists the names and ends the arm with `default:`, then the body and `break`.

@@ -17,10 +17,10 @@ import exit
 	from "stdlib.h"
 import fprintf, stderr 
 	from "stdio.h"
-import Node, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
+import pNode, TNode, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
 	NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,
 	NODE_DOC_COMMENT, NODE_PROGRAM, NODE_IMPORT, NODE_DEFINE,
-	from "node.h"
+	from tmodc.node
 import VERSION_BASE 
 	from "version.h"
 
@@ -32,7 +32,7 @@ import TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
 import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c, 
 	codegen_common_expr, codegen_common_type_decl, codegen_common_import, 
 	codegen_common_module_prototype, codegen_common_proc_or_func, 
-	codegen_emit_c_prelude, codegen_common_define,
+	codegen_emit_c_prelude, codegen_common_define, codegen_const_is_value,
 	codegen_decl_opens_type_order, codegen_type_in_file,
 	codegen_emit_type_preamble, codegen_type_order_skip,
 	codegen_type_order_after_type, codegen_type_order_check,
@@ -43,7 +43,7 @@ import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c,
  * Emit Header PROCEDURE or FUNCTION declaration.
  * All treated as a prototype.
  *)
-procedure codegen_header_proc_or_func(n: const ^Node, ctx: CodegenContext)
+procedure codegen_header_proc_or_func(n: const ^TNode, ctx: CodegenContext)
 begin
 	if n == nil then
 		return
@@ -60,7 +60,7 @@ end codegen_header_proc_or_func
 (**
  * Generate header exported declaration
  *)
-procedure codegen_header_emit_exported(n: const ^Node, ctx: CodegenContext)
+procedure codegen_header_emit_exported(n: const ^TNode, ctx: CodegenContext)
 begin
 	if n == nil then
 		return
@@ -72,16 +72,21 @@ begin
 		n^.kind == NODE_CONST_DECL) then
 		if n^.var_decl.is_exported then
 			var i: size_t = 0
+			var emitted: bool = false
 
-			emit_indent(ctx.out, ctx.indent)
-			dynbuf_append(ctx.out, "/* === LET/VAR/CONST EXPORT === */\n")
 			for i := 1 to n^.var_decl.count do
-				let item: ^Node = n^.var_decl.items[i-1]
+				let item: pNode = n^.var_decl.items[i-1]
 				if item == nil then
 					continue
 				end
-
-				if i > 1 then
+				if n^.kind == NODE_CONST_DECL and codegen_const_is_value(item) then
+					continue
+				end
+				if not emitted then
+					emit_indent(ctx.out, ctx.indent)
+					dynbuf_append(ctx.out, "/* === LET/VAR/CONST EXPORT === */\n")
+					emitted := true
+				else
 					emit_indent(ctx.out, ctx.indent)
 				end
 
@@ -172,7 +177,7 @@ begin
 end emit_header_guard_name
 
 
-procedure codegen_header_emit_one(n: ^Node, ctx: CodegenContext)
+procedure codegen_header_emit_one(n: pNode, ctx: CodegenContext)
 begin
 	if n == nil then
 		return
@@ -190,7 +195,7 @@ end codegen_header_emit_one
 (*
  * Walk the AST, create header file, and emit only exported declarations.
  *)
-procedure codegen_header_program(n: const ^Node, ctx: CodegenContext)
+procedure codegen_header_program(n: const ^TNode, ctx: CodegenContext)
 begin
 	var header_type: const ^char = "UNKNOWN"
 	var guard_base: const ^char = nil
@@ -260,7 +265,7 @@ begin
 		var order_flags: array[1024] of bool
 
 		for i := 1 to n^.program_decl.count do
-			let d: ^Node = n^.program_decl.decls[i-1]
+			let d: pNode = n^.program_decl.decls[i-1]
 
 			if d == nil then
 				continue

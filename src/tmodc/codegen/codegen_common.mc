@@ -14,16 +14,6 @@ module tmodc.codegen.codegen_common()
 
 
 import from "tmodc.h"
-import Node, pNode, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_FOR, NODE_WHILE, NODE_REPEAT_UNTIL,
-    NODE_LOOP, NODE_DOC_COMMENT, NODE_PROGRAM, NODE_TYPE_DECL, NODE_IMPORT, NODE_IMPORT_ITEM,
-    NODE_PARAM, NODE_PARAM_LIST, NODE_UNARY, NODE_STRUCT_DECL, NODE_ENUM_TYPE, NODE_ENUM_ITEM,
-    NODE_METHOD_TYPE, NODE_IDENT, NODE_LITERAL, NODE_ARRAY_INDEX, NODE_FIELD_ACCESS, NODE_CALL,
-    NODE_ASSIGN, NODE_BINARY, NODE_TERNARY, NODE_CAST, NODE_PAREN, NODE_ARRAY_LITERAL, NODE_SIZEOF,
-    NODE_COUNTOF, NODE_INC, NODE_DEC, NODE_PREPROCESSOR, NODE_SWITCH, NODE_DEBUG, NODE_VAR_DECL,
-    NODE_CONST_DECL, NODE_LET_DECL, NODE_VAR_ITEM, NODE_CONST_ITEM, NODE_LET_ITEM, NODE_FIELD_DECL,
-    NODE_ARRAY_TYPE, NODE_BLOCK, NODE_IF, NODE_ELSIF, NODE_ELSE, NODE_BREAK, NODE_CONTINUE, 
-    NODE_RETURN, NODE_EXPR_STMT, NODE_ASSERT, NODE_DEFER, NODE_DEFINE, 
-    from "node.h"
 import size_t 
     from "stddef.h"
 import snprintf, fprintf, stderr,
@@ -44,10 +34,17 @@ IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_
     from tmodc.lexer.Lexer
 import mh_path_is_mh, mh_format_h_include,
     from tmodc.mh.mh_reader    
-import TSymbol 
-    from tmodc.symbol
-import SYM_KIND_LET, SYM_KIND_PARAM, 
-    from tmodc.symkind
+import TNode, pNode, NODE_PROC_DECL, NODE_FUNC_DECL, NODE_FOR, NODE_WHILE, NODE_REPEAT_UNTIL,
+    NODE_LOOP, NODE_DOC_COMMENT, NODE_PROGRAM, NODE_TYPE_DECL, NODE_IMPORT, NODE_IMPORT_ITEM,
+    NODE_PARAM, NODE_PARAM_LIST, NODE_UNARY, NODE_STRUCT_DECL, NODE_ENUM_TYPE, NODE_ENUM_ITEM,
+    NODE_METHOD_TYPE, NODE_IDENT, NODE_LITERAL, NODE_ARRAY_INDEX, NODE_FIELD_ACCESS, NODE_CALL,
+    NODE_ASSIGN, NODE_BINARY, NODE_TERNARY, NODE_CAST, NODE_PAREN, NODE_ARRAY_LITERAL, NODE_SIZEOF,
+    NODE_COUNTOF, NODE_INC, NODE_DEC, NODE_PREPROCESSOR, NODE_SWITCH, NODE_DEBUG, NODE_VAR_DECL,
+    NODE_CONST_DECL, NODE_LET_DECL, NODE_VAR_ITEM, NODE_CONST_ITEM, NODE_LET_ITEM, NODE_FIELD_DECL,
+    NODE_ARRAY_TYPE, NODE_BLOCK, NODE_IF, NODE_ELSIF, NODE_ELSE, NODE_BREAK, NODE_CONTINUE, 
+    NODE_RETURN, NODE_EXPR_STMT, NODE_ASSERT, NODE_DEFER, NODE_DEFINE, 
+    TSymbol, SYM_KIND_CONST, SYM_KIND_LET, SYM_KIND_PARAM, 
+    from tmodc.node
 import TType, pTType, type_c_spelling, type_is_portable_rebindable,
     from tmodc.ttype
 import long_long, utils_parse_integer_literal,
@@ -81,16 +78,16 @@ end
  *)
 export type CodegenContext = struct
     out: pDynBuf                        // REQUIRED: Output buffer - never NULL after init
-    ast: const ^Node                          // REQUIRED: Top of the AST.
+    ast: const ^TNode                          // REQUIRED: Top of the AST.
     indent: integer                     // REQUIRED: Current indentation level
     debug_enabled: bool                 // REQUIRED: Indicate if debug mode is on or not.
     assert_off: bool                    // REQUIRED: Turn off assert statemetns if true
     dbc_off: bool                       // REQUIRED: Turn off DbC statements if true
     target: CodegenTarget               // REQUIRED: Code generation target.
     parent_ctx: const ^CodegenContext   // NULL: parent ctx. May be NULL.
-    parent_node: const ^Node            // NULL: immediate parent node (may be NULL)
-    enclosing_func: const ^Node         // NULL: nearest function/procedure for RETURN/DEFER
-    enclosing_loop: const ^Node         // NULL: nearest loop (for BREAK/CONTINUE)
+    parent_node: const ^TNode            // NULL: immediate parent node (may be NULL)
+    enclosing_func: const ^TNode         // NULL: nearest function/procedure for RETURN/DEFER
+    enclosing_loop: const ^TNode         // NULL: nearest loop (for BREAK/CONTINUE)
     stmt_index: size_t                  // When parent ode is a BLOCK: index in
                                         // block.stmts of the statement being
                                         // emitted (or block.count at fall-through
@@ -110,7 +107,7 @@ export type pCodegenContext = ^CodegenContext
 (**
  * Creae a child context for a nested node.
  *)
-// export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^Node): CodegenContext forward
+// export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^TNode): CodegenContext forward
 
 
 (* ===============================================
@@ -119,9 +116,9 @@ export type pCodegenContext = ^CodegenContext
 
 // export procedure emit_indent(out: pDynBuf, indent: int) forward
 
-// export function codegen_unit_binds_portable(prog: const ^Node, name: const ^char, name_len: size_t): bool forward
+// export function codegen_unit_binds_portable(prog: const ^TNode, name: const ^char, name_len: size_t): bool forward
 
-// export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^Node) forward
+// export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^TNode) forward
 
 // export procedure emit_return_type(out: pDynBuf, t: const ^TType) forward
 
@@ -130,14 +127,13 @@ export type pCodegenContext = ^CodegenContext
 // export procedure emit_type_specifier(out: pDynBuf, t: const ^TType, name: const ^char, length: size_t,
         // is_param: bool, is_var: bool, is_ref: bool, is_const: bool) forward
 
-type pNode = ^Node
 // export procedure emit_param_list(out: pDynBuf, params: ^pNode, count: size_t, is_parameter: bool, has_ellipsis: bool) forward
 
 // export function codegen_type_is_open_slice(t: const ^TType): bool forward
 
 // export procedure emit_var_decl(out: pDynBuf, name: const ^char, name_len: size_t, t: const ^TType) forward
 
-// export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^Node) forward
+// export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^TNode) forward
 
 
 (**
@@ -145,51 +141,51 @@ type pNode = ^Node
  * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
  *)
 // export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t,
-//                         binding_decl: const ^Node) forward
+//                         binding_decl: const ^TNode) forward
 
 (**
  * Emit an identifier expression (mangles LET uses via resolved_sym).
  *)
-// export procedure emit_let_ident(out: pDynBuf, n: const ^Node) forward
+// export procedure emit_let_ident(out: pDynBuf, n: const ^TNode) forward
 
 
 (* ============================================
  * Reusable Declaration Emitters
  * ============================================ *)
 
-// export procedure codegen_common_type_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_type_decl(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_proc_or_func(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_struct_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_struct_decl(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_union_decl(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_union_decl(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_enum_type(n: const ^Node, type_name: const ^char, type_name_len: size_t,
+// export procedure codegen_common_enum_type(n: const ^TNode, type_name: const ^char, type_name_len: size_t,
 //         ctx: CodegenContext) forward
 
-// export procedure codegen_common_method_type(method: const ^Node, type_decl: const ^Node, 
+// export procedure codegen_common_method_type(method: const ^TNode, type_decl: const ^TNode, 
 //         ctx: CodegenContext) forward
 
-// export procedure codegen_common_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_expr(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_emit_literal(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_emit_literal(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_array_literal(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_array_literal(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_preprocessor(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_preprocessor(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_field_access(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_sizeof_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_sizeof_expr(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_countof_expr(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_countof_expr(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_inc_dec(n: const ^Node, ctx: CodegenContext, as_statement: bool) forward
+// export procedure codegen_common_inc_dec(n: const ^TNode, ctx: CodegenContext, as_statement: bool) forward
 
-// export procedure codegen_common_module_prototype(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_module_prototype(n: const ^TNode, ctx: CodegenContext) forward
 
-// export procedure codegen_common_import(n: const ^Node, ctx: CodegenContext) forward
+// export procedure codegen_common_import(n: const ^TNode, ctx: CodegenContext) forward
 
 
 (* ============================================
@@ -232,7 +228,7 @@ end emit_type_leaf_name
  * Struct copy is cheap and safe.
  * Exits on fatal error (should never happen in normal use.).
  *)
-export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^Node): CodegenContext
+export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^TNode): CodegenContext
 begin
     require ctx <> nil and ctx.out <> nil
 
@@ -281,7 +277,7 @@ end
 (**
  * Emit Doc Comment, both Pascal and C style as C style comments.
  *)
-export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^Node)
+export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^TNode)
 begin
     if n == nil or n.kind <> NODE_DOC_COMMENT then
         return
@@ -312,12 +308,12 @@ end emit_doc_comment_as_c
 (**
  * True if this unit has type Name = ... for a portable rebindable name.
  *)
-export function codegen_unit_binds_portable(prog: const ^Node, name: const ^char, name_len: size_t): bool
+export function codegen_unit_binds_portable(prog: const ^TNode, name: const ^char, name_len: size_t): bool
 begin
     var i: size_t
-    var d: const ^Node
+    var d: const ^TNode
     var j: size_t
-    var item: const ^Node
+    var item: const ^TNode
     var bind: const ^char
     var bind_len: size_t = 0
 
@@ -374,7 +370,7 @@ end codegen_unit_binds_portable
  * C ABI prelude for a generated .h (includes, nil, byte, portable four).
  * Unit TYPE binds replace the default typedef for that name.
  *)
-export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^Node)
+export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^TNode)
 begin
     if out == nil then
         return
@@ -542,10 +538,10 @@ end codegen_type_is_open_slice
 (*
  * Bare slice-formal identifier, through parens. Nil otherwise.
  *)
-function codegen_bare_slice_ident(d: const ^Node): const ^Node
+function codegen_bare_slice_ident(d: const ^TNode): const ^TNode
 begin
-    var dn: const ^Node = d
-    var decl: const ^Node = nil
+    var dn: const ^TNode = d
+    var decl: const ^TNode = nil
 
     while dn <> nil and dn.kind == NODE_PAREN do
         dn := dn.paren.expr
@@ -571,10 +567,10 @@ end codegen_bare_slice_ident
  * code < 0 passes the actual formal's _length name. The leading comma
  * is included.
  *)
-procedure codegen_emit_slice_stamp(actual: const ^Node, code: int, ctx: CodegenContext)
+procedure codegen_emit_slice_stamp(actual: const ^TNode, code: int, ctx: CodegenContext)
 begin
     var buf: array[64] of char
-    var id: const ^Node = nil
+    var id: const ^TNode = nil
 
     if code == 0 then
         return
@@ -724,7 +720,7 @@ begin
 
     if params <> nil and count > 0 then
         for i := 1 to count do
-            var param: const ^Node = params[i-1]
+            var param: const ^TNode = params[i-1]
             if i > 1 then
                 dynbuf_append(out, ", ")
             end
@@ -776,7 +772,7 @@ end emit_var_decl
  * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
  *)
 export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t, 
-        binding_decl: const ^Node)
+        binding_decl: const ^TNode)
 begin
     var buf: array[32] of char
 
@@ -797,7 +793,7 @@ end emit_let_binding_name
 (*
  * Codegen_param_is_by_ref
  *)
-function codegen_param_is_by_ref(param_decl: const ^Node): bool
+function codegen_param_is_by_ref(param_decl: const ^TNode): bool
 begin
     if param_decl == nil or param_decl.kind <> NODE_PARAM then
         return false
@@ -809,7 +805,7 @@ end codegen_param_is_by_ref
 (*
  * True when C formal is T* alias of value T (not when formal type is already ^U).
  *)
-function codegen_param_needs_pointee_load(param_decl: const ^Node): bool
+function codegen_param_needs_pointee_load(param_decl: const ^TNode): bool
 begin
     var ty: const ^TType
 
@@ -838,10 +834,10 @@ end codegen_param_needs_pointee_load
  * Formal for call arg index (0-based). Instance sugar: receiver is formal 0,
  * so args[i] maps to formals[i + 1].
  *)
-function codegen_call_formal_for_arg(call: const ^Node, arg_index: size_t): const ^Node
+function codegen_call_formal_for_arg(call: const ^TNode, arg_index: size_t): const ^TNode
 begin
-    var decl: const ^Node
-    var pl: const ^Node
+    var decl: const ^TNode
+    var pl: const ^TNode
     var fi: size_t
 
     if call == nil or call.resolved_sym == nil or call.resolved_sym^.decl == nil then
@@ -869,10 +865,10 @@ end codegen_call_formal_for_arg
 (*
  * codgen_call_formal_receiver
  *)
-function codegen_call_formal_receiver(call: const ^Node): const ^Node
+function codegen_call_formal_receiver(call: const ^TNode): const ^TNode
 begin
-    var decl: const ^Node
-    var pl: const ^Node
+    var decl: const ^TNode
+    var pl: const ^TNode
 
     if call == nil or call.call.receiver_expr == nil then
         return nil
@@ -895,7 +891,7 @@ end codegen_call_formal_receiver
 (*
  * True when this actual should be emitted with a leading '&' for a VAR/REF formal
  *)
-function codegen_args_needs_address(formal: const ^Node, arg: const ^Node): bool
+function codegen_args_needs_address(formal: const ^TNode, arg: const ^TNode): bool
 begin
     var ty: const ^TType
 
@@ -930,7 +926,7 @@ end codegen_args_needs_address
 (*
  * codegen_emit_call_arg_deref
  *)
-procedure codegen_emit_call_arg_deref(formal: const ^Node, arg: const ^Node,
+procedure codegen_emit_call_arg_deref(formal: const ^TNode, arg: const ^TNode,
         auto_deref: bool, base_depth: size_t, ctx: CodegenContext)
 begin
     var need_addr: bool
@@ -963,11 +959,49 @@ end codegen_emit_call_arg_deref
 
 
 (**
+ * True for a folded integer declaration CONST.
+ * An enumeration constant keeps its C name.
+ *)
+export function codegen_const_is_value(n: const ^TNode): bool
+begin
+    if n == nil or n.resolved_sym == nil then
+        return false
+    end
+    if n.resolved_sym^.kind <> SYM_KIND_CONST then
+        return false
+    end
+    if n.resolved_sym^.decl <> nil and n.resolved_sym^.decl^.kind == NODE_ENUM_ITEM then
+        return false
+    end
+    return n.resolved_sym^.has_const_value
+end codegen_const_is_value
+
+
+procedure codegen_emit_const_value(out: pDynBuf, value: integer)
+begin
+    var buf: array[32] of char
+
+    if value < 0 then
+        dynbuf_append_char(out, '(')
+    end
+    snprintf(buf, sizeof(buf), "%d", value as int)
+    dynbuf_append(out, buf)
+    if value < 0 then
+        dynbuf_append_char(out, ')')
+    end
+end codegen_emit_const_value
+
+
+(**
  * Emit an identifier expression (mangles LET uses via resolved_sym).
  *)
-export procedure emit_let_ident(out: pDynBuf, n: const ^Node)
+export procedure emit_let_ident(out: pDynBuf, n: const ^TNode)
 begin
     if n == nil or out == nil then
+        return
+    end
+    if codegen_const_is_value(n) then
+        codegen_emit_const_value(out, n.resolved_sym^.const_value)
         return
     end
 
@@ -993,7 +1027,7 @@ end emit_let_ident
  * Matches thehistorical split: exported types go to the header, and a
  * non-exported portable rebind (integer / cardinal / real / string) does too.
  *)
-export function codegen_type_in_file(n: const ^Node, for_header: bool): bool
+export function codegen_type_in_file(n: const ^TNode, for_header: bool): bool
 begin
     if n == nil or n.kind <> NODE_TYPE_DECL then
         return false
@@ -1019,7 +1053,7 @@ end codegen_type_in_file
  * A declaration that can use a type name. The type-order preamble runs
  * just before the first one, after any leading imports and comments.
  *)
-export function codegen_decl_opens_type_order(n: const ^Node): bool
+export function codegen_decl_opens_type_order(n: const ^TNode): bool
 begin
     if n == nil then
         return false
@@ -1049,7 +1083,7 @@ end codegen_names_equal
  * struct, union, enum, method type, FORWARD, or extern.
  * The pointee name is defined_type.name (the name as written).
  *)
-function codegen_type_is_pointer_alias(n: const ^Node): bool
+function codegen_type_is_pointer_alias(n: const ^TNode): bool
 begin
     var dt: const ^TType = nil
 
@@ -1077,11 +1111,11 @@ end codegen_type_is_pointer_alias
 (*
  * This file defines a struct or union body with this typedef name.
  *)
-function codegen_file_has_aggregate_body(prog: const ^Node, for_header: bool,
+function codegen_file_has_aggregate_body(prog: const ^TNode, for_header: bool,
         name: const ^char, name_len: size_t): bool
 begin
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
         return false
@@ -1107,11 +1141,11 @@ end codegen_file_has_aggregate_body
 (*
  * An incomplete struct or union tag in this file is enough for a pointer.
  *)
-function codegen_aggregate_tag_ready(prog: const ^Node, for_header: bool,
+function codegen_aggregate_tag_ready(prog: const ^TNode, for_header: bool,
         name: const ^char, name_len: size_t): bool
 begin
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
         return false
@@ -1139,13 +1173,13 @@ end codegen_aggregate_tag_ready
  * The written pointee is a C type already: a builtin, an import, an
  * incomplete aggregate in this file, or a typedef this file has emitted.
  *)
-function codegen_pointee_ready(prog: const ^Node, decl: const ^Node,
+function codegen_pointee_ready(prog: const ^TNode, decl: const ^TNode,
         for_header: bool, flags: ^bool, cap: size_t): bool
 begin
     var pname: const ^char = nil
     var plen: size_t = 0
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
     var blocked: bool = false
     var dt: const ^TType = nil
 
@@ -1210,7 +1244,7 @@ begin
 end codegen_emit_incomplete
 
 
-procedure codegen_emit_alias(n: const ^Node, ctx: CodegenContext, for_header: bool)
+procedure codegen_emit_alias(n: const ^TNode, ctx: CodegenContext, for_header: bool)
 begin
     if for_header then
         emit_indent(ctx.out, ctx.indent)
@@ -1227,14 +1261,14 @@ end codegen_emit_alias
  * Emit pointer aliases whose pointee is ready, in source order.
  * Repeat so type pp = ^p follows type p=^T.
  *)
-procedure codegen_flush_pointer_aliases(prog: const ^Node, ctx: CodegenContext,
+procedure codegen_flush_pointer_aliases(prog: const ^TNode, ctx: CodegenContext,
         for_header: bool, flags: ^bool, cap: size_t)
 begin
     var wave: size_t = 0
     var i: size_t = 0
     var count: size_t = 0
     var progress: bool = false
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
         return
@@ -1277,12 +1311,12 @@ end codegen_flush_pointer_aliases
  * Incomplete aggregate typedefs, then every pointer alias that can use them.
  * flags has cap entries, indexed by declaration index. Cleared here.
  *)
-export procedure codegen_emit_type_preamble(prog: const ^Node, ctx: CodegenContext,
+export procedure codegen_emit_type_preamble(prog: const ^TNode, ctx: CodegenContext,
         for_header: bool, flags: ^bool, cap: size_t)
 begin
     var i: size_t = 0
     var count: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
     var is_union: bool = false
 
     if prog == nil or prog.kind <> NODE_PROGRAM or flags == nil or ctx.out == nil then
@@ -1331,7 +1365,7 @@ end codegen_emit_type_preamble
  * True when the walk must not emit this declaration. Already emitted,
  * or a pointer alias whose pointee is not a C type yet.
  *)
-export function codegen_type_order_skip(prog: const ^Node, n: const ^Node,
+export function codegen_type_order_skip(prog: const ^TNode, n: const ^TNode,
         for_header: bool, flags: ^bool, cap: size_t, index: size_t): bool
 begin
     if n == nil or n.kind <> NODE_TYPE_DECL or flags == nil then
@@ -1357,7 +1391,7 @@ end codegen_type_order_skip
 (**
  * The walk just emitted this type. Pointer aliases waiting on it can follow.
  *)
-export procedure codegen_type_order_after_type(prog: const ^Node, ctx: CodegenContext,
+export procedure codegen_type_order_after_type(prog: const ^TNode, ctx: CodegenContext,
         for_header: bool, flags: ^bool, cap: size_t, index: size_t)
 begin
     if flags == nil or index >= cap then
@@ -1371,11 +1405,11 @@ end codegen_type_order_after_type
 (**
  * A pointer alias in this file that was never emitted has no C order.
  *)
-export procedure codegen_type_order_check(prog: const ^Node, for_header: bool,
+export procedure codegen_type_order_check(prog: const ^TNode, for_header: bool,
         flags: ^bool, cap: size_t)
 begin
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
         return
@@ -1409,7 +1443,7 @@ end codegen_type_order_check
  * Emit a TYPE declaration.
  * Simple types for now.
  *)
-export procedure codegen_common_type_decl(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_type_decl(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -1524,7 +1558,7 @@ end codegen_common_type_decl
  * Emit Declaration portion of PROCEDURE or FUNCTION.
  * To be called by codegen_c or codegen_header.
  *)
-export procedure codegen_common_proc_or_func(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_proc_or_func(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -1572,7 +1606,7 @@ begin
 end codegen_common_proc_or_func
 
 
-recursive procedure codegen_emit_anon_union(n: const ^Node, ctx: CodegenContext)
+recursive procedure codegen_emit_anon_union(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
     var inner: CodegenContext = ctx         // gcc complains about a potential overflow if we don't do this.
@@ -1586,7 +1620,7 @@ begin
     dynbuf_append(ctx.out, "union {\n")
     inner.indent := ctx.indent + 1              // gcc hack.
     for i := 1 to n.struct_decl.field_count do
-        var f: const ^Node = n.struct_decl.fields[i - 1]
+        var f: const ^TNode = n.struct_decl.fields[i - 1]
 
         if f == nil then
             continue
@@ -1619,7 +1653,7 @@ end codegen_emit_anon_union
  * Emit STRUCT declaration.
  * Maps to a C typedef struct with named fields.
  *)
-export procedure codegen_common_struct_decl(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_struct_decl(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
 
@@ -1654,7 +1688,7 @@ begin
 
     // Emit fields
     for i := 1 to n.struct_decl.field_count do
-        var f: ^Node = n.struct_decl.fields[i-1]
+        var f: pNode = n.struct_decl.fields[i-1]
         if f == nil then
             continue
         end
@@ -1693,7 +1727,7 @@ end codegen_common_struct_decl
  * Emit UNION declaration. (Uses NODE_STRUCT_DECL)
  * Maps to a C typedef union with named field.s
  *)
-export procedure codegen_common_union_decl(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_union_decl(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
 
@@ -1710,7 +1744,7 @@ begin
 
     // Emit fields
     for i := 1 to n.struct_decl.field_count do
-        var f: const ^Node = n.struct_decl.fields[i-1]
+        var f: const ^TNode = n.struct_decl.fields[i-1]
         if f == nil then
             continue
         end
@@ -1750,7 +1784,7 @@ end codegen_common_union_decl
  * Emits: enum { M = n, ... } TypeName
  * (Caller adds 'typedf' and trailing ';')
  *)
-export procedure codegen_common_enum_type(en: const ^Node, type_name: const ^char,
+export procedure codegen_common_enum_type(en: const ^TNode, type_name: const ^char,
         type_name_len: size_t, ctx: CodegenContext)
 begin
     var i: size_t
@@ -1763,7 +1797,7 @@ begin
     dynbuf_append(ctx.out, "enum {\n")
 
     for i := 1 to en.enum_type.count do
-        var item: const ^Node = en.enum_type.elements[i-1]
+        var item: const ^TNode = en.enum_type.elements[i-1]
 
         if item == nil or item.kind <> NODE_ENUM_ITEM then
             continue
@@ -1796,7 +1830,7 @@ end codegen_common_enum_type
 (**
  * Generate method type.
  *)
-export procedure codegen_common_method_type(method: const ^Node, type_decl: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_method_type(method: const ^TNode, type_decl: const ^TNode, ctx: CodegenContext)
 begin
     if method == nil or method.kind <> NODE_METHOD_TYPE then
         dynbuf_append(ctx.out, "/* TODO: codegen_common_method_type: invalid METHOD_TYPE node */")
@@ -1818,7 +1852,7 @@ begin
     // Emit parameter list using the existing helper (include names)
     if method.method_type.params <> nil and
             method.method_type.params^.kind == NODE_PARAM_LIST then
-        var plist: ^Node = method.method_type.params
+        var plist: pNode = method.method_type.params
         emit_param_list(ctx.out,
             plist.param_list.params,
             plist.param_list.count,
@@ -1833,7 +1867,7 @@ end codegen_common_method_type
 (**
  * Emit expression
  *)
-export recursive procedure codegen_common_expr(n: const ^Node, ctx: CodegenContext)
+export recursive procedure codegen_common_expr(n: const ^TNode, ctx: CodegenContext)
 begin
     var up, ui, i: size_t
 
@@ -2086,7 +2120,7 @@ end codegen_common_expr
  *  -   Strips all '_' separators.
  *  -   Preserves original token text for strings and chars.
  *)
-export procedure codegen_common_emit_literal(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_emit_literal(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         dynbuf_append(ctx.out, "0")
@@ -2149,7 +2183,7 @@ end codegen_common_emit_literal
  * Emit array literal: { expr, expr, ... }
  * Special fast path for the extremly common {0} zero-initializer.
  *)
-export procedure codegen_common_array_literal(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_array_literal(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t
 
@@ -2159,7 +2193,7 @@ begin
     end
 
     if n.array_literal.count == 1 then
-        var elem: const ^Node = n.array_literal.elements[0]
+        var elem: const ^TNode = n.array_literal.elements[0]
 
         if elem <> nil and elem.kind == NODE_LITERAL and
                 elem.token.length == 1 and elem.token.start[0] == '0' then
@@ -2182,7 +2216,7 @@ end codegen_common_array_literal
 (**
  * Preprocessor directives.
  *)
-export procedure codegen_common_preprocessor(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_preprocessor(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_PREPROCESSOR then
         return
@@ -2196,7 +2230,7 @@ end codegen_common_preprocessor
 (**
  * Emit define
  *)
-export procedure codegen_common_define(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_define(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_DEFINE then
         return
@@ -2211,7 +2245,7 @@ end codegen_common_define
 (**
  * Emit field access: record.field
  *)
-export procedure codegen_common_field_access(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -2246,7 +2280,7 @@ end codegen_common_field_access
  * Emit COUNTOF. Semantic stores the outermost bound in count.
  * ((integer)N)
  *)
-export procedure codegen_common_countof_expr(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_countof_expr(n: const ^TNode, ctx: CodegenContext)
 begin
     var buf: array[64] of char
 
@@ -2266,8 +2300,8 @@ begin
 
     // Unfolded designator: C11 has no _Countof.
     begin
-        var d: const ^Node
-        var id: const ^Node = nil
+        var d: const ^TNode
+        var id: const ^TNode = nil
 
         d := n.sizeof_expr.target.designator
         id := codegen_bare_slice_ident(d)
@@ -2288,7 +2322,7 @@ end codegen_common_countof_expr
 (**
  * Emit SIZEOF (type or designator)
  *)
-export procedure codegen_common_sizeof_expr(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_sizeof_expr(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_SIZEOF then
         dynbuf_append(ctx.out, "((integer)sizeof(0))")      // safe fallback
@@ -2318,7 +2352,7 @@ end codegen_common_sizeof_expr
  * Expression context:  INC(x)      => x++
  *                      INC(x, 5)   => (x += 5)     <<-- parentheses added here
  *)
-export procedure codegen_common_inc_dec(n: const ^Node, ctx: CodegenContext, as_statement: bool)
+export procedure codegen_common_inc_dec(n: const ^TNode, ctx: CodegenContext, as_statement: bool)
 begin
     if n == nil then
         return
@@ -2362,7 +2396,7 @@ end codegen_common_inc_dec
 (**
  * Write out module prototype.
  *)
-export procedure codegen_common_module_prototype(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_module_prototype(n: const ^TNode, ctx: CodegenContext)
 begin
     // Return type
     if n.program_decl.return_type <> nil then
@@ -2388,7 +2422,7 @@ end codegen_common_module_prototype
  * The string-literal token includes quotes.
  * .mh paths: emit the associated .h (same step/path); tmodc reads .mh at compile time only.
  *)
-export procedure codegen_common_import(n: const ^Node, ctx: CodegenContext)
+export procedure codegen_common_import(n: const ^TNode, ctx: CodegenContext)
 begin
     var from_path: const ^char
     var path_len: size_t

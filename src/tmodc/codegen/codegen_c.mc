@@ -22,8 +22,8 @@ module tmodc.codegen.codegen_c(ctx: CodegenContext)
  * Port to TMod-c finished 10 Oct 2026.
  *)
 
-import Node, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP,
-    NODE_SWITCH, SwitchCase, NODE_BLOCK, NODE_RETURN, NODE_PROGRAM, NODE_BREAK,
+import pNode, TNode, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP,
+    NODE_SWITCH, TSwitchCase, NODE_BLOCK, NODE_RETURN, NODE_PROGRAM, NODE_BREAK,
     NODE_CONTINUE, NODE_DOC_COMMENT, NODE_PREPROCESSOR, NODE_DEFINE, NODE_EXPR_STMT,
     NODE_ASSIGN, NODE_DEFER, NODE_DEBUG, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
     NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL, NODE_INC, NODE_DEC, NODE_STRUCT_DECL,
@@ -32,7 +32,7 @@ import Node, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE
     NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, NODE_FIELD_ACCESS, NODE_ELSIF, NODE_ELSE,
     NODE_SIZEOF, NODE_COUNTOF, NODE_BINARY, NODE_UNARY, NODE_TERNARY, NODE_CAST,
     NODE_LITERAL, NODE_IDENT, NODE_CALL, NODE_PAREN,
-    from "node.h"
+    from tmodc.node
 import size_t
     from "stddef.h"
 import snprintf, fprintf, stderr,
@@ -54,7 +54,7 @@ import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_exp
     codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
     emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
     codegen_common_module_prototype, codegen_common_import, codegen_type_is_open_slice,
-    codegen_decl_opens_type_order, codegen_type_in_file,
+    codegen_decl_opens_type_order, codegen_type_in_file, codegen_const_is_value,
     codegen_emit_type_preamble, codegen_type_order_skip,
     codegen_type_order_after_type, codegen_type_order_check,
     from tmodc.codegen.codegen_common
@@ -73,19 +73,19 @@ import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
 // export procedure codegen_c(ctx: CodegenContext) forward
 
 
-// procedure codegen_c_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_block(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_if_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_while_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_for_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_repeat_until_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_loop_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_switch_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_defer_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_assert_stmt(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_proc_or_func(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_program(n: const ^Node, ctx: CodegenContext) forward
-// procedure codegen_c_type_decl(n: const ^Node, ctx: CodegenContext) forward
+// procedure codegen_c_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_block(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_if_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_while_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_for_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_repeat_until_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_loop_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_switch_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_defer_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_assert_stmt(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_proc_or_func(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_program(n: const ^TNode, ctx: CodegenContext) forward
+// procedure codegen_c_type_decl(n: const ^TNode, ctx: CodegenContext) forward
 
 
 (* ================================================
@@ -99,7 +99,7 @@ import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
  * Body is emitted as a block.
  * If no body is defined, treat it as a prototype.
  *)
-procedure codegen_c_proc_or_func(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_proc_or_func(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -125,7 +125,7 @@ end codegen_c_proc_or_func
 (**
  * Emit DEFER (phase 1: simple comment wrapper).
  *)
-procedure codegen_c_defer_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_defer_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -138,7 +138,7 @@ end codegen_c_defer_stmt
 (**
  * Emit DEBUG statements if debug flag has been set in the context.
  *)
-procedure codegen_c_debug_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_debug_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -155,7 +155,7 @@ end codegen_c_debug_stmt
 (**
  * Emit ASSERT (cond [, hint])
  *)
-procedure codegen_c_assert_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_assert_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_ASSERT or ctx.assert_off then
         return
@@ -179,10 +179,10 @@ end codegen_c_assert_stmt
  * Emit IF / ELSIF / ELSE chain.
  * Handles the full TMod-c if-then-elsif-else-end structure.
  *)
-procedure codegen_c_if_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_if_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
-    var else_: const ^Node
-    var elsif_: const ^Node
+    var else_: const ^TNode
+    var elsif_: const ^TNode
 
     if n == nil or n.kind <> NODE_IF then
         dynbuf_append(ctx.out, "/* TODO: codegen_c_if_stmt: invalid if node */\n")
@@ -242,7 +242,7 @@ begin
 end codegen_c_bound_active
 
 
-procedure codegen_c_emit_bound_name(ctx: CodegenContext, n: const ^Node)
+procedure codegen_c_emit_bound_name(ctx: CodegenContext, n: const ^TNode)
 begin
     var buf: array[32] of char
 
@@ -252,7 +252,7 @@ begin
 end codegen_c_emit_bound_name
 
 
-procedure codegen_c_emit_bound_init(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_bound_init(n: const ^TNode, ctx: CodegenContext)
 begin
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "cardinal ")
@@ -261,7 +261,7 @@ begin
 end codegen_c_emit_bound_init
 
 
-procedure codegen_c_emit_bound_check(n: const ^Node, value: int, ctx: CodegenContext)
+procedure codegen_c_emit_bound_check(n: const ^TNode, value: int, ctx: CodegenContext)
 begin
     var buf: array[32] of char
 
@@ -281,7 +281,7 @@ end codegen_c_emit_bound_check
 (**
  * Emit WHILE ... DO ... END
  *)
-procedure codegen_c_while_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_while_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -330,7 +330,7 @@ end codegen_c_while_stmt
 (**
  * Emit FOR ... TO/DOWNTO ... BY ... DO ... END
  *)
-procedure codegen_c_for_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_for_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var buf: array[32] of char
 
@@ -429,7 +429,7 @@ end codegen_c_for_stmt
 (**
  * Emit REPEAT ... UNTIL ...
  *)
-procedure codegen_c_repeat_until_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_repeat_until_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -479,7 +479,7 @@ end codegen_c_repeat_until_stmt
 (**
  * Emit LOOP ... END (infinite loop)
  *)
-procedure codegen_c_loop_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_loop_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -529,7 +529,7 @@ end codegen_c_loop_stmt
  * labels before that default, so default stays last. A break; is emitted after
  * the defualt arm for symetry.
  *)
-procedure codegen_c_switch_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_switch_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_SWITCH then
         dynbuf_append(ctx.out, "/* TODO: codegen_c_switch_stmt: invalid switch node */\n")
@@ -556,7 +556,7 @@ begin
 
         // CASE arms (zero or more)
         for i := 1 to n.switch_stmt.case_count do 
-            var c: ^SwitchCase = n.switch_stmt.cases[i-1]
+            var c: ^TSwitchCase = n.switch_stmt.cases[i-1]
             var j: size_t
 
             if c == nil then
@@ -609,7 +609,7 @@ end codegen_c_switch_stmt
  * Emit a TYPE declaration.
  * Simple types for now.
  *)
-procedure codegen_c_type_decl(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_type_decl(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -628,7 +628,7 @@ end codegen_c_type_decl
  * DEFER nodes are stored both in stmts[] and in defers[]; pointer equality
  * is the link.
  *)
-function codegen_c_block_stmt_index(block: const ^Node, stmt: const ^Node): size_t
+function codegen_c_block_stmt_index(block: const ^TNode, stmt: const ^TNode): size_t
 begin
     var i: size_t
 
@@ -646,7 +646,7 @@ begin
 end codegen_c_block_stmt_index
 
 
-function codegen_c_block_has_reached_defer(block: const ^Node, cutoff: size_t): bool
+function codegen_c_block_has_reached_defer(block: const ^TNode, cutoff: size_t): bool
 begin
     var i: size_t
     var at: size_t
@@ -656,7 +656,7 @@ begin
     end
 
     for i := 1 to block.block.defer_count do
-        var d: const ^Node = block.block.defers[i-1]
+        var d: const ^TNode = block.block.defers[i-1]
         if d == nil then
             continue
         end
@@ -676,7 +676,7 @@ end codegen_c_block_has_reached_defer
  * DEFER stateent. ctx.stmt_index is the cutoff in this block (see
  * CodegenContext.stmt_index); LIFO amongh those that qualify.
  *)
-procedure codegen_c_emit_defers(block_node: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_defers(block_node: const ^TNode, ctx: CodegenContext)
 begin
     var cutoff: size_t
     var i: size_t
@@ -689,7 +689,7 @@ begin
 
     // Emit in reverse order (LIFO)
     for i := block_node.block.defer_count downto 1 do
-        var d: const ^Node = block_node.block.defers[i - 1]
+        var d: const ^TNode = block_node.block.defers[i - 1]
         var at: size_t
 
         if d == nil then
@@ -714,7 +714,7 @@ end codegen_c_emit_defers
 procedure codegen_c_emit_defers_to_func(ctx: CodegenContext)
 begin
     var current: CodegenContext = ctx
-    var target_func: const ^Node = ctx.enclosing_func
+    var target_func: const ^TNode = ctx.enclosing_func
 
     while current.parent_ctx <> nil do
         if current.parent_node <> nil and current.parent_node.kind == NODE_BLOCK then
@@ -742,7 +742,7 @@ end codegen_c_emit_defers_to_func
 procedure codegen_c_emit_defers_to_loop(ctx: CodegenContext)
 begin
     var current: CodegenContext = ctx
-    var target_loop: const ^Node = ctx.enclosing_loop
+    var target_loop: const ^TNode = ctx.enclosing_loop
 
     while current.parent_ctx <> nil do
         if current.parent_node <> nil and current.parent_node.kind == NODE_BLOCK then
@@ -766,7 +766,7 @@ end codegen_c_emit_defers_to_loop
  * Emit RETURN statement with proper DEFER cleanup.
  * Grammar: "RETURN" [ expression ]
  *)
-procedure codegen_c_return_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_return_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_RETURN then
         return
@@ -826,7 +826,7 @@ end codegen_c_return_stmt
  * Emit BREAK statement with proper DEFER cleaup
  * Grammar "BREAK"
  *)
-procedure codegen_c_break_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_break_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_BREAK then
         return
@@ -847,7 +847,7 @@ end codegen_c_break_stmt
  * Emit CONTINUE statement wiht proper DEFER cleanup.
  * Grammar: "CONTINUE"
  *)
-procedure codegen_c_continue_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_continue_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_CONTINUE then
         return
@@ -867,7 +867,7 @@ end codegen_c_continue_stmt
 (**
  * Emit a single statement
  *)
-procedure codegen_c_stmt(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -931,16 +931,22 @@ begin
 
         case NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL:
             var i: size_t
+            var emitted: bool = false
 
             for i := 1 to n.var_decl.count do
-                var item: const ^Node = n.var_decl.items[i-1]
+                var item: const ^TNode = n.var_decl.items[i-1]
 
                 if item == nil then
                     continue
                 end
-                if i > 1 then
+                // Folded integer CONST: the uses emit the integer.
+                if n.kind == NODE_CONST_DECL and codegen_const_is_value(item) then
+                    continue
+                end
+                if emitted then
                     emit_indent(ctx.out, ctx.indent)
                 end
+                emitted := true
 
                 if n.var_decl.is_extern then
                     dynbuf_append(ctx.out, "extern ")
@@ -1022,7 +1028,7 @@ end codegen_c_stmt
 (**
  * Emit BEGIN ... END block (statement sequence)
  *)
-procedure codegen_c_block(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_block(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -1046,7 +1052,7 @@ begin
 
         // C2y-style: emit defers at block exit UNLESS we already did so via early exit.
         if n.block.count > 0 then
-            var last: const ^Node = n.block.stmts[n.block.count - 1]
+            var last: const ^TNode = n.block.stmts[n.block.count - 1]
 
             if last <> nil and 
                     (last.kind == NODE_RETURN or
@@ -1073,12 +1079,12 @@ end codegen_c_block
  * An open-array formal is passed as argv plus argc as its length.
  * The first other formal is argc. The second is argv.
  *)
-procedure codegen_c_emit_program_call(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_program_call(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
     var host: size_t = 0
     var any: bool = false
-    var param: const ^Node = nil
+    var param: const ^TNode = nil
 
     dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
     dynbuf_append_char(ctx.out, '(')
@@ -1111,7 +1117,7 @@ end codegen_c_emit_program_call
 (**
  * Generate a separate main(...) wraper for NODE_PROGRAM
  *)
-procedure codegen_c_main_wrapper(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_main_wrapper(n: const ^TNode, ctx: CodegenContext)
 begin
     // Return type
     if n.program_decl.return_type <> nil then
@@ -1175,7 +1181,7 @@ end codegen_c_main_wrapper
 (**
  * Generate module entry point using module name, parameters, and block.
  *)
-procedure codegen_c_module(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_module(n: const ^TNode, ctx: CodegenContext)
 begin
     // Return type
     if n.program_decl.return_type <> nil then
@@ -1206,7 +1212,7 @@ begin
 end codegen_c_module
 
 
-procedure codegen_c_emit_top(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_top(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -1250,7 +1256,7 @@ begin
 end codegen_c_text_equal
 
 
-function codegen_c_same_proc(a: const ^Node, b: const ^Node): bool
+function codegen_c_same_proc(a: const ^TNode, b: const ^TNode): bool
 begin
     if a == nil or b == nil then
         return false
@@ -1265,10 +1271,10 @@ begin
 end codegen_c_same_proc
 
 
-function codegen_c_completing_body(prog: const ^Node, sig: const ^Node): const ^Node
+function codegen_c_completing_body(prog: const ^TNode, sig: const ^TNode): const ^TNode
 begin
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.kind <> NODE_PROGRAM or prog.program_decl.decls == nil then
         return nil
@@ -1292,7 +1298,7 @@ begin
 end codegen_c_completing_body
 
 
-function codegen_c_defer_proc(prog: const ^Node, d: const ^Node): bool
+function codegen_c_defer_proc(prog: const ^TNode, d: const ^TNode): bool
 begin
     if d == nil then
         return false
@@ -1310,7 +1316,7 @@ begin
 end codegen_c_defer_proc
 
 
-function codegen_c_prev_index(prog: const ^Node, index: size_t): size_t
+function codegen_c_prev_index(prog: const ^TNode, index: size_t): size_t
 begin
     var j: size_t = 0
 
@@ -1331,7 +1337,7 @@ begin
 end codegen_c_prev_index
 
 
-function codegen_c_next_index(prog: const ^Node, index: size_t): size_t
+function codegen_c_next_index(prog: const ^TNode, index: size_t): size_t
 begin
     var j: size_t = 0
     var count: size_t = 0
@@ -1351,10 +1357,10 @@ begin
 end codegen_c_next_index
 
 
-function codegen_c_doc_before(prog: const ^Node, index: size_t): const ^Node
+function codegen_c_doc_before(prog: const ^TNode, index: size_t): const ^TNode
 begin
     var prev: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     prev := codegen_c_prev_index(prog, index)
     if prev == 0 then
@@ -1368,9 +1374,9 @@ begin
 end codegen_c_doc_before
 
 
-function codegen_c_hold_doc(prog: const ^Node, index: size_t): bool
+function codegen_c_hold_doc(prog: const ^TNode, index: size_t): bool
 begin
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
     var next: size_t = 0
 
     if prog == nil or prog.program_decl.decls == nil or index == 0 or
@@ -1389,12 +1395,12 @@ begin
 end codegen_c_hold_doc
 
 
-function codegen_c_body_comment(prog: const ^Node, index: size_t,
-        body: const ^Node): const ^Node
+function codegen_c_body_comment(prog: const ^TNode, index: size_t,
+        body: const ^TNode): const ^TNode
 begin
-    var direct: const ^Node = nil
+    var direct: const ^TNode = nil
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     direct := codegen_c_doc_before(prog, index)
     if direct <> nil then
@@ -1423,11 +1429,11 @@ begin
 end codegen_c_body_comment
 
 
-function codegen_c_entry_comment(prog: const ^Node): const ^Node
+function codegen_c_entry_comment(prog: const ^TNode): const ^TNode
 begin
     var i: size_t = 0
     var last: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.program_decl.decls == nil then
         return nil
@@ -1445,10 +1451,10 @@ begin
 end codegen_c_entry_comment
 
 
-procedure codegen_c_emit_proc_prototypes(prog: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_proc_prototypes(prog: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
-    var d: const ^Node = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.program_decl.decls == nil or ctx.out == nil then
         return
@@ -1471,11 +1477,11 @@ begin
 end codegen_c_emit_proc_prototypes
 
 
-procedure codegen_c_emit_proc_bodies(prog: const ^Node, ctx: CodegenContext)
+procedure codegen_c_emit_proc_bodies(prog: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t = 0
-    var note: const ^Node = nil
-    var d: const ^Node = nil
+    var note: const ^TNode = nil
+    var d: const ^TNode = nil
 
     if prog == nil or prog.program_decl.decls == nil then
         return
@@ -1503,7 +1509,7 @@ end codegen_c_emit_proc_bodies
 (**
  * Emit top-level program / module
  *)
-procedure codegen_c_program(n: const ^Node, ctx: CodegenContext)
+procedure codegen_c_program(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_PROGRAM then
         fprintf(stderr, "FATAL ERROR: codegen_c_program: expected NODE_PROGRAM\n")
@@ -1559,7 +1565,7 @@ begin
         end
 
         for i := 1 to n.program_decl.count do
-            var d: const ^Node = n.program_decl.decls[i-1]
+            var d: const ^TNode = n.program_decl.decls[i-1]
 
             // if d.kind == NODE_IMPORT then
             //     codegen_common_import(d, ctx)

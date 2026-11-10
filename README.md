@@ -89,6 +89,8 @@ Features (Early Design Goals)
 - Counted `FOR` (0.27.2.221; index type 0.27.3.227): `for i :=` assigns a predeclared variable. `for i =` and `for i: T =` declare a loop-scoped index. On `for i =`, an omitted type is the type of the start. A numeric literal stays `integer`. The declaring form accepts a type C can step, including `cardinal`, `char`, `size_t`, `byte`, an enumeration, and a pointer
 - Anonymous nested `UNION` (0.27.4.228): a field `union` … `end` inside a `struct` or a named `union` has no name. Members are in scope on the enclosing aggregate (`box.a`, `box.b`). C is an unnamed `union { ... };`. A nested struct stays a named type
 - Else labels (0.27.7.242): `else A, B, default:` shares one body with the required `else`. `else:` is the residual alone. `else default:` is that same arm. `default` is last and is a keyword
+- Folded integer `CONST` (0.27.7.243): a folded integer emits no C object. An ordinary use emits the integer. An exported folded integer is on the `.mh` line. A value that does not fold stays `static const`. An enumeration constant stays its C name. `DEFINE` stays the macro
+- Complete self-host (0.27.8.250): compiler sources are `.mc`. `src/tmodc/node.mc` is the AST (`TNode`). `src/tmodc/version.mc` is `header version`. `make version` rewrites it. Generated C is under `src/c/tmodc/`
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -98,6 +100,8 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.8.250** (9 November 2026): the compiler is completely self-hosted. `src/tmodc/node.mc` is the AST. The struct is `TNode`. `symbol` and `symkind` are in that module (**0.27.8.247**). `src/tmodc/version.mc` is `header version`. `make version` rewrites it. `sizeof` of an imported type name is a type operand. Branch **`TMod-c_0.27`**. Stem **0.27.8**. **0.27.8.247** reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261109-2011.md` (also **0.27.7.243**).
+- **0.27.7.243** (7 November 2026): folded integer `CONST` (item 19). A folded integer emits no C object. An ordinary use emits the integer. An exported folded integer is `export const Name complete N`. A value that does not fold stays `static const`. An enumeration constant stays its C name. Branch **`TMod-c_0.27`**. Stem **0.27.7**. Reported that all tests pass and that `make selfhost bootstrap` passes on gcc, clang, and tcc. Recorded then as waiting for a grok report. That report is `docs/grok_report-20261109-2011.md`.
 - **0.27.7.242** (6 November 2026): else labels. `else A, B, default:` shares the required else body. `else:` is the residual alone. `else default:` is that same arm. `default` is a keyword. Branch **`TMod-c_0.27`**. Stem **0.27.7**. Reported that gcc, clang, and tcc each pass `clean-all`, `all`, `test-all`, `selfhost`, `bootstrap`, and `promote`.
 - **0.27.6.240**: a `:` in an import list is a parse error (`parse_import_stmt: expected ',' or FROM in IMPORT`).
 - **0.27.6.239**: an unquoted import's root comes from the compiling file's directory and the declared package path. The filename is not part of that match.
@@ -157,7 +161,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.27.7 hello.mc -C hello.c
+./bin/modc.0.27.8 hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```
