@@ -364,7 +364,7 @@ pNode parse_sizeof(pParser p)
     TToken tok = ((*p)).current;
     pNode n = nil;
     consume(p, TOK_KEYWORD_SIZEOF, "parse_sizeof: expected SIZEOF");
-    consume(p, TOK_LPAREN, "parse_sizeof: expected '(' afer SIZEOF");
+    consume(p, TOK_LPAREN, "parse_sizeof: expected '(' after SIZEOF");
     n = node_create(((*p)).arena, NODE_SIZEOF, tok);
     if (parser_sizeof_operand_is_type(p))
     {

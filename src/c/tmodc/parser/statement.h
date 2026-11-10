@@ -83,7 +83,7 @@ pNode parse_debug_stmt(pParser p);
  * 	"END" ;
  *
  * 	case-labels = const-expression { "," const-expression } ;
- * 	else-lables = "DEFAULT" | const-expression { "," const-expression } "," "DEFAULT";
+ * 	else-labels = "DEFAULT" | const-expression { "," const-expression } "," "DEFAULT";
  *
  * No fallthrough. ELSE is required and last. else: is the residual alone.
  * else default: is that same arm. A list that names a constant ends with default.

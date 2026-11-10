@@ -18,7 +18,6 @@ import pNode, TSwitchCase, NODE_DEFER, NODE_DEBUG, NODE_SWITCH, NODE_IMPORT,
 	NODE_ELSIF, NODE_WHILE, NODE_LITERAL, NODE_FOR, NODE_REPEAT_UNTIL,
 	NODE_LOOP, NODE_INC, NODE_DEC, node_create,
 	from tmodc.node
-	// from "node.h"
 
 import TParser, pParser, advance, match, error_at, check, consume, isEOF, checkEOS, matchEOS,
 	skip_empty_statements, skip_layout_breaks,
@@ -117,7 +116,7 @@ end parse_debug_stmt
  * 	"END" ;
  *
  * 	case-labels = const-expression { "," const-expression } ;
- * 	else-lables = "DEFAULT" | const-expression { "," const-expression } "," "DEFAULT";
+ * 	else-labels = "DEFAULT" | const-expression { "," const-expression } "," "DEFAULT";
  *
  * No fallthrough. ELSE is required and last. else: is the residual alone.
  * else default: is that same arm. A list that names a constant ends with default.
@@ -161,7 +160,7 @@ begin
 		var body: pNode = nil
 		var case_arm: ^TSwitchCase = nil
 
-		consume(p, TOK_KEYWORD_CASE, "parse_switch_stt: expected CASE")
+		consume(p, TOK_KEYWORD_CASE, "parse_switch_stmt: expected CASE")
 
 		// Parse case-labels: const-expression { "," const-expression }
 		lab := TParser::parse_const_expression(p^)
@@ -173,7 +172,7 @@ begin
 		while match(p, TOK_COMMA) do
 			lab := TParser::parse_const_expression(p^)
 			if lab == nil then
-				error_at(p, "parse_switch_stmt: expected const-expression afer ','", true)
+				error_at(p, "parse_switch_stmt: expected const-expression after ','", true)
 			end
 			arena_append_ptr(p^.arena, (@labels) as ppvoid, @label_count, @label_capacity, lab as pvoid)
 		end
@@ -217,7 +216,7 @@ begin
 		var ended: bool = false
 
 		if check(p, TOK_KEYWORD_CASE) then
-			error_at(p, "parse_switch_stmt: ELSE lables do not use CASE", true)
+			error_at(p, "parse_switch_stmt: ELSE labels do not use CASE", true)
 		end
 
 		else_lab := TParser::parse_const_expression(p^)
@@ -245,7 +244,7 @@ begin
 			if check(p, TOK_KEYWORD_DEFAULT) then
 				error_at(p, "parse_switch_stmt: expected ',' before DEFAULT", true)
 			else
-				error_at(p, "parse_switch_stmt: ELSE lables must end with DEFAULT", true)
+				error_at(p, "parse_switch_stmt: ELSE labels must end with DEFAULT", true)
 			end
 		end
 
@@ -737,7 +736,7 @@ begin
 	var_len := p^.current.length
 	advance(p)
 
-	// consume(p, TOK_COLON_EQ, "parse_for_stmt: expected ':='' afer FOR variable")
+	// consume(p, TOK_COLON_EQ, "parse_for_stmt: expected ':='' after FOR variable")
 
 	// start_expr := TParser::parse_expr(p^)
 	// if start_expr == nil then
@@ -821,7 +820,7 @@ begin
 
 		expr := TParser::parse_expr(p^)
 		if expr == nil then
-			error_at(p, "parse_for_stmt: expected expression afer INVARIANT", true)
+			error_at(p, "parse_for_stmt: expected expression after INVARIANT", true)
 		end
 
 		if not matchEOS(p) then
@@ -998,7 +997,7 @@ begin
 	if match(p, TOK_COMMA) then
 		step := TParser::parse_expr(p^)
 		if step == nil then
-			error_at(p, "parse_inc_dec_stmt: expected expression afer comma in INC/DEC", true)
+			error_at(p, "parse_inc_dec_stmt: expected expression after comma in INC/DEC", true)
 		end
 	end
 

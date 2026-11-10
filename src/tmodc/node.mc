@@ -8,7 +8,9 @@ module tmodc.node()
  * AST node creation helper.
  *
  * 3 November 2026
- * Converstion to TMod-c from C started
+ * Conversion to TMod-c from C started
+ * 9 November 2026
+ * Conversion to TMod-c finished.
  *)
 
 
@@ -113,9 +115,8 @@ end
  * Forward declaration of AST node.
  * All nodes are allocated in an Arena and owned by it.
  *)
-export type Node = TNode
 export type pNode = pointer to TNode
-export type array_of_node = ^pNode 		// alternate for pNode
+export type array_of_node = ^pNode 		// alternate for ^pNode
 
 (** Switch statement case *)
 export type TSwitchCase = struct
@@ -718,18 +719,18 @@ end node_indent_dots
 (**
  * Create a new AST node in the given arena.
  * Zero-initializes all fields, sets kind and token, then returns pointer.
- * Never returns nil - arena_alloc exists on allocation failure.
+ * Never returns nil - arena_alloc exits on allocation failure.
  *
  * @param arena 	Arena to allocate from (must be initialized)
  * @param kind 		NodeKind to assign
- * @param tok 		TToken to associaate (copied by value)
- * @return 			Nely allocated and initialized ^TNode
+ * @param tok 		TToken to associate (copied by value)
+ * @return 			Newly allocated and initialized ^TNode
  *)
 export function node_create(arena: ^Arena, kind: NodeKind, tok: TToken): ^TNode
 begin
 	require arena <> nil
 
-	var n: ^TNode = arena_alloc(arena, sizeof(Node))
+	var n: ^TNode = arena_alloc(arena, sizeof(TNode))
 
 	// Zero all fields (union safety, prevents garbage in pointers/counters/etc.
 	// memset(n, 0, sizeof(Node)) - arena_alloc already zero's fields

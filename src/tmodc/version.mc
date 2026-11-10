@@ -1,6 +1,7 @@
 header version
-// DO NOT EDIT: This is generated via the Makefile
-export define VERSION = "0.27.8.250"
+// DO NOT EDIT: This is generated via the Makefile:
+// 'make version' 
+export define VERSION = "0.27.8.251"
 export define VERSION_BASE = "0.27.8"
-export define BUILD_NUMBER = 250
+export define BUILD_NUMBER = 251
 end

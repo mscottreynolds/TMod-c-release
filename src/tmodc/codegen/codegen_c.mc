@@ -524,7 +524,7 @@ end codegen_c_loop_stmt
 (**
  * Emit SWITCH ... OF ... CASE ... ELSE ... END
  * Maps to a C switch. No fallthrough (we emit explic break; after each arm's body).
- * Comma lables become successive "case X:" (they share the following body until the break)
+ * Comma labels become successive "case X:" (they share the following body until the break)
  * ELSE (required in source) becomes "default". Labels written on ELSE are case
  * labels before that default, so default stays last. A break; is emitted after
  * the defualt arm for symetry.

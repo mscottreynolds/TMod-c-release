@@ -25,7 +25,9 @@ typedef float real;
  * AST node creation helper.
  *
  * 3 November 2026
- * Converstion to TMod-c from C started
+ * Conversion to TMod-c from C started
+ * 9 November 2026
+ * Conversion to TMod-c finished.
  */
 
 /* === IMPORT === */
@@ -262,9 +264,6 @@ typedef enum {
  * Forward declaration of AST node.
  * All nodes are allocated in an Arena and owned by it.
  */
-
-/* === TYPE EXPORT === */
-typedef TNode Node;
 
 /** Switch statement case */
 
@@ -885,12 +884,12 @@ const char* symbol_kind_name(SymbolKind kind);
 /**
  * Create a new AST node in the given arena.
  * Zero-initializes all fields, sets kind and token, then returns pointer.
- * Never returns nil - arena_alloc exists on allocation failure.
+ * Never returns nil - arena_alloc exits on allocation failure.
  *
  * @param arena 	Arena to allocate from (must be initialized)
  * @param kind 		NodeKind to assign
- * @param tok 		TToken to associaate (copied by value)
- * @return 			Nely allocated and initialized ^TNode
+ * @param tok 		TToken to associate (copied by value)
+ * @return 			Newly allocated and initialized ^TNode
  */
 
 /* === PROC/FUNC EXPORT === */

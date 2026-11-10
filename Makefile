@@ -22,14 +22,14 @@ TOOLS_DIR   = tools
 BUILD_FILE   := $(SRC_DIR)/build.number
 BUILD_NUMBER := $$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
-# Generated and hand-written C live under src/c, mirroring the .mc tree.
+# Generated and hand-written C (if any) live under src/c, mirroring the .mc tree.
 # src/parser/foo.mc lowers to src/c/parser/foo.c, so #include "../arena.h"
 # and #include "parser/parser_common.h" still resolve. find, not wildcard.
 SOURCES := $(sort $(shell find $(C_SRC_DIR) -name '*.c' -print))
 OBJS    := $(patsubst $(C_SRC_DIR)/%.c,$(C_BUILD_DIR)/%.o,$(SOURCES))
 # Each directory that holds a header is an include root. src/c/ itself
-# is one, so #include "node.h" and #include "version.h" resolve from a 
-# package directory.
+# is one, so statements like #include "foo.h" and #include "bar.h"
+# resolve from a package directory.
 SRC_HEADER_DIRS := $(patsubst %/,%,$(sort $(dir $(shell find $(C_SRC_DIR) -name '*.h' -print))))
 
 # Host C compiler: gcc (default), clang, or tcc.
@@ -146,7 +146,8 @@ version:
 	echo $$build > $(BUILD_FILE); 								\
 	printf '%s\n'												\
 		"header version"										\
-		"// DO NOT EDIT: This is generated via the Makefile" 	\
+		"// DO NOT EDIT: This is generated via the Makefile:" 	\
+		"// 'make version' "									\
 		"export define VERSION = \"$(VERSION).$$build\"" 		\
 		"export define VERSION_BASE = \"$(VERSION)\""			\
 		"export define BUILD_NUMBER = $$build"					\
@@ -497,13 +498,14 @@ clean-all: examples-clean string-lib-clean clean
 help:
 	@echo "Available targets:"
 	@echo "  version            Increment the BUILD_NUMBER and update $(SRC_DIR)/tmodc/version.mc"
-	@echo "  all                Build the modc.$(VERSION) binary"
+	@echo "  all                Build the modc.$(VERSION) binary, examples, and string-lib"
 	@echo "  test               Run all preprocessor, compile, and run tests (test_*)"
 	@echo "  test2              Run just preprocessor tests (test2_*)"
 	@echo "  test3              Run negative semantic tests (test3_* - failure = pass)"
 	@echo "  debug              Build with debug symbols and sanitizers"
 	@echo "  clean              Remove build artifacts and generated test files"
-	@echo "  distclean          Clean + remove dist directory"
+	@echo "  clean-all          Calls clean targets for example, string-lib, and TMod-c."
+	@echo "  dist-clean         Clean + remove dist directory"
 	@echo "  selfhost           Regenerate .c for every src/**/*.mc (self-host test)"
 	@echo "  bootstrap          Full bootstrap with verification (every src/**/*.mc)"
 	@echo "  promote            Promote verified to source (after successful bootstrap)"
@@ -516,6 +518,8 @@ help:
 	@echo "  run-lib FILE=filename  Compile and run FILE with lib"
 	@echo "  cloc               Count TMod-c .mc lines (needs cloc; $(TOOLS_DIR)/tmodc.cloc)"
 	@echo "  CC=gcc|clang|tcc   Host C compiler (default gcc). make clean when switching."
+	@echo "  examples           Compile examples/sds and examples/kilo"
+	@echo "  examples-clean     Remove generated files under examples/sds and examples/kilo"
 	@echo ""
 	@echo "VERSION:      $(VERSION)"
 	@echo "BUILD_NUMBER: $(BUILD_NUMBER)"
@@ -531,9 +535,9 @@ reset: clean
 
 
 # Stage 1 and 2: Generate new source into build, compile temporary compiler.
-# Stage 1 clears build/selfhost, copies the hand-written C (node.c, node.h,
-# version.h), then writes each src/**/*.mc to build/selfhost/<stem>.c.
-# Stage 2 compiles node.c plus each generated .c. A HEADER unit has no .c.
+# Stage 1 clears build/selfhost, 
+# then writes each src/**/*.mc to build/selfhost/<stem>.c.
+# Stage 2 compiles each generated .c. A HEADER unit has no .c.
 selfhost: $(TARGET)
 	@rm -rf $(SH_BUILD_DIR)
 	@mkdir -p $(SH_BUILD_DIR)
@@ -568,7 +572,7 @@ selfhost: $(TARGET)
 	$(CC) $$objs -o $(BIN_DIR)/modc.selfhost
 	@echo "=== Self-hosting stage 2 complete. Temporary compiler: $(BIN_DIR)/modc.selfhost ==="
 
-# Stage 3 clears build/bootstrap and copies the same hand-written C.
+# Stage 3 clears build/bootstrap.
 bootstrap: selfhost
 	@rm -rf $(BS_BUILD_DIR)
 	@mkdir -p $(BS_BUILD_DIR) $(VF_BUILD_DIR)
@@ -626,7 +630,7 @@ bootstrap: selfhost
 			success=false;												\
 		fi;																\
 		h_selfhost="$(SH_BUILD_DIR)/$$stem.h";							\
-		if [ -f "$$h_selfhost" ] && [ -f "$$h_regen" ]; then				\
+		if [ -f "$$h_selfhost" ] && [ -f "$$h_regen" ]; then			\
 			if ! diff -u "$$h_selfhost" "$$h_regen" >/dev/null; then	\
 				echo "=== ERROR: $$h_selfhost and $$h_regen differ ==="; \
 				success=false;											\
@@ -709,6 +713,6 @@ cloc:
 
 # 		--include-lang='TMod-c' \
 
-.PHONY: all test test2 test3 clean distclean string-lib string-lib-clean tmodc cloc $(EXAMPLES)
+.PHONY: all test test2 test3 clean dist-clean string-lib string-lib-clean tmodc cloc $(EXAMPLES)
 
 # msr/gk/msr

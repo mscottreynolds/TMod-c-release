@@ -14,8 +14,6 @@ begin
 	printf("ProcA()\n")
 end
 
-procedure ProcD() forward
-
 procedure ProcC()
 begin
 	ProcD()
