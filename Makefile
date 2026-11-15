@@ -136,7 +136,7 @@ tmodc: $(TARGET)
 	@chmod +x $(BIN_DIR)/$@
 	@echo "Done."
 
-all: tmodc string-lib examples
+all: tmodc examples
 	@echo "All done."
 
 # Increment BUILD_NUMBER and update src/tmodc/version.mc

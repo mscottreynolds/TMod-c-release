@@ -248,7 +248,7 @@ On 13 October 2026 the lock was two candidates, flat file then directory, flat w
   - `extern type Foo = struct bar` — `typedef struct bar Foo;`.  
   Not `type T = opaque` (`void *`). Not `type T FORWARD` (must complete in this unit). Layout and fields come from the `#include`. *Implemented (0.26.5.186).*  
 - **Calls (0.26.0):** unresolved free `name(...)` / `Type::name(...)` is an error. A declared type name `Ident(...)` is `Ident::Ident(...)` when that function is in scope (**0.26.12.212**, §8.3).  
-- **Types (0.26.1):** unknown **single-word** type is an error. Multi-word C spellings (`long long`, `unsigned int`) remain legal without import. Bare `unsigned` is not a type. `unsigned` is not a modifier on `^T` or on a typedef name — see §5.3.  
+- **Types (0.26.1; bare `signed` / `unsigned` 0.27.8.252):** unknown **single-word** type is an error. Multi-word C spellings (`long long`, `unsigned int`) remain legal without import. Bare `signed` and bare `unsigned` are reserved C spellings. `unsigned` is not a modifier on `^T` or on a typedef name — see §5.3.  
 - **C preprocessor:** `#define` / `#if` lines are copied into generated C; they do **not** bind TMod-c names. A name the unit must see (e.g. `switch` `case`) is **`DEFINE`** (§4.1.1), not a pass-through line.
 
 **Examples:**
@@ -1653,6 +1653,7 @@ Do not maintain a second full EBNF elsewhere.
 | 6 November 2026 | **§2.2 / §7.1 else labels (0.27.7.242):** the 5 November spelling is parsed. `default` is a keyword. A folded integer appears once in the switch. A character literal matches by token text. A label that does not fold is left to the C compiler. Generated C lists the names and ends the arm with `default:`. |
 | 7 November 2026 | **§4.2 folded integer `CONST` (0.27.7.243):** a folded integer emits no C object. An ordinary use emits the integer. A negative value is parenthesized. An exported folded integer is an optional integer after `complete` on the `.mh` line. The `.h` does not declare a C object. A value that does not fold stays `static const`. An enumeration constant stays its C name. A character literal still lowers to an object. `DEFINE` stays the macro. |
 | 9 November 2026 | **§10.2 `SIZEOF` of an imported type (0.27.8.250):** an imported type name is a type operand. The parser type list does not include imports. A builtin name used as a designator is still an error. |
+| 14 November 2026 | **§3.2 types (0.27.8.252):** `bit` is not a prelude type. Bare `signed` and bare `unsigned` are reserved C spellings. `unsigned` is still not a modifier on `^T` or on a typedef name. |
 
 ---
 

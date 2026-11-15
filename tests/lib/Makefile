@@ -4,11 +4,11 @@
 # 	make -C tests clean
 
 HERE 	:= $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-TMODC 	:= $(HERE)/../bin/tmodc
+TMODC 	:= $(HERE)/../../bin/tmodc
 CC 		?= gcc
 CFLAGS 	:= -std=c11 -Wall -Wextra
 
-PROG 	:= test_Strings
+PROG 	:= test_all
 PROG_MC	:= $(HERE)/tmodc/tests/$(PROG).mc
 PROG_C 	:= $(HERE)/tmodc/tests/$(PROG).c
 PROG_H	:= $(HERE)/tmodc/tests/$(PROG).h
@@ -26,7 +26,7 @@ LIB_MHS 	:= $(LIB_MCS:.mc=.mh)
 
 all: $(BIN)
 
-# Onetmodc run per library writes that stem's .c, .h, and .mh
+# One tmodc run per library writes that stem's .c, .h, and .mh
 $(LIB_DIR)/%c $(LIB_DIR)/%.h $(LIB_DIR)/%.mh: $(LIB_DIR)/%.mc $(TMODC)
 		$(TMODC) $< -C -H -M
 

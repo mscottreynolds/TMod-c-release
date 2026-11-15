@@ -2,6 +2,11 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.8.252
+- **Builtin type names.** `bit` is no longer a prelude type. Width forms (`integer N`, `cardinal N`) replaced it. `signed` and `unsigned` are reserved C spellings, in the same group as `int` and `long`. A bare `signed` lowers to C `signed` (`int`). A bare `unsigned` lowers to C `unsigned` (`unsigned int`). The documented prelude is unchanged: `bool`, `byte`, `char`, `integer`, `cardinal`, `real`, `string`.
+- The user promoted **0.27.8.252**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **252**. No suite result is recorded for this promote.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, and `docs/language-report.md`.
+
 ## Version 0.27.8.251
 - **Self-host cleanup.** The self-host and bootstrap comments match the recipes. They regenerate every `src/**/*.mc` and do not copy hand-written C. A header unit still has no `.c`.
 - Parser spellings on the paths that used them: `parse_switch_stmt`, `ELSE labels`, and `after`. That covers the switch, `SIZEOF`, `FOR`, and `INC` / `DEC` messages that had the old spelling.

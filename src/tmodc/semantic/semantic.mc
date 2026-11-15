@@ -2723,9 +2723,8 @@ begin
  *)
 procedure semantic_register_prelude(ctx: pTSemanticContext)
 begin
-	semantic_register_prelude_builtin(ctx, "bool", 4)
-	semantic_register_prelude_builtin(ctx, "bit", 3)
 	semantic_register_prelude_builtin(ctx, "int", 3)
+	semantic_register_prelude_builtin(ctx, "bool", 4)
 	semantic_register_prelude_builtin(ctx, "byte", 4)
 	semantic_register_prelude_builtin(ctx, "char", 4)
 	semantic_register_prelude_builtin(ctx, "real", 4)
@@ -2734,8 +2733,10 @@ begin
 	semantic_register_prelude_builtin(ctx, "short", 5)
 	semantic_register_prelude_builtin(ctx, "double", 6)
 	semantic_register_prelude_builtin(ctx, "string", 6)
+	semantic_register_prelude_builtin(ctx, "signed", 6)
 	semantic_register_prelude_builtin(ctx, "integer", 7)
 	semantic_register_prelude_builtin(ctx, "cardinal", 8)
+	semantic_register_prelude_builtin(ctx, "unsigned", 8)
 end
 
 

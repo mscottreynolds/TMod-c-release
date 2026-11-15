@@ -82,24 +82,25 @@ begin
 	if name == nil or name_len == 0 then
 		return false
 	elsif name_len == 3 then
-		return memcmp(name, "bit", 3) == 0 or 		\
-			memcmp(name, "int", 3) == 0
+		return memcmp(name, "int", 3) == 0
 	elsif name_len == 4 then
-		return memcmp(name, "bool", 4) == 0 or		\
-			memcmp(name, "byte", 4) == 0 or 		\
-			memcmp(name, "char", 4) == 0 or 		\
-			memcmp(name, "real", 4) == 0 or 		\
+		return memcmp(name, "bool", 4) == 0 or
+			memcmp(name, "byte", 4) == 0 or
+			memcmp(name, "char", 4) == 0 or
+			memcmp(name, "real", 4) == 0 or
 			memcmp(name, "long", 4) == 0
 	elsif name_len == 5 then
-		return memcmp(name, "float", 5) == 0 or 		\
+		return memcmp(name, "float", 5) == 0 or
 			memcmp(name, "short", 5) == 0
 	elsif name_len == 6 then
-		return memcmp(name, "string", 6) == 0 or 	\
-			memcmp(name, "double", 6) == 0
+		return memcmp(name, "string", 6) == 0 or
+			memcmp(name, "double", 6) == 0 or
+			memcmp(name, "signed", 6) == 0
 	elsif name_len == 7 then
 		return memcmp(name, "integer", 7) == 0
 	elsif name_len == 8 then
-		return memcmp(name, "cardinal", 8) == 0
+		return memcmp(name, "cardinal", 8) == 0 or
+			memcmp(name, "unsigned", 8) == 0
 	else
 		return false
 	end

@@ -1,10 +1,9 @@
 module tmodc.lib.String(str: string): TString
 
 (**
- * Basic wrapper around strings.
+ * Basic wrapper around string.
  * example: var s: TString = String("...")
  *)
-
 
 
 (**
@@ -15,13 +14,23 @@ export type TString = struct
     length: integer
 end
 
+export function TString::TString(s: string, l: integer): TString
+begin
+    var t: TString
+
+    t.value := s
+    t.length := l
+    return t
+end
+
+
 export function TString::value(ref self: TString): string
 begin
     return self.value
 end TString::value
 
-
-function len(str: string): integer
+// helper function
+export function TString::len(str: string): integer
 begin
     require str <> nil
 
@@ -43,7 +52,5 @@ end TString::length
 begin
     require str <> nil
 
-    var s: TString = { str, len(str) }
-
-    return s
+    return TString(str, TString::len(str))
 end String
