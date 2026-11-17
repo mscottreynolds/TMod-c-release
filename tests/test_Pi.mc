@@ -1,6 +1,6 @@
 program test_Pi(args: ^char[]): int
 
-(** Mod-C
+(** TMod-c
  This program computes Pi by the formula:
  pi / 4 = 4 * ArcTan(1/5) - ArcTan(1/239)
 
@@ -29,7 +29,7 @@ program test_Pi(args: ^char[]): int
  Author: M. Scott Reynolds
  Date: 09 September 2006
 
- 4 May 2026: TMod-C version.
+ 4 May 2026: TMod-c version.
 *)
 
 

@@ -157,6 +157,37 @@ begin
 end type_apply_use_qualifiers
 
 
+(*
+ * IMPORT AS: a .mh formal is spelled with the C name (Pair).
+ * The unit bound that export under the alias (Point, c_name Pair),
+ * Walkas the scope chain. First matching c_name wins.
+ *)
+function semantic_lookup_import_c_name(ctx: pTSemanticContext,
+		name: const ^char, name_len: size_t): pTSymbol
+begin
+	var table: pTSymbolTable = nil
+	var i: size_t = 0
+	var sym: pTSymbol = nil
+
+	if ctx == nil or name == nil or name_len == 0 then
+		return nil
+	end
+	table := ctx^.scope
+	while table <> nil do
+		for i := 1 to table^.count do
+			sym := table^.symbols[i - 1]
+			if sym <> nil and sym^.c_name <> nil and sym^.c_name_len > 0 and
+					semantic_names_equal(sym^.c_name, sym^.c_name_len,
+						name, name_len) then
+				return sym
+			end
+		end
+		table := table^.parent
+	end
+	return nil
+end semantic_lookup_import_c_name
+
+
 (**
  * Resolve type TType tree to its concrete form; return a new TType copy.
  * at = AST node for error location (may be nil).
@@ -214,6 +245,9 @@ begin
 	// 	elsif sym^.kind <> SYM_KIND_TYPE then
 	if ty^.name <> nil and ty^.name_len > 0 and not type_is_builtin_name(ty^.name, ty^.name_len) then
 		sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+		if sym == nil then
+			sym := semantic_lookup_import_c_name(ctx, ty^.name, ty^.name_len)
+		end
 		if sym == nil then
 			// Multi-word C spellings (long long, unsigned int) -- prelude extras.
 			// Single-word names must be IMPORT / EXTERN TYPE/ a TYPE decl.
@@ -283,6 +317,35 @@ begin
 end semantic_resolve_type_inner
 
 
+(*
+ * IMPORT AS: the use site keeps its TMod-c name. c_name is the C spelling.
+ *)
+recursive procedure semantic_stamp_c_name(ctx: pTSemanticContext, ty: pTType)
+begin
+	var sym: pTSymbol = nil
+
+	if ctx == nil or ty == nil then
+		return
+	end
+	if ty^.is_array and ty^.element_type <> nil then
+		semantic_stamp_c_name(ctx, ty^.element_type)
+		return
+	end
+	if ty^.name == nil or ty^.name_len == 0 then
+		return
+	end
+	if type_is_builtin_name(ty^.name, ty^.name_len) then
+		return
+	end
+	sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+	if sym == nil or sym^.c_name == nil or sym^.c_name_len == 0 then
+		return
+	end
+	ty^.c_name := sym^.c_name
+	ty^.c_name_len := sym^.c_name_len
+end semantic_stamp_c_name
+
+
 (**
  * Resolve ty in place; sets ty^.resolved_type (idempotent).
  *)
@@ -297,6 +360,7 @@ begin
 	end
 
 	ty^.resolved_type := semantic_resolve_type_inner(ctx, ty, 0, at)
+	semantic_stamp_c_name(ctx, ty)
 end semantic_resolve_type
 
 
@@ -619,6 +683,9 @@ begin
 		return
 	end
 	sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+	if sym == nil then
+		sym := semantic_lookup_import_c_name(ctx, ty^.name, ty^.name_len)
+	end
 	if sym == nil or sym^.kind <> SYM_KIND_TYPE then
 		return
 	end
@@ -2013,17 +2080,31 @@ procedure semantic_register_import_item(ctx: pTSemanticContext, item: pNode)
 begin
 	var name: const ^char = nil
 	var name_len: size_t = 0
+	var c_name: const ^char = nil
+	var c_len: size_t = 0
+	var sym: pTSymbol = nil
 
 	if item == nil or item^.kind <> NODE_IMPORT_ITEM then
 		semantic_error_at(item, "semantic_register_import_item: expected import item")
+	end
+
+	// C spelling. A .h header is not read; the written name is the claim.
+	if item^.import_item.method_owner <> nil and item^.import_item.method_owner_len > 0 then
+		c_name := semantic_mangle_method(ctx^.arena,
+			item^.import_item.method_owner, item^.import_item.method_owner_len,
+			item^.import_item.qualident, item^.import_item.qualident_len)
+		c_len := item^.import_item.method_owner_len + 2 + item^.import_item.qualident_len
+	else
+		c_name := item^.import_item.qualident
+		c_len := item^.import_item.qualident_len
 	end
 
 	if item^.import_item.import_alias <> nil and item^.import_item.import_alias_len > 0 then
 		name 		:= item^.import_item.import_alias
 		name_len 	:= item^.import_item.import_alias_len
 	else
-		name 		:= item^.import_item.qualident
-		name_len 	:= item^.import_item.qualident_len
+		name 		:= c_name
+		name_len 	:= c_len
 	end
 
 	if name == nil or name_len == 0 then
@@ -2031,6 +2112,12 @@ begin
 	end
 
 	semantic_define(ctx, SYM_KIND_IMPORT, name, name_len, nil, item, false)
+	sym := symtab_lookup_current(ctx^.scope, name, name_len)
+	if sym <> nil and c_name <> nil and c_len > 0 and
+			not semantic_names_equal(name, name_len, c_name, c_len) then
+		sym^.c_name := c_name
+		sym^.c_name_len := c_len
+	end
 end semantic_register_import_item
 
 
@@ -2435,8 +2522,12 @@ begin
 		semantic_error_at(loc, "semantic_bind_mh_export: unknown export kind in .mh")
 	end
 
+	// AS is not the portable bind. import integer from a pack still is.
 	owned := semantic_arena_strndup(ctx^.arena, bind_name, bind_len)
-	if kind == SYM_KIND_TYPE and type_is_portable_rebindable(owned, bind_len) then
+	// if kind == SYM_KIND_TYPE and type_is_portable_rebindable(owned, bind_len) then
+	if kind == SYM_KIND_TYPE and
+			semantic_names_equal(bind_name, bind_len, exp^.name, exp^.name_len) and
+			type_is_portable_rebindable(exp^.name, exp^.name_len) then
 		semantic_bind_portable_import(ctx, loc, owned, bind_len)
 	else
 		semantic_define(ctx, kind, owned, bind_len, nil, loc, false)
@@ -2445,6 +2536,13 @@ begin
 	sym := symtab_lookup_current(ctx^.scope, owned, bind_len)
 	if sym == nil then
 		semantic_error_at(loc, "semantic_bind_mh_export: internal: symbol not defined")
+	end
+
+	// exp^.name is freed with the .mh module. Copy it first.
+	if exp^.name <> nil and exp^.name_len > 0 and
+			not semantic_names_equal(bind_name, bind_len, exp^.name, exp^.name_len) then
+		sym^.c_name := semantic_arena_strndup(ctx^.arena, exp^.name, exp^.name_len)
+		sym^.c_name_len := exp^.name_len
 	end
 
 	if kind == SYM_KIND_CONST and exp^.has_const_value then
@@ -3068,6 +3166,8 @@ begin
 	var owner: const ^char = nil
 	var owner_len: size_t = 0
 	var depth: size_t = 0
+	var lookup_owner: const ^char = nil
+	var lookup_len: size_t = 0
 	var sym: pTSymbol = nil
 
 	result.sym := nil
@@ -3089,9 +3189,17 @@ begin
 		if owner == nil or owner_len == 0 then
 			return result
 		end
-		mangled := semantic_mangle_method(ctx^.arena, owner, owner_len,
+		// IMPORT AS: the symbol key is Type__method under the C type name.
+		// result.owner stays the TMod-c name so auto-deref still matches.
+		lookup_owner := owner
+		lookup_len := owner_len
+		if ty^.c_name <> nil and ty^.c_name_len > 0 then
+			lookup_owner := ty^.c_name
+			lookup_len := ty^.c_name_len
+		end
+		mangled := semantic_mangle_method(ctx^.arena, lookup_owner, lookup_len,
 			method, method_len)
-		sym := symtab_lookup(ctx^.scope, mangled, owner_len + 2 + method_len)
+		sym := symtab_lookup(ctx^.scope, mangled, lookup_len + 2 + method_len)
 		if sym <> nil then
 			result.sym := sym
 			result.owner := owner
@@ -3252,6 +3360,9 @@ begin
 	var is_instance: bool = false
 	var field_callable: bool = false
 	var hit: TMethodChainHit
+	var c_owner: const ^char = nil
+	var c_owner_len : size_t = 0
+	var owner_sym: pTSymbol = nil
 
 	if n == nil or n^.kind <> NODE_CALL then
 		return
@@ -3330,11 +3441,19 @@ begin
 	else
 		// --- Free call / Type::name (method_owner already set by parser) ---
 		if n^.call.method_owner <> nil and n^.call.method_owner_len > 0 then
+			c_owner := n^.call.method_owner
+			c_owner_len := n^.call.method_owner_len
+			owner_sym := symtab_lookup(ctx^.scope, c_owner, c_owner_len)
+			if owner_sym <> nil and owner_sym^.c_name <> nil and
+					owner_sym^.c_name_len > 0 then
+				c_owner := owner_sym^.c_name
+				c_owner_len := owner_sym^.c_name_len
+			end
 			mangled := semantic_mangle_method(ctx^.arena,
-				n^.call.method_owner, n^.call.method_owner_len,
+				c_owner, c_owner_len,
 				n^.call.name, n^.call.name_len)
 			lookup_name 	:= mangled
-			lookup_len 		:= n^.call.method_owner_len + 2 + n^.call.name_len
+			lookup_len 		:= c_owner_len + 2 + n^.call.name_len
 		else
 			lookup_name 	:= n^.call.name
 			lookup_len 		:= n^.call.name_len

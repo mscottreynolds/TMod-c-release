@@ -2,6 +2,13 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.8.253
+- **`IMPORT … AS` (item 7 remainder).** `import Name as Alias` and `import Type::name as Alias`. `Alias` is one identifier. The binding in this unit is `Alias`. Generated C keeps the original spelling. `import printf as say` calls `say`. A later `printf(...)` is unknown. `import TPoint as Pt` writes `var p: Pt` and emits `TPoint`. A type use spelled with the C name resolves, so a `.mh` formal typed `Pair` resolves after `import Pair as Point`. `AS` is not the portable bind. `import integer from` a pack still rebinds `integer`. `import TPoint as integer` is a duplicate of the prelude name. `import Type::name as Alias` is the free call `Alias(...)`. `obj.name()` and `Type::name(...)` need `Type::name` with no alias. The dot call looks up `CName__name`.
+- **Tests:** `tests/test_import_as.mc`. `tests/test3_import_as_shadow.mc`. `tests/test3_import_as_orig.mc`.
+- `IMPORT *` and the module-name prefix stay later.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` succeeds on gcc, clang, and tcc, and promoted **0.27.8.253**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **253**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, and `docs/syntax-ebnf.md`. No new grok report. The session archive remains `docs/grok_report-20261109-2011.md`.
+
 ## Version 0.27.8.252
 - **Builtin type names.** `bit` is no longer a prelude type. Width forms (`integer N`, `cardinal N`) replaced it. `signed` and `unsigned` are reserved C spellings, in the same group as `int` and `long`. A bare `signed` lowers to C `signed` (`int`). A bare `unsigned` lowers to C `unsigned` (`unsigned int`). The documented prelude is unchanged: `bool`, `byte`, `char`, `integer`, `cardinal`, `real`, `string`.
 - The user promoted **0.27.8.252**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **252**. No suite result is recorded for this promote.

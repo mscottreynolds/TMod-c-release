@@ -46,6 +46,27 @@ void TIO__fprint(TIO* self, FILE* out, const char* fmt, ...);
 /* === PROC/FUNC EXPORT === */
 void TIO__error(TIO* self, const char* fmt, ...);
 
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_str(TIO* self, string str);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_char(TIO* self, char ch);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_integer(TIO* self, integer i);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_carddinal(TIO* self, cardinal u);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_real(TIO* self, real r);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_bool(TIO* self, bool b);
+
+/* === PROC/FUNC EXPORT === */
+integer TIO__write_string(char* dest, integer dest_length, char* str, integer str_length);
+
 TIO IO(void);
 
 #endif /* MODC_MODULE_IO_H */

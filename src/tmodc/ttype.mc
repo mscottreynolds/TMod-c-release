@@ -39,6 +39,8 @@ export type TType = struct
 	base_type:		^TType		// for EXTENDS support (NULL if none)
 	resolved_type:	^TType 		// semantic pass: fully expanded alias (nil - not resolved yet)
 	width:			int 		// 0 = not a width form; else exact bit count
+	c_name: 		const ^char 	// IMPORT AS: C spelling. nil => name
+	c_name_len:		size_t
 end
 
 
@@ -67,6 +69,8 @@ begin
 	t^.element_type 	:= src^.element_type
 	t^.base_type 		:= src^.base_type
 	t^.width 			:= src^.width
+	t^.c_name 			:= src^.c_name
+	t^.c_name_len 		:= src^.c_name_len
 	t^.resolved_type 	:= nil
 
 	return t
@@ -211,6 +215,13 @@ begin
 		return false
 	end
 
+	// IMPORT AS keeps the TMod-c namem for lookup and emits c_name.
+	if t^.c_name <> nil and t^.c_name_len > 0 then
+		out_s^ := t^.c_name
+		out_len^ := t^.c_name_len
+		return true
+	end
+
 	out_s^ := t^.name
 	out_len^ := t^.name_len
 	return t^.name <> nil and t^.name_len > 0
@@ -237,7 +248,9 @@ begin
 	t^.base_type 		:= nil
 	t^.resolved_type 	:= nil
 	t^.width 			:= 0
-
+	t^.c_name 			:= nil
+	t^.c_name_len 		:= 0
+	
 	// Auto-detect floating point primitives (case-sensitive for now)
 	// if (name_len == 5 and memcmp(name_start, "float", 5) == 0) {
 	// 	t->is_floating = true;

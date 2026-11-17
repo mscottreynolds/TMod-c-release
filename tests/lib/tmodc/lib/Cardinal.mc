@@ -6,7 +6,7 @@ module tmodc.lib.Cardinal(n: cardinal): TCardinal
  *)
 
 
-import fprintf, snprintf from "stdio.h"
+import fprintf, snprintf, FILE from "stdio.h"
 
 
 (**
@@ -39,7 +39,7 @@ begin
 end
 
 
-export function TCardinal::write(ref self: TCardinal, out: FILE): integer
+export function TCardinal::write(ref self: TCardinal, out: ^FILE): integer
 begin
     return fprintf(out, "%s", @self.str[0])
 end

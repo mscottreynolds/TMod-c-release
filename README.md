@@ -91,6 +91,7 @@ Features (Early Design Goals)
 - Else labels (0.27.7.242): `else A, B, default:` shares one body with the required `else`. `else:` is the residual alone. `else default:` is that same arm. `default` is last and is a keyword
 - Folded integer `CONST` (0.27.7.243): a folded integer emits no C object. An ordinary use emits the integer. An exported folded integer is on the `.mh` line. A value that does not fold stays `static const`. An enumeration constant stays its C name. `DEFINE` stays the macro
 - Complete self-host (0.27.8.250): compiler sources are `.mc`. `src/tmodc/node.mc` is the AST (`TNode`). `src/tmodc/version.mc` is `header version`. `make version` rewrites it. Generated C is under `src/c/tmodc/`
+- `IMPORT … AS` (0.27.8.253): `import Name as Alias` and `import Type::name as Alias`. The alias is one identifier and is the name in this unit. Generated C keeps the original spelling. `Type::name as Alias` is a free call. `IMPORT *` stays later
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -100,6 +101,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.8.253** (16 November 2026): `IMPORT … AS`. The alias is one identifier and is the name in this unit. Generated C keeps the original spelling. `AS` is not the portable bind. `Type::name as Alias` is a free name. `IMPORT *` and the module-name prefix stay later. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. No separate grok report.
 - **0.27.8.252** (14 November 2026): builtin type names. `bit` is no longer a prelude type. `signed` and `unsigned` are reserved C spellings. A bare `signed` lowers to C `signed`. A bare `unsigned` lowers to C `unsigned`. The documented prelude is unchanged. Branch **`TMod-c_0.27`**. Stem **0.27.8**. No suite result is recorded for this promote. No separate grok report.
 - **0.27.8.251** (9 November 2026): self-host cleanup. Makefile self-host and bootstrap comments match the recipes. Parser messages use `parse_switch_stmt`, `ELSE labels`, and `after`. `tests/test_forward.mc` drops `procedure ProcD() forward`. The keyword stays. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive remains `docs/grok_report-20261109-2011.md`.
 - **0.27.8.250** (9 November 2026): the compiler is completely self-hosted. `src/tmodc/node.mc` is the AST. The struct is `TNode`. `symbol` and `symkind` are in that module (**0.27.8.247**). `src/tmodc/version.mc` is `header version`. `make version` rewrites it. `sizeof` of an imported type name is a type operand. Branch **`TMod-c_0.27`**. Stem **0.27.8**. **0.27.8.247** reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261109-2011.md` (also **0.27.7.243**).
@@ -136,9 +138,11 @@ All code was reviewed and typed in by hand, making adjustments and corrections a
 
 About Me
 --------
-I am a self-taught software engineer that has been programming ever since the early 1980s. Started with B.A.S.I.C. (Beginners All Purpose Symbolic Instructioin Code), then Pascal, C, and Modula-2. Professionally with C, Delphi, JavaScript, and Java for over 20 years.
+I am a self-taught software engineer that has been programming ever since the early 1980s. Started with B.A.S.I.C. (Beginners All Purpose Symbolic Instructioin Code), then Pascal, C, and Modula-2. Professionally with C, Visual Basic, Delphi, JavaScript, and Java for many years.
 
-I've been designing my own personal programming language ever since I learned how to code. TMod-c is the results of many years of experience with many different types of languages, compilers, and interpreters, incorporating my favorite features. Inspired heavly by Pascal, Modula-2, and C. Also inspired by Lua, Zen-C, and many others.
+I've been designing my own personal programming language ever since I learned how to code. TMod-c is the results of many years of experience with many different types of languages, compilers, and interpreters, incorporating my favorite features. Inspired heavly by Pascal, Modula-2, and C. Also inspired by Oberon-07, Lua, Java, and many others.
+
+TMod-c is also an experiment of creating a project with the assistance of AI.
 
 —M. Scott Reynolds  
 Salt Lake City, Utah  

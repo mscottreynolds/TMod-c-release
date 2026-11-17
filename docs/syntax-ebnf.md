@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 6 November 2026.  
+**Last updated:** 16 November 2026.  
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -43,10 +43,18 @@ module-name = qualident ;
 
 (**** Imports ******************************************************)
 
-import-stmt   = "IMPORT" [ import-item { "," import-item } ] "FROM" import-source EOS ;
+import-stmt   = "IMPORT" ( "*" | [ import-item { "," import-item } ] ) "FROM" import-source EOS ;
 import-source = string-literal | qualident ;
 
-import-item = [ type-identifier "::" ] identifier ;
+(* "*" (Planned). An .mh source. Binds the package qualident.
+   No bare names. A quoted C header is an error.
+   Language Report §3.2. Not implemented. *)
+
+(* AS (0.27.8.253). The alias is one identifier.
+   The unit's name is the alias. C keeps the original spelling.
+   Type::name as Alias is a free name. *)
+
+import-item = [ type-identifier "::" ] identifier [ "AS" identifier ] ;
 
 (**** Top Level Declarations *************************************************)
 
@@ -206,14 +214,20 @@ extern-proc-decl = "EXTERN" [ "EXPORT" ] "PROCEDURE" identifier formal-parameter
 extern-func-decl = "EXTERN" [ "EXPORT" ] "FUNCTION" identifier formal-parameters EOS ;
 
 method-prototype = [ "RECURSIVE" ] ( "PROCEDURE" | "FUNCTION" )
-    qualified-method-name formal-parameters [ "FORWARD" ] EOS ;
+    method-name formal-parameters [ "FORWARD" ] EOS ;
     
     (* [ "FORWARD" ] stays optional in the grammar.
        As of 0.27.6.237 a later top-level procedure or function may be
        called without it. EXTERN, and a forward with no body, stay prototypes.
        Language Report §4.4. *)
 
-qualified-method-name = [ type-identifier "::" ] identifier ;
+(* A declaration writes one type name before "::". *)
+method-name = [ type-identifier "::" ] identifier ;
+
+(* A call may use a package qualident before "::" (Planned).
+   Point::print and tmodc.arena.Point::print are both this form.
+   Language Report §3.2. Not implemented. *)
+qualified-method-name = [ qualident "::" ] identifier ;
 
 method-def = method-prototype
     block;
@@ -419,7 +433,9 @@ postfix-expression = primary-expression
 
 instance-method-call = "." identifier "(" [ argument-list ] ")" ;
 
-type-qualified-call = type-identifier "::" identifier "(" [ argument-list ] ")" ;
+type-qualified-call = qualident "::" identifier "(" [ argument-list ] ")" ;
+    (* Planned when the qualident has a dot. Point::print is the
+       implemented call. Language Report §3.2. *)
 
 argument-list = expression { "," expression } ;
 

@@ -32,11 +32,18 @@ cardinal TCardinal__value(TCardinal* self)
     return __ret_l32;
 }
 
-string TCardinal__toString(TCardinal* self)
+string TCardinal__to_string(TCardinal* self)
 {
     /* return value captured before defers */
     string __ret_l38 = (string)&((*self)).str[0];
     return __ret_l38;
+}
+
+integer TCardinal__write(TCardinal* self, FILE* out)
+{
+    /* return value captured before defers */
+    integer __ret_l44 = fprintf(out, "%s", &((*self)).str[0]);
+    return __ret_l44;
 }
 
 
@@ -44,6 +51,6 @@ TCardinal Cardinal(cardinal n)
 {
     TCardinal c = TCardinal__TCardinal(n);
     /* return value captured before defers */
-    TCardinal __ret_l45 = c;
-    return __ret_l45;
+    TCardinal __ret_l51 = c;
+    return __ret_l51;
 }

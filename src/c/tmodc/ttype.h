@@ -69,6 +69,8 @@ typedef struct TType {
     TType* base_type;
     TType* resolved_type;
     int width;
+    const char* c_name;
+    size_t c_name_len;
 } TType;
 
 /**

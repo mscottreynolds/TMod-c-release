@@ -45,10 +45,59 @@ void TIO__error(TIO* self, const char* fmt, ...)
     va_end(ap);
 }
 
+integer TIO__write_str(TIO* self, string str)
+{
+    /* return value captured before defers */
+    integer __ret_l65 = fprintf(((*self)).stdout, "%s", str);
+    return __ret_l65;
+}
+
+integer TIO__write_char(TIO* self, char ch)
+{
+    /* return value captured before defers */
+    integer __ret_l70 = fprintf(((*self)).stdout, "%c", ch);
+    return __ret_l70;
+}
+
+integer TIO__write_integer(TIO* self, integer i)
+{
+    /* return value captured before defers */
+    integer __ret_l75 = fprintf(((*self)).stdout, "%d", i);
+    return __ret_l75;
+}
+
+integer TIO__write_carddinal(TIO* self, cardinal u)
+{
+    /* return value captured before defers */
+    integer __ret_l80 = fprintf(((*self)).stdout, "%u", u);
+    return __ret_l80;
+}
+
+integer TIO__write_real(TIO* self, real r)
+{
+    /* return value captured before defers */
+    integer __ret_l85 = fprintf(((*self)).stdout, "%g", r);
+    return __ret_l85;
+}
+
+integer TIO__write_bool(TIO* self, bool b)
+{
+    /* return value captured before defers */
+    integer __ret_l90 = fprintf(((*self)).stdout, "%s", ((b ? "true" : "false")));
+    return __ret_l90;
+}
+
+integer TIO__write_string(char* dest, integer dest_length, char* str, integer str_length)
+{
+    /* return value captured before defers */
+    integer __ret_l96 = snprintf(dest, dest_length, "%.*s", str_length, str);
+    return __ret_l96;
+}
+
 
 TIO IO(void)
 {
     /* return value captured before defers */
-    TIO __ret_l64 = TIO__TIO(stdin, stdout, stderr);
-    return __ret_l64;
+    TIO __ret_l101 = TIO__TIO(stdin, stdout, stderr);
+    return __ret_l101;
 }

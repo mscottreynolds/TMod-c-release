@@ -18,11 +18,11 @@ void test_all(void)
     TIO__fprint(&io, (io).stdout, "io.fprint(io.stdout): %s", (s).value);
     TIO__print(&io, "io.print: %s", TString__value(&s));
     s = TString__TString("Good bye.", TString__len("Good bye."));
-    TIO__error(&io, "io.error: %s\n", (s).value);
+    TIO__error(&io, "io.error: %s, %d and %d\n", (s).value, TString__length(&s), TString__length(&s));
     TInteger i_l26_c7 = Integer(-42);
     TIO__print(&io, "TInteger: %s\n", TInteger__toString(&i_l26_c7));
-    TCardinal u_l29_c7 = Cardinal(3);
-    TIO__print(&io, "TCardinal: %s\n", TCardinal__toString(&u_l29_c7));
+    TCardinal u_l29_c7 = Cardinal(3.14);
+    TIO__print(&io, "TCardinal: %s\n", TCardinal__to_string(&u_l29_c7));
     TReal r_l32_c7 = Real(3.14);
     TIO__print(&io, "TReal: %s\n", TReal__toString(&r_l32_c7));
 }

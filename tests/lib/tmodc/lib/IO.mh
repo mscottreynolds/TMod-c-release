@@ -7,4 +7,11 @@ export function TIO__TIO complete static TIO (^FILE, ^FILE, ^FILE) : TIO
 export procedure TIO__print complete instance TIO (ref TIO, const ^char, ...)
 export procedure TIO__fprint complete instance TIO (ref TIO, ^FILE, const ^char, ...)
 export procedure TIO__error complete instance TIO (ref TIO, const ^char, ...)
+export function TIO__write_str complete instance TIO (ref TIO, string) : integer
+export function TIO__write_char complete instance TIO (ref TIO, char) : integer
+export function TIO__write_integer complete instance TIO (ref TIO, integer) : integer
+export function TIO__write_carddinal complete instance TIO (ref TIO, cardinal) : integer
+export function TIO__write_real complete instance TIO (ref TIO, real) : integer
+export function TIO__write_bool complete instance TIO (ref TIO, bool) : integer
+export function TIO__write_string complete static TIO (var char[], char[]) : integer
 export function IO complete () : TIO

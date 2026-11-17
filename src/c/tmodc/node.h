@@ -847,6 +847,8 @@ typedef struct TSymbol {
     bool has_const_value;
     integer const_value;
     bool is_method_instance;
+    const char* c_name;
+    size_t c_name_len;
 } TSymbol;
 
 /**

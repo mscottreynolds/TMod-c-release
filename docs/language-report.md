@@ -105,7 +105,7 @@ Illustrative fragments in this report are **non-normative** if they disagree wit
 
 - **Keywords** are **case-insensitive** (`IF`, `if`, `If`).  
 - **Identifiers** are **case-sensitive** (`MyVar` ≠ `myvar`).  
-- **Length *Implemented (0.26.3.170)*** — an identifier is at most **255** characters. Longer is a compile-time error (lexer / `.mh` reader). Mangled export / C names `Owner__name` may be 512; they are not source identifiers.  
+- **Length *Implemented (0.26.3.170)*** — an identifier is at most **255** characters. Longer is a compile-time error (lexer / `.mh` reader). A mangled C name may be 512. That budget covers `Owner__name` and a package-mangled export (`tmodc__arena__Point__print`, §3.2). Those spellings are not source identifiers.  
 - Full keyword list: EBNF production `keyword`.
 - `default` is a keyword (**0.27.7.242**). It marks the residual on an else arm (§7.1).
 
@@ -238,6 +238,7 @@ On 13 October 2026 the lock was two candidates, flat file then directory, flat w
   - **Quoted string** — foreign/C path or explicit path (`"stdio.h"`, `"path.mh"`).  
   - **Qualident** — TMod-c module. Dots become directory separators under the importing unit's package root (§3.1.1). The root is the directory above the compiling file's package path. The compiling file's name is not used. *Directory form implemented (0.26.12.212). Filename omitted from the root match (0.27.6.239).* A unit with no package prefix still resolves beside the compiling file, which is what 0.24.5 did for every unquoted import.  
   - **Import items:** plain names, or **`Type::name`** for type-bound methods (*0.25.2*); lookup uses C mangling `Type__name`.  
+  - **`AS` (0.27.8.253):** `import Name as Alias` and `import Type::name as Alias`. `Alias` is one identifier. A dot or `::` after it is a parse error. The binding in this unit is `Alias`. Generated C keeps the original spelling: `say(...)` emits `printf`, and `var p: Pt` emits `TPoint`. `printf(...)` after `import printf as say` is unknown. A type use spelled with the C name resolves, because a `.mh` formal is written that way (`Pair` on `Pair__sum` after `import Pair as Point`). `AS` is not the portable bind. `import integer from` a pack still rebinds `integer`. `import TPoint as integer` is a duplicate of the prelude name. `import Type::name as Alias` is the free call `Alias(...)`. `obj.name()` and `Type::name(...)` need `Type::name` with no alias. The dot call looks up `CName__name`.  
 - **Include-only:** `IMPORT FROM source` with no item list — `#include` only, no TMod-c names.  
 - **Module entry (7a, 0.25.3.150):** a named import from an `.mh` also binds the `@module` unit-entry export. Include-only does not. `PROGRAM` names are not bound. A `HEADER` unit writes `@module` and does not write a unit-entry export, so nothing is bound.  
 - **`EXPORT`** — marks declarations written into the unit’s `.mh` table.  
@@ -262,6 +263,8 @@ extern type TTermios = struct termios
 import TPoint from "fixtures/tpoint.mh"
 import mini_answer from fixtures.minimod
 import Point::print from geometry
+import printf as say, FILE as File from "stdio.h"
+import Pair as Point, Pair::sum, Pair::sum as total from "fixtures/asmethod.mh"
 
 import from "extra.h"          (* include-only: no names bound *)
 
@@ -290,7 +293,27 @@ export function mini_answer complete () : integer
 export procedure Point__print complete instance Point (Point)
 ```
 
-**Deferred:** `IMPORT *`. **Mutual TMod-c `IMPORT`:** later. Makefile subdirectory compilation landed in **0.26.12.213** (`src/codegen/` is package `codegen`). Today cycles can compile because C headers include each other and `.mh` comes from a previous emit.
+**`IMPORT *` and the C spelling *Planned*.** Not in the compiler yet. `AS` above is the implemented rule.
+
+- `import * from Module` brings that module in under its package qualident. A call, a type, a constant, a variable, or a method is written with that qualident: `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, `tmodc.arena.Point::print`. The star adds no bare name. A qualified `tmodc.pack.integer` is a different name from the prelude `integer`.
+- A selective import is the bare name only. `import arena_init from tmodc.arena` is `import tmodc.arena.arena_init as arena_init`. A star and a selective import from the same module may stand together.
+- `import *` is an `.mh` import. `import * from "stdio.h"` is an error. Include-only `import from` still binds nothing.
+- `obj.print()` still needs a selective `import Point::print`. The star supplies `tmodc.arena.Point::print(p)`.
+- Inside the defining unit the source name stays bare: `arena_init`, `Point::print`.
+- `import integer from` a width pack still rebinds `integer`. `import integer as i64` does not. `import TPoint as integer` is still a duplicate of the prelude name. The same four names are `integer`, `cardinal`, `real`, and `string`. A star cannot rebind them, because it creates no bare name.
+
+Every exported procedure, function, method, type, variable, enumeration constant, and the module entry uses the package spelling in C. Each `.` and each `::` becomes `__`.
+
+```
+tmodc.arena.Point::print    →    tmodc__arena__Point__print
+module tmodc.lib.String     →    tmodc__lib__String
+```
+
+A selective import emits that same C spelling. `AS` does not change it. A `.h` import and an `EXTERN` keep the C spelling, so `fprintf` stays `fprintf`. `DEFINE` stays the macro text. A non-exported procedure stays `static` under its source name. The `.mh` line keeps the source name (`export procedure arena_init`). The importer builds the C spelling from the module qualident. This changes the generated `.h`. `@format` stays 1.
+
+`Point::print` and a procedure named `Point__print` are one C symbol. `tmodc.arena.Point::print` and `tmodc.arena.Point.print` are the same pair. That clash is the programmer's to avoid.
+
+**Mutual TMod-c `IMPORT`:** later. Makefile subdirectory compilation landed in **0.26.12.213** (`src/codegen/` is package `codegen`). Today cycles can compile because C headers include each other and `.mh` comes from a previous emit.
 
 ### 3.3 `.mh` completeness vs source `OPAQUE`
 
@@ -1326,7 +1349,7 @@ Expression actuals (`a + b`, `g()`) are **illegal** for `VAR`/`REF` on non-point
 
 ### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191; named-type owner 0.26.8.196; type call 0.26.12.212)*
 
-Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**.
+Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**. A package prefix on that name is planned (§3.2): `tmodc.arena.Point::print` lowers to `tmodc__arena__Point__print`. `import *` is the same section. `obj.print()` still needs a selective `import Point::print`.
 
 Classification uses the **written type of the first formal** only. The formal’s name is free (need not be `self`). The **owner is the name**, not the layout after aliases: `type sds = ^char` then `s: sds` is instance; `s: ^sds` is not (**0.26.8.196**). Do not treat a named pointer alias as “not a type.” First formal `^Owner` as instance remains deferred.
 
@@ -1406,7 +1429,7 @@ box.h := say
 box.h(42)              (* (box.h)(42) — no auto-self *)
 ```
 
-No vtables. Cross-module: `import Type::name`; `.mh` carries `instance`/`static` and formals; `VAR`/`REF` auto-`&` applies. `REF`/`VAR` first formal on a `^T` receiver: auto-`&` outside the peel (`Type__scale(&(*pp), n)`). `Type::m(@x)` is not peeled (`@` is already the address). Parent-chain: `c.m()` walks `EXTENDS` (first instance hit; Child shadows Parent); C `.base` × N after peel (`Parent__show((*pc).base)`; `REF` `&((*pc).base)`). Qualified `Child::m` does not walk. C-index: `p[i].m()` when `p` is `^T` (**0.26.7.191**) is an ordinary `T` receiver — C `Type__m(&p[i])` for `REF`; not `(*p)[i]`. Deferred: first formal `^Owner` as instance.
+No vtables. Cross-module: `import Type::name`; `import Type::name as Alias` binds the free name `Alias` (§3.2). `.mh` carries `instance`/`static` and formals; `VAR`/`REF` auto-`&` applies. `REF`/`VAR` first formal on a `^T` receiver: auto-`&` outside the peel (`Type__scale(&(*pp), n)`). `Type::m(@x)` is not peeled (`@` is already the address). Parent-chain: `c.m()` walks `EXTENDS` (first instance hit; Child shadows Parent); C `.base` × N after peel (`Parent__show((*pc).base)`; `REF` `&((*pc).base)`). Qualified `Child::m` does not walk. C-index: `p[i].m()` when `p` is `^T` (**0.26.7.191**) is an ordinary `T` receiver — C `Type__m(&p[i])` for `REF`; not `(*p)[i]`. Deferred: first formal `^Owner` as instance.
 
 ---
 
@@ -1455,7 +1478,7 @@ Everyday portable names answer **“what exactly is this?”** — not C’s ran
 | `string` | Immutable text (TMod-c **`const ^char`**) | `const char *` |
 | `bool`, `byte`, `char` | Fixed small types | `bool`; `byte` is `uint8_t`; `char` is host `char`. Not rebindable |
 
-**Unit binding:** at most one bind per unit via `TYPE` or named `.mh` import. Unbound defaults as above. `import integer as i64` does not bind `integer`. Include-only and foreign `.h` imports do not count.
+**Unit binding:** at most one bind per unit via `TYPE` or named `.mh` import. Unbound defaults as above. `import integer as i64` does not bind `integer` (**0.27.8.253**). Include-only and foreign `.h` imports do not count.
 
 **Width forms:** exact C11 `intN_t` / `uintN_t` / `float` / `double`. `.mh` type-spec may write `integer 32`. **Alias RHS** in the export table: `export type integer complete integer 64` (optional; old lines without a tail stay valid). **Packs:** `tests/fixtures/lp64` and `ilp32` (lean `.h`; stand-in for `tmodc.lp64`). Directory compilation landed in **0.26.12.213**. **Build-time defaults** (unbound `cint` vs `lp64`) are parked indefinitely (12 October 2026) until another architecture can prove a compiler-build default. Unbound units stay `cint`.
 
@@ -1654,6 +1677,8 @@ Do not maintain a second full EBNF elsewhere.
 | 7 November 2026 | **§4.2 folded integer `CONST` (0.27.7.243):** a folded integer emits no C object. An ordinary use emits the integer. A negative value is parenthesized. An exported folded integer is an optional integer after `complete` on the `.mh` line. The `.h` does not declare a C object. A value that does not fold stays `static const`. An enumeration constant stays its C name. A character literal still lowers to an object. `DEFINE` stays the macro. |
 | 9 November 2026 | **§10.2 `SIZEOF` of an imported type (0.27.8.250):** an imported type name is a type operand. The parser type list does not include imports. A builtin name used as a designator is still an error. |
 | 14 November 2026 | **§3.2 types (0.27.8.252):** `bit` is not a prelude type. Bare `signed` and bare `unsigned` are reserved C spellings. `unsigned` is still not a modifier on `^T` or on a typedef name. |
+| 16 November 2026 | **§3.2 / §8.3 / §10.1 `IMPORT … AS` (0.27.8.253):** the alias is one identifier and is the binding in this unit. Generated C keeps the original spelling. `AS` is not the portable bind. `Type::name as Alias` is a free name. `IMPORT *` stays deferred. |
+| 16 November 2026 | **§2.2 / §3.2 / §8.3 `IMPORT *` and the C spelling (planned):** `import *` binds the package qualident and no bare name. A selective import is the bare name. `*` is an `.mh` import. `.` and `::` become `__` on an exported C name. A `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. A non-exported procedure stays `static`. The `.mh` line keeps the source name. Not implemented. |
 
 ---
 

@@ -46,7 +46,10 @@ TCardinal TCardinal__TCardinal(cardinal n);
 cardinal TCardinal__value(TCardinal* self);
 
 /* === PROC/FUNC EXPORT === */
-string TCardinal__toString(TCardinal* self);
+string TCardinal__to_string(TCardinal* self);
+
+/* === PROC/FUNC EXPORT === */
+integer TCardinal__write(TCardinal* self, FILE* out);
 
 TCardinal Cardinal(cardinal n);
 

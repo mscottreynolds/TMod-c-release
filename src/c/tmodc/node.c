@@ -108,9 +108,11 @@ TSymbol* symbol_create(Arena* arena, SymbolKind kind, const char* name, size_t n
     ((*s)).has_const_value = false;
     ((*s)).const_value = 0;
     ((*s)).is_method_instance = false;
+    ((*s)).c_name = nil;
+    ((*s)).c_name_len = 0;
     /* return value captured before defers */
-    TSymbol* __ret_l662 = s;
-    return __ret_l662;
+    TSymbol* __ret_l666 = s;
+    return __ret_l666;
 }
 
 /**
@@ -125,92 +127,92 @@ const char* symbol_kind_name(SymbolKind kind)
         case SYM_KIND_CONST:
         {
             /* return value captured before defers */
-            const char* __ret_l674 = "CONST";
-            return __ret_l674;
+            const char* __ret_l678 = "CONST";
+            return __ret_l678;
         }
         break;
         case SYM_KIND_FIELD:
         {
             /* return value captured before defers */
-            const char* __ret_l675 = "FIELD";
-            return __ret_l675;
+            const char* __ret_l679 = "FIELD";
+            return __ret_l679;
         }
         break;
         case SYM_KIND_FUNC:
         {
             /* return value captured before defers */
-            const char* __ret_l676 = "FUNC";
-            return __ret_l676;
+            const char* __ret_l680 = "FUNC";
+            return __ret_l680;
         }
         break;
         case SYM_KIND_IMPORT:
         {
             /* return value captured before defers */
-            const char* __ret_l677 = "IMPORT";
-            return __ret_l677;
+            const char* __ret_l681 = "IMPORT";
+            return __ret_l681;
         }
         break;
         case SYM_KIND_LET:
         {
             /* return value captured before defers */
-            const char* __ret_l678 = "LET";
-            return __ret_l678;
+            const char* __ret_l682 = "LET";
+            return __ret_l682;
         }
         break;
         case SYM_KIND_PARAM:
         {
             /* return value captured before defers */
-            const char* __ret_l679 = "PARAM";
-            return __ret_l679;
+            const char* __ret_l683 = "PARAM";
+            return __ret_l683;
         }
         break;
         case SYM_KIND_PROC:
         {
             /* return value captured before defers */
-            const char* __ret_l680 = "PROC";
-            return __ret_l680;
+            const char* __ret_l684 = "PROC";
+            return __ret_l684;
         }
         break;
         case SYM_KIND_RECEIVER:
         {
             /* return value captured before defers */
-            const char* __ret_l681 = "RECEIVER";
-            return __ret_l681;
+            const char* __ret_l685 = "RECEIVER";
+            return __ret_l685;
         }
         break;
         case SYM_KIND_STRUCT:
         {
             /* return value captured before defers */
-            const char* __ret_l682 = "STRUCT";
-            return __ret_l682;
+            const char* __ret_l686 = "STRUCT";
+            return __ret_l686;
         }
         break;
         case SYM_KIND_TYPE:
         {
             /* return value captured before defers */
-            const char* __ret_l683 = "TYPE";
-            return __ret_l683;
+            const char* __ret_l687 = "TYPE";
+            return __ret_l687;
         }
         break;
         case SYM_KIND_UNKNOWN:
         {
             /* return value captured before defers */
-            const char* __ret_l684 = "UNKNOWN";
-            return __ret_l684;
+            const char* __ret_l688 = "UNKNOWN";
+            return __ret_l688;
         }
         break;
         case SYM_KIND_VAR:
         {
             /* return value captured before defers */
-            const char* __ret_l685 = "VAR";
-            return __ret_l685;
+            const char* __ret_l689 = "VAR";
+            return __ret_l689;
         }
         break;
         default:
         {
             /* return value captured before defers */
-            const char* __ret_l686 = "UNKNOWN";
-            return __ret_l686;
+            const char* __ret_l690 = "UNKNOWN";
+            return __ret_l690;
         }
         break;
     }
@@ -249,8 +251,8 @@ TNode* node_create(Arena* arena, NodeKind kind, TToken tok)
     (*(n)).kind = kind;
     (*(n)).token = tok;
     /* return value captured before defers */
-    TNode* __ret_l741 = n;
-    return __ret_l741;
+    TNode* __ret_l745 = n;
+    return __ret_l745;
 }
 
 static void print_kind_line_column(const TNode* n, const char* kind_name)
@@ -312,8 +314,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l802_c7 = (((*(n)).program_decl).param_count);
-                for (size_t i = 1; i <= __for_end_l802_c7; i++)
+                const size_t __for_end_l806_c7 = (((*(n)).program_decl).param_count);
+                for (size_t i = 1; i <= __for_end_l806_c7; i++)
                 {
                     {
                         node_print(((*(n)).program_decl).params[i - 1], indent + 1);
@@ -321,8 +323,8 @@ void node_print(const TNode* n, int indent)
                 }
             }
             {
-                const size_t __for_end_l807_c7 = (((*(n)).program_decl).count);
-                for (size_t i = 1; i <= __for_end_l807_c7; i++)
+                const size_t __for_end_l811_c7 = (((*(n)).program_decl).count);
+                for (size_t i = 1; i <= __for_end_l811_c7; i++)
                 {
                     {
                         node_print(((*(n)).program_decl).decls[i - 1], indent + 1);
@@ -392,8 +394,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l856_c7 = (((*(n)).var_decl).count);
-                for (size_t i = 1; i <= __for_end_l856_c7; i++)
+                const size_t __for_end_l860_c7 = (((*(n)).var_decl).count);
+                for (size_t i = 1; i <= __for_end_l860_c7; i++)
                 {
                     {
                         const TNode* item = ((*(n)).var_decl).items[i - 1];
@@ -491,8 +493,8 @@ void node_print(const TNode* n, int indent)
                 }
                 printf("\n");
                 {
-                    const size_t __for_end_l931_c8 = (((*(struct_body)).struct_decl).field_count);
-                    for (size_t i = 1; i <= __for_end_l931_c8; i++)
+                    const size_t __for_end_l935_c8 = (((*(struct_body)).struct_decl).field_count);
+                    for (size_t i = 1; i <= __for_end_l935_c8; i++)
                     {
                         {
                             node_print(((*(struct_body)).struct_decl).fields[i - 1], indent + 1);
@@ -535,8 +537,8 @@ void node_print(const TNode* n, int indent)
                 TNode* en = ((*(n)).type_decl).enum_type;
                 printf("ENUM\n");
                 {
-                    const size_t __for_end_l957_c8 = (((*(en)).enum_type).count);
-                    for (size_t i = 1; i <= __for_end_l957_c8; i++)
+                    const size_t __for_end_l961_c8 = (((*(en)).enum_type).count);
+                    for (size_t i = 1; i <= __for_end_l961_c8; i++)
                     {
                         {
                             node_print(((*(en)).enum_type).elements[i - 1], indent + 1);
@@ -574,8 +576,8 @@ void node_print(const TNode* n, int indent)
             print_kind_line_column(n, kind_name);
             printf("\n");
             {
-                const size_t __for_end_l980_c7 = (((*(n)).enum_type).count);
-                for (size_t i = 1; i <= __for_end_l980_c7; i++)
+                const size_t __for_end_l984_c7 = (((*(n)).enum_type).count);
+                for (size_t i = 1; i <= __for_end_l984_c7; i++)
                 {
                     {
                         node_print(((*(n)).enum_type).elements[i - 1], indent + 1);
@@ -626,8 +628,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l1015_c7 = (((*(n)).struct_decl).field_count);
-                for (size_t i = 1; i <= __for_end_l1015_c7; i++)
+                const size_t __for_end_l1019_c7 = (((*(n)).struct_decl).field_count);
+                for (size_t i = 1; i <= __for_end_l1019_c7; i++)
                 {
                     {
                         node_print(((*(n)).struct_decl).fields[i - 1], indent + 1);
@@ -662,8 +664,8 @@ void node_print(const TNode* n, int indent)
             print_kind_line_column(n, kind_name);
             printf("[%zu]\n", ((*(n)).array_literal).count);
             {
-                const size_t __for_end_l1037_c7 = (((*(n)).array_literal).count);
-                for (size_t i = 1; i <= __for_end_l1037_c7; i++)
+                const size_t __for_end_l1041_c7 = (((*(n)).array_literal).count);
+                for (size_t i = 1; i <= __for_end_l1041_c7; i++)
                 {
                     {
                         node_print(((*(n)).array_literal).elements[i - 1], indent + 1);
@@ -803,8 +805,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l1154_c7 = (((*(n)).block).require_count);
-                for (size_t i = 1; i <= __for_end_l1154_c7; i++)
+                const size_t __for_end_l1158_c7 = (((*(n)).block).require_count);
+                for (size_t i = 1; i <= __for_end_l1158_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -815,8 +817,8 @@ void node_print(const TNode* n, int indent)
                 }
             }
             {
-                const size_t __for_end_l1161_c7 = (((*(n)).block).count);
-                for (size_t i = 1; i <= __for_end_l1161_c7; i++)
+                const size_t __for_end_l1165_c7 = (((*(n)).block).count);
+                for (size_t i = 1; i <= __for_end_l1165_c7; i++)
                 {
                     {
                         node_print(((*(n)).block).stmts[i - 1], indent + 1);
@@ -824,8 +826,8 @@ void node_print(const TNode* n, int indent)
                 }
             }
             {
-                const size_t __for_end_l1166_c7 = (((*(n)).block).ensure_count);
-                for (size_t i = 1; i <= __for_end_l1166_c7; i++)
+                const size_t __for_end_l1170_c7 = (((*(n)).block).ensure_count);
+                for (size_t i = 1; i <= __for_end_l1170_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -896,8 +898,8 @@ void node_print(const TNode* n, int indent)
                 node_print(((*(n)).while_stmt).bound_expr, indent + 2);
             }
             {
-                const size_t __for_end_l1222_c7 = (((*(n)).while_stmt).invariant_count);
-                for (size_t i = 1; i <= __for_end_l1222_c7; i++)
+                const size_t __for_end_l1226_c7 = (((*(n)).while_stmt).invariant_count);
+                for (size_t i = 1; i <= __for_end_l1226_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -921,8 +923,8 @@ void node_print(const TNode* n, int indent)
             node_print(((*(n)).for_stmt).start_, indent + 1);
             node_print(((*(n)).for_stmt).end_, indent + 1);
             {
-                const size_t __for_end_l1246_c7 = (((*(n)).for_stmt).invariant_count);
-                for (size_t i = 1; i <= __for_end_l1246_c7; i++)
+                const size_t __for_end_l1250_c7 = (((*(n)).for_stmt).invariant_count);
+                for (size_t i = 1; i <= __for_end_l1250_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -951,8 +953,8 @@ void node_print(const TNode* n, int indent)
                 node_print(((*(n)).repeat_until).bound_expr, indent + 2);
             }
             {
-                const size_t __for_end_l1270_c7 = (((*(n)).repeat_until).invariant_count);
-                for (size_t i = 1; i <= __for_end_l1270_c7; i++)
+                const size_t __for_end_l1274_c7 = (((*(n)).repeat_until).invariant_count);
+                for (size_t i = 1; i <= __for_end_l1274_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -985,8 +987,8 @@ void node_print(const TNode* n, int indent)
                 node_print(((*(n)).loop_stmt).bound_expr, indent + 2);
             }
             {
-                const size_t __for_end_l1296_c7 = (((*(n)).loop_stmt).invariant_count);
-                for (size_t i = 1; i <= __for_end_l1296_c7; i++)
+                const size_t __for_end_l1300_c7 = (((*(n)).loop_stmt).invariant_count);
+                for (size_t i = 1; i <= __for_end_l1300_c7; i++)
                 {
                     {
                         print_line_column(n);
@@ -1066,23 +1068,23 @@ void node_print(const TNode* n, int indent)
                 printf("?? ( ");
             }
             {
-                const size_t __for_end_l1357_c7 = (((*(n)).call).argc);
-                for (size_t i = 1; i <= __for_end_l1357_c7; i++)
+                const size_t __for_end_l1361_c7 = (((*(n)).call).argc);
+                for (size_t i = 1; i <= __for_end_l1361_c7; i++)
                 {
                     {
                         if (i > 1)
                         {
                             printf(", ");
                         }
-                        TNode* arg_l1363_c12 = ((*(n)).call).args[i - 1];
-                        if ((*(arg_l1363_c12)).kind == NODE_LITERAL)
+                        TNode* arg_l1367_c12 = ((*(n)).call).args[i - 1];
+                        if ((*(arg_l1367_c12)).kind == NODE_LITERAL)
                         {
-                            size_t len_l1366_c13 = (((*(arg_l1363_c12)).token).length > 30 ? (size_t)30 : ((*(arg_l1363_c12)).token).length);
-                            printf("'%.*s'", (int)len_l1366_c13, ((*(arg_l1363_c12)).token).start);
+                            size_t len_l1370_c13 = (((*(arg_l1367_c12)).token).length > 30 ? (size_t)30 : ((*(arg_l1367_c12)).token).length);
+                            printf("'%.*s'", (int)len_l1370_c13, ((*(arg_l1367_c12)).token).start);
                         }
-                        else if ((*(arg_l1363_c12)).kind == NODE_IDENT)
+                        else if ((*(arg_l1367_c12)).kind == NODE_IDENT)
                         {
-                            printf("%.*s", (int)((*(arg_l1363_c12)).token).length, ((*(arg_l1363_c12)).token).start);
+                            printf("%.*s", (int)((*(arg_l1367_c12)).token).length, ((*(arg_l1367_c12)).token).start);
                         }
                         else
                         {
@@ -1160,8 +1162,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l1425_c7 = (((*(n)).import_stmt).count);
-                for (size_t i = 1; i <= __for_end_l1425_c7; i++)
+                const size_t __for_end_l1429_c7 = (((*(n)).import_stmt).count);
+                for (size_t i = 1; i <= __for_end_l1429_c7; i++)
                 {
                     {
                         node_print(((*(n)).import_stmt).items[i - 1], indent + 1);
@@ -1267,8 +1269,8 @@ void node_print(const TNode* n, int indent)
             print_kind_line_column(n, kind_name);
             if (((*(n)).token).length > 0 && ((*(n)).token).start != nil)
             {
-                size_t len_l1506_c12 = (((*(n)).token).length > 60 ? (size_t)60 : ((*(n)).token).length);
-                printf("'%.*s'", (int)len_l1506_c12, ((*(n)).token).start);
+                size_t len_l1510_c12 = (((*(n)).token).length > 60 ? (size_t)60 : ((*(n)).token).length);
+                printf("'%.*s'", (int)len_l1510_c12, ((*(n)).token).start);
             }
             printf("\n");
         }
@@ -1283,8 +1285,8 @@ void node_print(const TNode* n, int indent)
             }
             printf("\n");
             {
-                const size_t __for_end_l1518_c7 = (((*(n)).param_list).count);
-                for (size_t i = 1; i <= __for_end_l1518_c7; i++)
+                const size_t __for_end_l1522_c7 = (((*(n)).param_list).count);
+                for (size_t i = 1; i <= __for_end_l1522_c7; i++)
                 {
                     {
                         node_print(((*(n)).param_list).params[i - 1], indent + 1);
@@ -1329,8 +1331,8 @@ void node_print(const TNode* n, int indent)
             printf("\n");
             node_print(((*(n)).switch_stmt).expr, indent + 1);
             {
-                const size_t __for_end_l1552_c7 = (((*(n)).switch_stmt).case_count);
-                for (size_t i = 1; i <= __for_end_l1552_c7; i++)
+                const size_t __for_end_l1556_c7 = (((*(n)).switch_stmt).case_count);
+                for (size_t i = 1; i <= __for_end_l1556_c7; i++)
                 {
                     {
                         TSwitchCase* c = ((*(n)).switch_stmt).cases[i - 1];
@@ -1338,8 +1340,8 @@ void node_print(const TNode* n, int indent)
                         node_indent_dots(indent + 1);
                         printf("CASE\n");
                         {
-                            const size_t __for_end_l1560_c8 = ((*(c)).label_count);
-                            for (size_t j = 1; j <= __for_end_l1560_c8; j++)
+                            const size_t __for_end_l1564_c8 = ((*(c)).label_count);
+                            for (size_t j = 1; j <= __for_end_l1564_c8; j++)
                             {
                                 {
                                     node_print((*(c)).labels[j - 1], indent + 2);
@@ -1354,8 +1356,8 @@ void node_print(const TNode* n, int indent)
             node_indent_dots(indent + 1);
             printf("ELSE\n");
             {
-                const size_t __for_end_l1572_c7 = (((*(n)).switch_stmt).else_label_count);
-                for (size_t k = 1; k <= __for_end_l1572_c7; k++)
+                const size_t __for_end_l1576_c7 = (((*(n)).switch_stmt).else_label_count);
+                for (size_t k = 1; k <= __for_end_l1576_c7; k++)
                 {
                     {
                         node_print(((*(n)).switch_stmt).else_labels[k - 1], indent + 2);
@@ -1381,8 +1383,8 @@ void node_print(const TNode* n, int indent)
             printf("(%s)", TokenKind__string(((*(n)).token).kind));
             if (((*(n)).token).length > 0 && ((*(n)).token).start != nil)
             {
-                size_t len_l1589_c12 = (((*(n)).token).length > 32 ? (size_t)32 : ((*(n)).token).length);
-                printf("'%.*s'\n", (int)len_l1589_c12, ((*(n)).token).start);
+                size_t len_l1593_c12 = (((*(n)).token).length > 32 ? (size_t)32 : ((*(n)).token).length);
+                printf("'%.*s'\n", (int)len_l1593_c12, ((*(n)).token).start);
             }
             printf("\n");
         }

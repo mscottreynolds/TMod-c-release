@@ -43,10 +43,12 @@ TType* type_copy_shell(Arena* arena, const TType* src)
     ((*t)).element_type = ((*src)).element_type;
     ((*t)).base_type = ((*src)).base_type;
     ((*t)).width = ((*src)).width;
+    ((*t)).c_name = ((*src)).c_name;
+    ((*t)).c_name_len = ((*src)).c_name_len;
     ((*t)).resolved_type = nil;
     /* return value captured before defers */
-    TType* __ret_l72 = t;
-    return __ret_l72;
+    TType* __ret_l76 = t;
+    return __ret_l76;
 }
 
 /**
@@ -58,50 +60,50 @@ bool type_is_builtin_name(const char* name, size_t name_len)
     if (name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l83 = false;
-        return __ret_l83;
+        bool __ret_l87 = false;
+        return __ret_l87;
     }
     else if (name_len == 3)
     {
         /* return value captured before defers */
-        bool __ret_l85 = memcmp(name, "int", 3) == 0;
-        return __ret_l85;
+        bool __ret_l89 = memcmp(name, "int", 3) == 0;
+        return __ret_l89;
     }
     else if (name_len == 4)
     {
         /* return value captured before defers */
-        bool __ret_l87 = memcmp(name, "bool", 4) == 0 || memcmp(name, "byte", 4) == 0 || memcmp(name, "char", 4) == 0 || memcmp(name, "real", 4) == 0 || memcmp(name, "long", 4) == 0;
-        return __ret_l87;
+        bool __ret_l91 = memcmp(name, "bool", 4) == 0 || memcmp(name, "byte", 4) == 0 || memcmp(name, "char", 4) == 0 || memcmp(name, "real", 4) == 0 || memcmp(name, "long", 4) == 0;
+        return __ret_l91;
     }
     else if (name_len == 5)
     {
         /* return value captured before defers */
-        bool __ret_l93 = memcmp(name, "float", 5) == 0 || memcmp(name, "short", 5) == 0;
-        return __ret_l93;
+        bool __ret_l97 = memcmp(name, "float", 5) == 0 || memcmp(name, "short", 5) == 0;
+        return __ret_l97;
     }
     else if (name_len == 6)
     {
         /* return value captured before defers */
-        bool __ret_l96 = memcmp(name, "string", 6) == 0 || memcmp(name, "double", 6) == 0 || memcmp(name, "signed", 6) == 0;
-        return __ret_l96;
+        bool __ret_l100 = memcmp(name, "string", 6) == 0 || memcmp(name, "double", 6) == 0 || memcmp(name, "signed", 6) == 0;
+        return __ret_l100;
     }
     else if (name_len == 7)
     {
         /* return value captured before defers */
-        bool __ret_l100 = memcmp(name, "integer", 7) == 0;
-        return __ret_l100;
+        bool __ret_l104 = memcmp(name, "integer", 7) == 0;
+        return __ret_l104;
     }
     else if (name_len == 8)
     {
         /* return value captured before defers */
-        bool __ret_l102 = memcmp(name, "cardinal", 8) == 0 || memcmp(name, "unsigned", 8) == 0;
-        return __ret_l102;
+        bool __ret_l106 = memcmp(name, "cardinal", 8) == 0 || memcmp(name, "unsigned", 8) == 0;
+        return __ret_l106;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l105 = false;
-        return __ret_l105;
+        bool __ret_l109 = false;
+        return __ret_l109;
     }
 }
 
@@ -114,38 +116,38 @@ bool type_is_portable_rebindable(const char* name, size_t name_len)
     if (name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l117 = false;
-        return __ret_l117;
+        bool __ret_l121 = false;
+        return __ret_l121;
     }
     else if (name_len == 4)
     {
         /* return value captured before defers */
-        bool __ret_l119 = memcmp(name, "real", 4) == 0;
-        return __ret_l119;
+        bool __ret_l123 = memcmp(name, "real", 4) == 0;
+        return __ret_l123;
     }
     else if (name_len == 6)
     {
         /* return value captured before defers */
-        bool __ret_l121 = memcmp(name, "string", 6) == 0;
-        return __ret_l121;
+        bool __ret_l125 = memcmp(name, "string", 6) == 0;
+        return __ret_l125;
     }
     else if (name_len == 7)
     {
         /* return value captured before defers */
-        bool __ret_l123 = memcmp(name, "integer", 7) == 0;
-        return __ret_l123;
+        bool __ret_l127 = memcmp(name, "integer", 7) == 0;
+        return __ret_l127;
     }
     else if (name_len == 8)
     {
         /* return value captured before defers */
-        bool __ret_l125 = memcmp(name, "cardinal", 8) == 0;
-        return __ret_l125;
+        bool __ret_l129 = memcmp(name, "cardinal", 8) == 0;
+        return __ret_l129;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l127 = false;
-        return __ret_l127;
+        bool __ret_l131 = false;
+        return __ret_l131;
     }
 }
 
@@ -157,32 +159,32 @@ bool type_is_width_base(const char* name, size_t name_len)
     if (name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l139 = false;
-        return __ret_l139;
+        bool __ret_l143 = false;
+        return __ret_l143;
     }
     else if (name_len == 4)
     {
         /* return value captured before defers */
-        bool __ret_l141 = memcmp(name, "real", 4) == 0;
-        return __ret_l141;
+        bool __ret_l145 = memcmp(name, "real", 4) == 0;
+        return __ret_l145;
     }
     else if (name_len == 7)
     {
         /* return value captured before defers */
-        bool __ret_l143 = memcmp(name, "integer", 7) == 0;
-        return __ret_l143;
+        bool __ret_l147 = memcmp(name, "integer", 7) == 0;
+        return __ret_l147;
     }
     else if (name_len == 8)
     {
         /* return value captured before defers */
-        bool __ret_l145 = memcmp(name, "cardinal", 8) == 0;
-        return __ret_l145;
+        bool __ret_l149 = memcmp(name, "cardinal", 8) == 0;
+        return __ret_l149;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l147 = false;
-        return __ret_l147;
+        bool __ret_l151 = false;
+        return __ret_l151;
     }
 }
 
@@ -191,18 +193,18 @@ bool type_width_allowed(const char* name, size_t name_len, int n)
     if (!type_is_width_base(name, name_len))
     {
         /* return value captured before defers */
-        bool __ret_l155 = false;
-        return __ret_l155;
+        bool __ret_l159 = false;
+        return __ret_l159;
     }
     if (name_len == 4)
     {
         /* return value captured before defers */
-        bool __ret_l158 = n == 32 || n == 64;
-        return __ret_l158;
+        bool __ret_l162 = n == 32 || n == 64;
+        return __ret_l162;
     }
     /* return value captured before defers */
-    bool __ret_l160 = n == 8 || n == 16 || n == 32 || n == 64;
-    return __ret_l160;
+    bool __ret_l164 = n == 8 || n == 16 || n == 32 || n == 64;
+    return __ret_l164;
 }
 
 /**
@@ -214,8 +216,8 @@ bool type_c_spelling(const TType* t, string* out_s, size_t* out_len)
     if (t == nil || out_s == nil || out_len == nil)
     {
         /* return value captured before defers */
-        bool __ret_l171 = false;
-        return __ret_l171;
+        bool __ret_l175 = false;
+        return __ret_l175;
     }
     if (((*t)).width > 0 && type_is_width_base(((*t)).name, ((*t)).name_len))
     {
@@ -244,12 +246,12 @@ bool type_c_spelling(const TType* t, string* out_s, size_t* out_len)
             else
             {
                 /* return value captured before defers */
-                bool __ret_l185 = false;
-                return __ret_l185;
+                bool __ret_l189 = false;
+                return __ret_l189;
             }
             /* return value captured before defers */
-            bool __ret_l187 = true;
-            return __ret_l187;
+            bool __ret_l191 = true;
+            return __ret_l191;
         }
         else if (((*t)).name_len == 8)
         {
@@ -276,12 +278,12 @@ bool type_c_spelling(const TType* t, string* out_s, size_t* out_len)
             else
             {
                 /* return value captured before defers */
-                bool __ret_l198 = false;
-                return __ret_l198;
+                bool __ret_l202 = false;
+                return __ret_l202;
             }
             /* return value captured before defers */
-            bool __ret_l200 = true;
-            return __ret_l200;
+            bool __ret_l204 = true;
+            return __ret_l204;
         }
         else if (((*t)).name_len == 4)
         {
@@ -298,22 +300,30 @@ bool type_c_spelling(const TType* t, string* out_s, size_t* out_len)
             else
             {
                 /* return value captured before defers */
-                bool __ret_l207 = false;
-                return __ret_l207;
+                bool __ret_l211 = false;
+                return __ret_l211;
             }
             /* return value captured before defers */
-            bool __ret_l209 = true;
-            return __ret_l209;
+            bool __ret_l213 = true;
+            return __ret_l213;
         }
         /* return value captured before defers */
-        bool __ret_l211 = false;
-        return __ret_l211;
+        bool __ret_l215 = false;
+        return __ret_l215;
+    }
+    if (((*t)).c_name != nil && ((*t)).c_name_len > 0)
+    {
+        (*out_s) = ((*t)).c_name;
+        (*out_len) = ((*t)).c_name_len;
+        /* return value captured before defers */
+        bool __ret_l222 = true;
+        return __ret_l222;
     }
     (*out_s) = ((*t)).name;
     (*out_len) = ((*t)).name_len;
     /* return value captured before defers */
-    bool __ret_l216 = ((*t)).name != nil && ((*t)).name_len > 0;
-    return __ret_l216;
+    bool __ret_l227 = ((*t)).name != nil && ((*t)).name_len > 0;
+    return __ret_l227;
 }
 
 /**
@@ -335,9 +345,11 @@ TType* type_create_named(Arena* arena, const char* name_start, size_t name_len)
     ((*t)).base_type = nil;
     ((*t)).resolved_type = nil;
     ((*t)).width = 0;
+    ((*t)).c_name = nil;
+    ((*t)).c_name_len = 0;
     /* return value captured before defers */
-    TType* __ret_l248 = t;
-    return __ret_l248;
+    TType* __ret_l261 = t;
+    return __ret_l261;
 }
 
 /**
@@ -355,8 +367,8 @@ TType* type_create_array(Arena* arena, TType* element, size_t fixed_size)
     ((*t)).base_type = nil;
     ((*t)).resolved_type = nil;
     /* return value captured before defers */
-    TType* __ret_l270 = t;
-    return __ret_l270;
+    TType* __ret_l283 = t;
+    return __ret_l283;
 }
 
 /**
@@ -375,8 +387,8 @@ TType* type_create_array_expr(Arena* arena, TType* element, pvoid size_expr)
     ((*t)).base_type = nil;
     ((*t)).resolved_type = nil;
     /* return value captured before defers */
-    TType* __ret_l292 = t;
-    return __ret_l292;
+    TType* __ret_l305 = t;
+    return __ret_l305;
 }
 
 /**
@@ -388,8 +400,8 @@ TType* type_create_opaque(Arena* arena)
     TType* t = arena_alloc(arena, ((integer)sizeof(TType)));
     ((*t)).is_opaque = true;
     /* return value captured before defers */
-    TType* __ret_l308 = t;
-    return __ret_l308;
+    TType* __ret_l321 = t;
+    return __ret_l321;
 }
 
 /**
@@ -400,75 +412,75 @@ bool type_equals(const TType* a, const TType* b)
     if (a == b)
     {
         /* return value captured before defers */
-        bool __ret_l319 = true;
-        return __ret_l319;
+        bool __ret_l332 = true;
+        return __ret_l332;
     }
     else if (a == nil || b == nil)
     {
         /* return value captured before defers */
-        bool __ret_l321 = false;
-        return __ret_l321;
+        bool __ret_l334 = false;
+        return __ret_l334;
     }
     else if (((*a)).is_pointer != ((*b)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l323 = false;
-        return __ret_l323;
+        bool __ret_l336 = false;
+        return __ret_l336;
     }
     else if (((*a)).is_const != ((*b)).is_const)
     {
         /* return value captured before defers */
-        bool __ret_l325 = false;
-        return __ret_l325;
+        bool __ret_l338 = false;
+        return __ret_l338;
     }
     else if (((*a)).is_opaque != ((*b)).is_opaque)
     {
         /* return value captured before defers */
-        bool __ret_l327 = false;
-        return __ret_l327;
+        bool __ret_l340 = false;
+        return __ret_l340;
     }
     else if (((*a)).is_array != ((*b)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l329 = false;
-        return __ret_l329;
+        bool __ret_l342 = false;
+        return __ret_l342;
     }
     else if (((*a)).is_array)
     {
         if (((*a)).size_expr != nil || ((*b)).size_expr != nil)
         {
             /* return value captured before defers */
-            bool __ret_l333 = false;
-            return __ret_l333;
+            bool __ret_l346 = false;
+            return __ret_l346;
         }
         if (((*a)).array_size != ((*b)).array_size)
         {
             /* return value captured before defers */
-            bool __ret_l336 = false;
-            return __ret_l336;
+            bool __ret_l349 = false;
+            return __ret_l349;
         }
         else
         {
             /* return value captured before defers */
-            bool __ret_l338 = type_equals(((*a)).element_type, ((*b)).element_type);
-            return __ret_l338;
+            bool __ret_l351 = type_equals(((*a)).element_type, ((*b)).element_type);
+            return __ret_l351;
         }
     }
     if (((*a)).name_len != ((*b)).name_len)
     {
         /* return value captured before defers */
-        bool __ret_l343 = false;
-        return __ret_l343;
+        bool __ret_l356 = false;
+        return __ret_l356;
     }
     if (((*a)).width != ((*b)).width)
     {
         /* return value captured before defers */
-        bool __ret_l346 = false;
-        return __ret_l346;
+        bool __ret_l359 = false;
+        return __ret_l359;
     }
     /* return value captured before defers */
-    bool __ret_l348 = memcmp(((*a)).name, ((*b)).name, ((*a)).name_len) == 0;
-    return __ret_l348;
+    bool __ret_l361 = memcmp(((*a)).name, ((*b)).name, ((*a)).name_len) == 0;
+    return __ret_l361;
 }
 
 /**

@@ -4,7 +4,7 @@ module tmodc.lib.IO(): TIO
  * Test of a simple wrapper around stdio.
  *)
 
-import FILE, vfprintf, stdin, stdout, stderr, snprintf,
+import FILE, vfprintf, fprintf, stdin, stdout, stderr, snprintf,
 	from "stdio.h"
 import va_list, va_copy, va_end, va_start, va_arg 
     from "stdarg.h"

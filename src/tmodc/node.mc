@@ -631,6 +631,8 @@ export type TSymbol = struct
 	const_value:		integer			// valid when has_const_value
 	// .mh type-bound method import (A2/A3): true => obj.method instance sugar (A4)
 	is_method_instance: bool
+	c_name: 			const ^char 	// IMPORT AS: C spelling. nil => name
+	c_name_len:			size_t
 end
 
 export type pTSymbol		= ^TSymbol
@@ -658,6 +660,8 @@ begin
 	s^.has_const_value		:= false
 	s^.const_value 			:= 0
 	s^.is_method_instance 	:= false
+	s^.c_name 				:= nil
+	s^.c_name_len 			:= 0
 
 	return s
 end

@@ -349,13 +349,13 @@ begin
             if item == nil or item.kind <> NODE_IMPORT_ITEM then
                 continue
             end
+            // AS renames a foreign export. It does not bind the portable name.
+            if item.import_item.import_alias <> nil and 
+                    item.import_item.import_alias_len > 0 then
+                continue
+            end
             bind := item.import_item.qualident
             bind_len := item.import_item.qualident_len
-            if item.import_item.import_alias <> nil and
-                    item.import_item.import_alias_len > 0 then
-                bind := item.import_item.import_alias
-                bind_len := item.import_item.import_alias_len
-            end
             if bind <> nil and bind_len == name_len and
                     memcmp(bind, name, name_len) == 0 then
                 return true
@@ -1016,6 +1016,9 @@ begin
         dynbuf_append(out, "(*")
         dynbuf_appendn(out, n.token.start, n.token.length)
         dynbuf_append_char(out, ')')
+    elsif n.resolved_sym <> nil and n.resolved_sym^.c_name <> nil and
+            n.resolved_sym^.c_name_len > 0 then
+        dynbuf_appendn(out, n.resolved_sym^.c_name, n.resolved_sym^.c_name_len)
     elsif n.token.length > 0 and n.token.start <> nil then
         dynbuf_appendn(out, n.token.start, n.token.length)
     end
@@ -1914,7 +1917,12 @@ begin
                 codegen_common_expr(n.call.callee_expr, ctx)
                 dynbuf_append_char(ctx.out, ')')
             elsif n.resolved_sym <> nil then
-                dynbuf_appendn(ctx.out, n.resolved_sym^.name, n.resolved_sym^.name_len)
+                if n.resolved_sym^.c_name <> nil and n.resolved_sym^.c_name_len > 0 then
+                    dynbuf_appendn(ctx.out, n.resolved_sym^.c_name,
+                        n.resolved_sym^.c_name_len)
+                else
+                    dynbuf_appendn(ctx.out, n.resolved_sym^.name, n.resolved_sym^.name_len)
+                end
             elsif n.call.method_owner <> nil and n.call.method_owner_len > 0 then
                 dynbuf_appendn(ctx.out, n.call.method_owner, n.call.method_owner_len)
                 dynbuf_append(ctx.out, "__")

@@ -1,0 +1,5 @@
+# modc-mh/1
+@module asmethod
+@format 1
+export type Pair complete struct (x: integer, y: integer)
+export function Pair__sum complete static Pair (Pair) : integer
