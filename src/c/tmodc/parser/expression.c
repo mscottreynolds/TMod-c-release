@@ -770,15 +770,15 @@ pNode parse_primary(pParser p)
         pNode __ret_l830 = ident;
         return __ret_l830;
     }
-    else if ((((*p)).current).kind == TOK_STRING || (((*p)).current).kind == TOK_NUMBER || (((*p)).current).kind == TOK_CHAR)
+    else if ((((*p)).current).kind == TOK_STRING || (((*p)).current).kind == TOK_NUMBER || (((*p)).current).kind == TOK_REAL || (((*p)).current).kind == TOK_CHAR)
     {
         pNode lit = node_create(((*p)).arena, NODE_LITERAL, ((*p)).current);
         (((*lit)).literal).value = (((*p)).current).start;
         (((*lit)).literal).length = (((*p)).current).length;
         advance(p);
         /* return value captured before defers */
-        pNode __ret_l839 = lit;
-        return __ret_l839;
+        pNode __ret_l840 = lit;
+        return __ret_l840;
     }
     else if (match(p, TOK_LPAREN))
     {
@@ -792,14 +792,14 @@ pNode parse_primary(pParser p)
         paren = node_create(((*p)).arena, NODE_PAREN, ((*inner)).token);
         (((*paren)).paren).expr = inner;
         /* return value captured before defers */
-        pNode __ret_l851 = paren;
-        return __ret_l851;
+        pNode __ret_l852 = paren;
+        return __ret_l852;
     }
     if (check(p, TOK_LBRACE))
     {
         /* return value captured before defers */
-        pNode __ret_l856 = parse_array_literal(p);
-        return __ret_l856;
+        pNode __ret_l857 = parse_array_literal(p);
+        return __ret_l857;
     }
     if ((((*p)).current).kind == TOK_BITWISE_AND)
     {
@@ -807,8 +807,8 @@ pNode parse_primary(pParser p)
     }
     error_at(p, "parse_primary: expected expression", true);
     /* return value captured before defers */
-    pNode __ret_l863 = nil;
-    return __ret_l863;
+    pNode __ret_l864 = nil;
+    return __ret_l864;
 }
 
 /**
@@ -830,8 +830,8 @@ pNode parse_call(pParser p, TToken ident_token)
     consume(p, TOK_LPAREN, "parse_call: expected '(' after function name");
     parse_call_arguments(p, call);
     /* return value captured before defers */
-    pNode __ret_l890 = call;
-    return __ret_l890;
+    pNode __ret_l891 = call;
+    return __ret_l891;
 }
 
 /**
@@ -851,8 +851,8 @@ pNode parse_array_literal(pParser p)
     if (match(p, TOK_RBRACE))
     {
         /* return value captured before defers */
-        pNode __ret_l912 = lit;
-        return __ret_l912;
+        pNode __ret_l913 = lit;
+        return __ret_l913;
     }
     do
     {
@@ -876,8 +876,8 @@ pNode parse_array_literal(pParser p)
     while (!(check(p, TOK_RBRACE) || isEOF(p)));
     consume(p, TOK_RBRACE, "parse_array_literal: expected '}' after array literal");
     /* return value captured before defers */
-    pNode __ret_l940 = lit;
-    return __ret_l940;
+    pNode __ret_l941 = lit;
+    return __ret_l941;
 }
 
 /**
@@ -899,8 +899,8 @@ pNode parse_array_index(pParser p, pNode left)
     (((*n)).array_index).array_ = left;
     (((*n)).array_index).index = index_expr;
     /* return value captured before defers */
-    pNode __ret_l966 = n;
-    return __ret_l966;
+    pNode __ret_l967 = n;
+    return __ret_l967;
 }
 
 

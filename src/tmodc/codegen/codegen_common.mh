@@ -23,6 +23,7 @@ export procedure emit_type_specifier complete (pDynBuf, const ^TType, const ^cha
 export procedure emit_param_list complete (pDynBuf, ^pNode, size_t, bool, bool)
 export procedure emit_var_decl complete (pDynBuf, const ^char, size_t, const ^TType)
 export procedure emit_let_binding_name complete (pDynBuf, const ^char, size_t, const ^TNode)
+export procedure emit_let_value_array complete (pDynBuf, const ^TType, const ^TNode)
 export function codegen_const_is_value complete (const ^TNode) : bool
 export procedure emit_let_ident complete (pDynBuf, const ^TNode)
 export function codegen_type_in_file complete (const ^TNode, bool) : bool

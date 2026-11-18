@@ -2,18 +2,18 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.8 (build 253)  
-**Last updated:** 2026-11-16  
+**Version:** 0.27.8 (build 254)  
+**Last updated:** 2026-11-17  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.8.253** is in `changelog.md`, `docs/project_bible.md`, and `docs/grok_report-*.md`. This file is the live focus.
+History through **0.27.8.254** is in `changelog.md`, `docs/project_bible.md`, and `docs/grok_report-*.md`. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.8**, build **253**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **`IMPORT … AS` (0.27.8.253)**. The alias is one identifier and is the name in this unit. Generated C keeps the original spelling. `AS` is not the portable bind. `Type::name as Alias` is a free name.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.8**, build **254**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **brace-list inference (21a, 0.27.8.254)**. A non-empty brace list whose elements share one static type is `array[N] of T`. A written `:` stays the type. A decimal with a dot or an exponent has type `real`. `IMPORT … AS` is **0.27.8.253**.
 
-**Next:** **21a remainder.** A brace list still takes its type from a written target. Ternary typing is done (**0.26.10.203**).
+**Next:** **7 remainder.** `IMPORT *` and the package C spelling. The rule is locked in Language Report §3.2 and `docs/syntax-ebnf.md`. The compiler does not do it yet.
 
 **Still open**
 
@@ -61,7 +61,7 @@ Oberon `IS` is a runtime type test (`p is T`) — needs RTTI or a tag. TMod-c: *
 **v1 surface**
 
 - Type: `SET OF E` where `E` is an **enum**. Every enumerator value is a distinct constant in **0 .. 63**. One `cardinal 64` / `uint64_t` mask.
-- Constructor: Modula-2 **`{ a, b, c }`** — same braces as `array-literal`; semantic picks set vs array from the expected type / element types. Empty `{}` needs a type ascription.
+- Constructor: Modula-2 **`{ a, b, c }`** — same braces as `array-literal`. The written target decides set or array. A brace list with no target is an array (§6.3 of the Language Report). Empty `{}` needs a type ascription.
 - Named sets: `type NodeKindSet = set of NodeKind` then `const LOOP_KINDS: NodeKindSet = { NODE_FOR, NODE_WHILE, NODE_REPEAT_UNTIL, NODE_LOOP }`.
 - `x IN s` — `x` is `E`, `s` is `SET OF E`.
 - `s + t` union, `s * t` intersection, `s - t` difference, `s == t` / `s != t`. Include/exclude via `s := s + { x }` / `s := s - { x }`.
@@ -159,7 +159,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 - **Discard (13b Policy A — Done 0.24.15)** — `(expression)` as statement; bare call only when result type unknown; known results require `(f())` or use. C may lower with `(void)`.
 - **`OPAQUE` vs `.mh` `opaque`** — source type constructor vs export completeness flag (same word, different grammars).
 - **`STRUCT EXTENDS`** — Oberon-shaped record **layout** (single base at offset 0, unique field names, flat `c.x` in source); C lowering **option A** (`Parent base;`, emit `c.base.x` for parent fields). Synthetic `base` reserved **only on EXTENDS** types. Not class/vtable; **no hidden RTTI**. See Language Report §5.4.0. **13d Done (0.24.13)**; **by-value auto-upcast Done (0.24.16)**; **`p^.x` / `as` → `.base` / pointer·`REF` upcast Done (0.26.5.175)**; **Oberon `p.x` auto-deref Done (0.26.5.176)**; **`p[i]` peel + instance on `^T` Done (0.26.5.178)**; **`Type::m(p)` peel Done (0.26.5.179)**; **parent-chain methods Done (0.26.5.180)**.
-- **`type_of_expr` / init inference (21a)** — **Done (0.24.14)**. Ternary/`? :` typing **Done (0.26.10.203)**. Brace-list inference still open.
+- **`type_of_expr` / init inference (21a)** — **Done (0.24.14)**. Ternary/`? :` typing **Done (0.26.10.203)**. Brace-list inference **Done (0.27.8.254)**. A non-empty brace list whose elements share one static type is `array[N] of T`. A written `:` stays the type.
 - **Bare `UNION`** — C overlapping members; `codegen_common_union_decl`; no EXTENDS; not language-level tagged unions. A nested struct is a named type used as a field type. An anonymous `union` … `end` promotes its members into the enclosing struct or union (**0.27.4.228**).
 - **Arena** — linked chunks (pointer-stable); no whole-buffer `realloc` of live AST/symtab storage.
 - **Portable builtins (Option A — Phase A Done 0.24.18; widths Done 0.26.5; import-bind / `.mh` widths Done 0.26.5.174; alias RHS / packs Done 0.26.8.194)** — Only `integer`, `cardinal`, `real`, `string` may be **bound once per compilation unit** via top-level `TYPE` **or** a named `.mh` import of that name. Unbound → defaults `int` / `unsigned int` / `float` / `const char *` (`cint`). Width forms **`integer N` / `cardinal N` / `real N`** are exact, RHS-only constructors (closed *N*); `.mh` type-spec may carry the same tail; **alias RHS** `export type integer complete integer 64`. Packs: `tests/fixtures/lp64`, `ilp32`. **Parked indefinitely (12 October 2026):** build-time defaults, until another architecture can prove `TMODC_ARCH`. Not C rank. See Language Report §5.5 / §10.1.
@@ -174,7 +174,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.8.253**, are in `changelog.md` and `docs/project_bible.md`.
+Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.8.254**, are in `changelog.md` and `docs/project_bible.md`.
 
 ## Useful Commands
 

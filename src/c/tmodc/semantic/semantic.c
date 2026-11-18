@@ -1346,16 +1346,52 @@ static pTType semantic_type_of_expr(pTSemanticContext ctx, pNode n)
         break;
         case NODE_ARRAY_LITERAL:
         {
-            /* return value captured before defers */
-            pTType __ret_l1092 = nil;
-            return __ret_l1092;
+            {
+                pTType first = nil;
+                pTType elem = nil;
+                pNode one = nil;
+                size_t i = 0;
+                if ((((*n)).array_literal).count == 0 || (((*n)).array_literal).elements == nil)
+                {
+                    /* return value captured before defers */
+                    pTType __ret_l1101 = nil;
+                    return __ret_l1101;
+                }
+                one = (((*n)).array_literal).elements[0];
+                first = semantic_type_of_expr(ctx, one);
+                if (first == nil)
+                {
+                    /* return value captured before defers */
+                    pTType __ret_l1106 = nil;
+                    return __ret_l1106;
+                }
+                {
+                    const size_t __for_end_l1108_c8 = ((((*n)).array_literal).count);
+                    for (i = 2; i <= __for_end_l1108_c8; i++)
+                    {
+                        {
+                            one = (((*n)).array_literal).elements[i - 1];
+                            elem = semantic_type_of_expr(ctx, one);
+                            if (elem == nil || !semantic_types_same(first, elem))
+                            {
+                                /* return value captured before defers */
+                                pTType __ret_l1112 = nil;
+                                return __ret_l1112;
+                            }
+                        }
+                    }
+                }
+                /* return value captured before defers */
+                pTType __ret_l1115 = type_create_array(((*ctx)).arena, first, (((*n)).array_literal).count);
+                return __ret_l1115;
+            }
         }
         break;
         default:
         {
             /* return value captured before defers */
-            pTType __ret_l1095 = nil;
-            return __ret_l1095;
+            pTType __ret_l1119 = nil;
+            return __ret_l1119;
         }
         break;
     }
@@ -1372,12 +1408,12 @@ static pNode semantic_find_struct_member(pNode st, const char* name, size_t name
     if (st == nil || ((*st)).kind != NODE_STRUCT_DECL || name == nil)
     {
         /* return value captured before defers */
-        pNode __ret_l1111 = nil;
-        return __ret_l1111;
+        pNode __ret_l1135 = nil;
+        return __ret_l1135;
     }
     {
-        const size_t __for_end_l1113_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1113_c5; i++)
+        const size_t __for_end_l1137_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1137_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1392,22 +1428,22 @@ static pNode semantic_find_struct_member(pNode st, const char* name, size_t name
                     if (inner != nil)
                     {
                         /* return value captured before defers */
-                        pNode __ret_l1121 = inner;
-                        return __ret_l1121;
+                        pNode __ret_l1145 = inner;
+                        return __ret_l1145;
                     }
                 }
                 else if (semantic_names_equal((((*f)).field_decl).name, (((*f)).field_decl).name_len, name, name_len))
                 {
                     /* return value captured before defers */
-                    pNode __ret_l1125 = f;
-                    return __ret_l1125;
+                    pNode __ret_l1149 = f;
+                    return __ret_l1149;
                 }
             }
         }
     }
     /* return value captured before defers */
-    pNode __ret_l1128 = nil;
-    return __ret_l1128;
+    pNode __ret_l1152 = nil;
+    return __ret_l1152;
 }
 
 static size_t semantic_count_member(pNode st, const char* name, size_t name_len)
@@ -1418,12 +1454,12 @@ static size_t semantic_count_member(pNode st, const char* name, size_t name_len)
     if (st == nil || name == nil)
     {
         /* return value captured before defers */
-        size_t __ret_l1140 = 0;
-        return __ret_l1140;
+        size_t __ret_l1164 = 0;
+        return __ret_l1164;
     }
     {
-        const size_t __for_end_l1142_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1142_c5; i++)
+        const size_t __for_end_l1166_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1166_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1444,8 +1480,8 @@ static size_t semantic_count_member(pNode st, const char* name, size_t name_len)
         }
     }
     /* return value captured before defers */
-    size_t __ret_l1154 = n;
-    return __ret_l1154;
+    size_t __ret_l1178 = n;
+    return __ret_l1178;
 }
 
 static void semantic_check_promoted_dups(pNode st, pNode at)
@@ -1459,8 +1495,8 @@ static void semantic_check_promoted_dups(pNode st, pNode at)
                 return;
     }
     {
-        const size_t __for_end_l1168_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1168_c5; i++)
+        const size_t __for_end_l1192_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1192_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1473,8 +1509,8 @@ static void semantic_check_promoted_dups(pNode st, pNode at)
                 {
                     semantic_check_promoted_dups((((*f)).field_decl).nested, at);
                     {
-                        const size_t __for_end_l1175_c7 = ((((*(((*f)).field_decl).nested)).struct_decl).field_count);
-                        for (j = 1; j <= __for_end_l1175_c7; j++)
+                        const size_t __for_end_l1199_c7 = ((((*(((*f)).field_decl).nested)).struct_decl).field_count);
+                        for (j = 1; j <= __for_end_l1199_c7; j++)
                         {
                             {
                                 c = (((*(((*f)).field_decl).nested)).struct_decl).fields[j - 1];
@@ -1508,8 +1544,8 @@ static bool semantic_find_field_depth(pTSemanticContext ctx, pNode sem_type, con
     if (st == nil || name == nil || name_len == 0 || out_depth == nil)
     {
         /* return value captured before defers */
-        bool __ret_l1209 = false;
-        return __ret_l1209;
+        bool __ret_l1233 = false;
+        return __ret_l1233;
     }
     while (st != nil)
     {
@@ -1518,37 +1554,37 @@ static bool semantic_find_field_depth(pTSemanticContext ctx, pNode sem_type, con
             {
                 (*out_depth) = 0;
                 /* return value captured before defers */
-                bool __ret_l1217 = true;
-                return __ret_l1217;
+                bool __ret_l1241 = true;
+                return __ret_l1241;
             }
             f = semantic_find_struct_member(st, name, name_len);
             if (f != nil)
             {
                 (*out_depth) = depth;
                 /* return value captured before defers */
-                bool __ret_l1223 = true;
-                return __ret_l1223;
+                bool __ret_l1247 = true;
+                return __ret_l1247;
             }
             if ((((*st)).struct_decl).extends_type == nil)
             {
                 /* return value captured before defers */
-                bool __ret_l1227 = false;
-                return __ret_l1227;
+                bool __ret_l1251 = false;
+                return __ret_l1251;
             }
             parent = semantic_struct_body_of_type(ctx, (((*st)).struct_decl).extends_type);
             if (parent == nil)
             {
                 /* return value captured before defers */
-                bool __ret_l1231 = false;
-                return __ret_l1231;
+                bool __ret_l1255 = false;
+                return __ret_l1255;
             }
             st = parent;
             depth = depth + 1;
         }
     }
     /* return value captured before defers */
-    bool __ret_l1236 = false;
-    return __ret_l1236;
+    bool __ret_l1260 = false;
+    return __ret_l1260;
 }
 
 /**
@@ -1568,8 +1604,8 @@ static void semantic_check_extends_clashes(pTSemanticContext ctx, pNode st, pNod
     }
     semantic_check_promoted_dups(st, at);
     {
-        const size_t __for_end_l1259_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1259_c5; i++)
+        const size_t __for_end_l1283_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1283_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1579,8 +1615,8 @@ static void semantic_check_extends_clashes(pTSemanticContext ctx, pNode st, pNod
                     continue;
                 }
                 {
-                    const size_t __for_end_l1264_c6 = ((((*st)).struct_decl).field_count);
-                    for (j = i + 1; j <= __for_end_l1264_c6; j++)
+                    const size_t __for_end_l1288_c6 = ((((*st)).struct_decl).field_count);
+                    for (j = i + 1; j <= __for_end_l1288_c6; j++)
                     {
                         {
                             g = (((*st)).struct_decl).fields[j - 1];
@@ -1608,8 +1644,8 @@ static void semantic_check_extends_clashes(pTSemanticContext ctx, pNode st, pNod
         semantic_error_at(at, "semantic_check_extends_clashes: EXTENDS base cannot be a UNION");
     }
     {
-        const size_t __for_end_l1287_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1287_c5; i++)
+        const size_t __for_end_l1311_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1311_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1621,8 +1657,8 @@ static void semantic_check_extends_clashes(pTSemanticContext ctx, pNode st, pNod
                 if ((((*f)).field_decl).nested != nil)
                 {
                     {
-                        const size_t __for_end_l1293_c7 = ((((*(((*f)).field_decl).nested)).struct_decl).field_count);
-                        for (j = 1; j <= __for_end_l1293_c7; j++)
+                        const size_t __for_end_l1317_c7 = ((((*(((*f)).field_decl).nested)).struct_decl).field_count);
+                        for (j = 1; j <= __for_end_l1317_c7; j++)
                         {
                             {
                                 g = (((*(((*f)).field_decl).nested)).struct_decl).fields[j - 1];
@@ -1682,8 +1718,8 @@ static void semantic_resolve_struct_type(pTSemanticContext ctx, pNode st, pNode 
         }
     }
     {
-        const size_t __for_end_l1337_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l1337_c5; i++)
+        const size_t __for_end_l1361_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l1361_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -1737,8 +1773,8 @@ static integer semantic_parse_integer_literal(pNode n)
         semantic_error_at(n, "semantic_parse_integer_literal: invalid integer literal");
     }
     /* return value captured before defers */
-    integer __ret_l1383 = (integer)v;
-    return __ret_l1383;
+    integer __ret_l1407 = (integer)v;
+    return __ret_l1407;
 }
 
 /**
@@ -1758,8 +1794,8 @@ static integer semantic_eval_const_expr(pTSemanticContext ctx, pNode n)
         semantic_error_at(n, msg);
     }
     /* return value captured before defers */
-    integer __ret_l1402 = val;
-    return __ret_l1402;
+    integer __ret_l1426 = val;
+    return __ret_l1426;
 }
 
 /**
@@ -1778,15 +1814,15 @@ static bool semantic_countof_value(pTSemanticContext ctx, pNode n, integer* out_
             (*msg) = "semantic_countof_value: missing expression";
         }
         /* return value captured before defers */
-        bool __ret_l1420 = false;
-        return __ret_l1420;
+        bool __ret_l1444 = false;
+        return __ret_l1444;
     }
     if ((((*n)).sizeof_expr).folded)
     {
         (*out_val) = (((*n)).sizeof_expr).count;
         /* return value captured before defers */
-        bool __ret_l1425 = true;
-        return __ret_l1425;
+        bool __ret_l1449 = true;
+        return __ret_l1449;
     }
     if ((((*n)).sizeof_expr).is_type)
     {
@@ -1798,8 +1834,8 @@ static bool semantic_countof_value(pTSemanticContext ctx, pNode n, integer* out_
                 (*msg) = "semantic_countof_value: type operand missing";
             }
             /* return value captured before defers */
-            bool __ret_l1434 = false;
-            return __ret_l1434;
+            bool __ret_l1458 = false;
+            return __ret_l1458;
         }
         semantic_resolve_type(ctx, ty, n);
     }
@@ -1813,8 +1849,8 @@ static bool semantic_countof_value(pTSemanticContext ctx, pNode n, integer* out_
                 (*msg) = "semantic_countof_value: designator missing";
             }
             /* return value captured before defers */
-            bool __ret_l1443 = false;
-            return __ret_l1443;
+            bool __ret_l1467 = false;
+            return __ret_l1467;
         }
         semantic_resolve_expr(ctx, d);
         if (semantic_bare_slice_param(d) != nil)
@@ -1824,8 +1860,8 @@ static bool semantic_countof_value(pTSemanticContext ctx, pNode n, integer* out_
                 (*msg) = "semantic_countof_value: slice length is not a constant";
             }
             /* return value captured before defers */
-            bool __ret_l1450 = false;
-            return __ret_l1450;
+            bool __ret_l1474 = false;
+            return __ret_l1474;
         }
         ty = semantic_type_of_designator(ctx, d);
         if (ty == nil)
@@ -1844,15 +1880,15 @@ static bool semantic_countof_value(pTSemanticContext ctx, pNode n, integer* out_
             (*msg) = "semantic_countof_value: operand must be a complete array";
         }
         /* return value captured before defers */
-        bool __ret_l1465 = false;
-        return __ret_l1465;
+        bool __ret_l1489 = false;
+        return __ret_l1489;
     }
     (*out_val) = (integer)((*ty)).array_size;
     (((*n)).sizeof_expr).folded = true;
     (((*n)).sizeof_expr).count = (*out_val);
     /* return value captured before defers */
-    bool __ret_l1471 = true;
-    return __ret_l1471;
+    bool __ret_l1495 = true;
+    return __ret_l1495;
 }
 
 /**
@@ -1871,8 +1907,8 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
             (*msg) = "semantic_eval_const_expr: missing expression";
         }
         /* return value captured before defers */
-        bool __ret_l1489 = false;
-        return __ret_l1489;
+        bool __ret_l1513 = false;
+        return __ret_l1513;
     }
     switch (((*n)).kind)
     {
@@ -1885,13 +1921,13 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                     (*msg) = "semantic_eval_const_expr: not an integer constant expression";
                 }
                 /* return value captured before defers */
-                bool __ret_l1498 = false;
-                return __ret_l1498;
+                bool __ret_l1522 = false;
+                return __ret_l1522;
             }
             (*out_val) = semantic_parse_integer_literal(n);
             /* return value captured before defers */
-            bool __ret_l1501 = true;
-            return __ret_l1501;
+            bool __ret_l1525 = true;
+            return __ret_l1525;
         }
         break;
         case NODE_IDENT:
@@ -1919,20 +1955,20 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                     }
                 }
                 /* return value captured before defers */
-                bool __ret_l1517 = false;
-                return __ret_l1517;
+                bool __ret_l1541 = false;
+                return __ret_l1541;
             }
             (*out_val) = ((*sym)).const_value;
             /* return value captured before defers */
-            bool __ret_l1520 = true;
-            return __ret_l1520;
+            bool __ret_l1544 = true;
+            return __ret_l1544;
         }
         break;
         case NODE_PAREN:
         {
             /* return value captured before defers */
-            bool __ret_l1523 = semantic_try_eval_const_expr(ctx, (((*n)).paren).expr, out_val, msg);
-            return __ret_l1523;
+            bool __ret_l1547 = semantic_try_eval_const_expr(ctx, (((*n)).paren).expr, out_val, msg);
+            return __ret_l1547;
         }
         break;
         case NODE_UNARY:
@@ -1944,19 +1980,19 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                     (*msg) = "semantic_eval_const_expr: unsupported unary operator";
                 }
                 /* return value captured before defers */
-                bool __ret_l1530 = false;
-                return __ret_l1530;
+                bool __ret_l1554 = false;
+                return __ret_l1554;
             }
             if (!semantic_try_eval_const_expr(ctx, (((*n)).unary).operand, out_val, msg))
             {
                 /* return value captured before defers */
-                bool __ret_l1533 = false;
-                return __ret_l1533;
+                bool __ret_l1557 = false;
+                return __ret_l1557;
             }
             (*out_val) = -((*out_val));
             /* return value captured before defers */
-            bool __ret_l1536 = true;
-            return __ret_l1536;
+            bool __ret_l1560 = true;
+            return __ret_l1560;
         }
         break;
         case NODE_BINARY:
@@ -1964,14 +2000,14 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
             if (!semantic_try_eval_const_expr(ctx, (((*n)).binary).left, &left, msg))
             {
                 /* return value captured before defers */
-                bool __ret_l1540 = false;
-                return __ret_l1540;
+                bool __ret_l1564 = false;
+                return __ret_l1564;
             }
             if (!semantic_try_eval_const_expr(ctx, (((*n)).binary).right, &right, msg))
             {
                 /* return value captured before defers */
-                bool __ret_l1543 = false;
-                return __ret_l1543;
+                bool __ret_l1567 = false;
+                return __ret_l1567;
             }
             if ((((*n)).binary).op == TOK_ADD)
             {
@@ -1994,8 +2030,8 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                         (*msg) = "semantic_eval_const_expr: division by zero";
                     }
                     /* return value captured before defers */
-                    bool __ret_l1556 = false;
-                    return __ret_l1556;
+                    bool __ret_l1580 = false;
+                    return __ret_l1580;
                 }
                 (*out_val) = left / right;
             }
@@ -2008,8 +2044,8 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                         (*msg) = "semantic_eval_const_expr: division by zero";
                     }
                     /* return value captured before defers */
-                    bool __ret_l1564 = false;
-                    return __ret_l1564;
+                    bool __ret_l1588 = false;
+                    return __ret_l1588;
                 }
                 (*out_val) = left % right;
             }
@@ -2020,19 +2056,19 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                     (*msg) = "semantic_eval_const_expr: unsupported binary operator";
                 }
                 /* return value captured before defers */
-                bool __ret_l1571 = false;
-                return __ret_l1571;
+                bool __ret_l1595 = false;
+                return __ret_l1595;
             }
             /* return value captured before defers */
-            bool __ret_l1573 = true;
-            return __ret_l1573;
+            bool __ret_l1597 = true;
+            return __ret_l1597;
         }
         break;
         case NODE_COUNTOF:
         {
             /* return value captured before defers */
-            bool __ret_l1576 = semantic_countof_value(ctx, n, out_val, msg);
-            return __ret_l1576;
+            bool __ret_l1600 = semantic_countof_value(ctx, n, out_val, msg);
+            return __ret_l1600;
         }
         break;
         default:
@@ -2042,14 +2078,14 @@ static bool semantic_try_eval_const_expr(pTSemanticContext ctx, pNode n, integer
                 (*msg) = "semantic_eval_const_expr: not a constant expression";
             }
             /* return value captured before defers */
-            bool __ret_l1582 = false;
-            return __ret_l1582;
+            bool __ret_l1606 = false;
+            return __ret_l1606;
         }
         break;
     }
     /* return value captured before defers */
-    bool __ret_l1584 = false;
-    return __ret_l1584;
+    bool __ret_l1608 = false;
+    return __ret_l1608;
 }
 
 /**
@@ -2078,8 +2114,8 @@ static void semantic_register_enum_type(pTSemanticContext ctx, pNode en, pNode t
     int_ty = type_create_named(((*ctx)).arena, "integer", 7);
     next_val = 0;
     {
-        const size_t __for_end_l1614_c5 = ((((*en)).enum_type).count);
-        for (i = 1; i <= __for_end_l1614_c5; i++)
+        const size_t __for_end_l1638_c5 = ((((*en)).enum_type).count);
+        for (i = 1; i <= __for_end_l1638_c5; i++)
         {
             {
                 item = (((*en)).enum_type).elements[i - 1];
@@ -2092,8 +2128,8 @@ static void semantic_register_enum_type(pTSemanticContext ctx, pNode en, pNode t
                     semantic_error_at(item, "semantic_register_enum_type: enum member has no name");
                 }
                 {
-                    const size_t __for_end_l1623_c6 = (i - 1);
-                    for (j = 1; j <= __for_end_l1623_c6; j++)
+                    const size_t __for_end_l1647_c6 = (i - 1);
+                    for (j = 1; j <= __for_end_l1647_c6; j++)
                     {
                         {
                             other = (((*en)).enum_type).elements[j - 1];
@@ -2157,8 +2193,8 @@ static void semantic_resolve_method_type(pTSemanticContext ctx, pNode mt, pNode 
         params = (((*(((*mt)).method_type).params)).param_list).params;
         count = (((*(((*mt)).method_type).params)).param_list).count;
         {
-            const size_t __for_end_l1681_c6 = (count);
-            for (i = 1; i <= __for_end_l1681_c6; i++)
+            const size_t __for_end_l1705_c6 = (count);
+            for (i = 1; i <= __for_end_l1705_c6; i++)
             {
                 {
                     p = params[i - 1];
@@ -2185,8 +2221,8 @@ static void semantic_resolve_type_decls(pTSemanticContext ctx, pNode root)
                 return;
     }
     {
-        const size_t __for_end_l1704_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l1704_c5; i++)
+        const size_t __for_end_l1728_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l1728_c5; i++)
         {
             {
                 decl = (((*root)).program_decl).decls[i - 1];
@@ -2234,20 +2270,20 @@ static bool semantic_for_control_matches(pTSemanticContext ctx, const char* name
     if (ctx == nil || ((*ctx)).for_var_name == nil || ((*ctx)).for_var_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l1742 = false;
-        return __ret_l1742;
+        bool __ret_l1766 = false;
+        return __ret_l1766;
     }
     else if (name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l1744 = false;
-        return __ret_l1744;
+        bool __ret_l1768 = false;
+        return __ret_l1768;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l1746 = name_len == ((*ctx)).for_var_len && memcmp(name, ((*ctx)).for_var_name, name_len) == 0;
-        return __ret_l1746;
+        bool __ret_l1770 = name_len == ((*ctx)).for_var_len && memcmp(name, ((*ctx)).for_var_name, name_len) == 0;
+        return __ret_l1770;
     }
 }
 
@@ -2260,48 +2296,48 @@ static pNode semantic_designator_param_root(pNode d)
     if (d == nil)
     {
         /* return value captured before defers */
-        pNode __ret_l1758 = nil;
-        return __ret_l1758;
+        pNode __ret_l1782 = nil;
+        return __ret_l1782;
     }
     if (((*d)).kind == NODE_IDENT)
     {
         if (((*d)).resolved_sym != nil && ((*((*d)).resolved_sym)).kind == SYM_KIND_PARAM && ((*((*d)).resolved_sym)).decl != nil && ((*((*((*d)).resolved_sym)).decl)).kind == NODE_PARAM)
         {
             /* return value captured before defers */
-            pNode __ret_l1763 = ((*((*d)).resolved_sym)).decl;
-            return __ret_l1763;
+            pNode __ret_l1787 = ((*((*d)).resolved_sym)).decl;
+            return __ret_l1787;
         }
         /* return value captured before defers */
-        pNode __ret_l1765 = nil;
-        return __ret_l1765;
+        pNode __ret_l1789 = nil;
+        return __ret_l1789;
     }
     if (((*d)).kind == NODE_FIELD_ACCESS)
     {
         /* return value captured before defers */
-        pNode __ret_l1768 = semantic_designator_param_root((((*d)).field_access).record_);
-        return __ret_l1768;
+        pNode __ret_l1792 = semantic_designator_param_root((((*d)).field_access).record_);
+        return __ret_l1792;
     }
     if (((*d)).kind == NODE_ARRAY_INDEX)
     {
         /* return value captured before defers */
-        pNode __ret_l1771 = semantic_designator_param_root((((*d)).array_index).array_);
-        return __ret_l1771;
+        pNode __ret_l1795 = semantic_designator_param_root((((*d)).array_index).array_);
+        return __ret_l1795;
     }
     if (((*d)).kind == NODE_UNARY && (((*d)).unary).op == TOK_CARET)
     {
         /* return value captured before defers */
-        pNode __ret_l1774 = semantic_designator_param_root((((*d)).unary).operand);
-        return __ret_l1774;
+        pNode __ret_l1798 = semantic_designator_param_root((((*d)).unary).operand);
+        return __ret_l1798;
     }
     if (((*d)).kind == NODE_PAREN)
     {
         /* return value captured before defers */
-        pNode __ret_l1777 = semantic_designator_param_root((((*d)).paren).expr);
-        return __ret_l1777;
+        pNode __ret_l1801 = semantic_designator_param_root((((*d)).paren).expr);
+        return __ret_l1801;
     }
     /* return value captured before defers */
-    pNode __ret_l1779 = nil;
-    return __ret_l1779;
+    pNode __ret_l1803 = nil;
+    return __ret_l1803;
 }
 
 /**
@@ -2358,48 +2394,48 @@ static pTSymbol semantic_designator_let_root(pNode d)
     if (d == nil)
     {
         /* return value captured before defers */
-        pTSymbol __ret_l1839 = nil;
-        return __ret_l1839;
+        pTSymbol __ret_l1863 = nil;
+        return __ret_l1863;
     }
     if (((*d)).kind == NODE_IDENT)
     {
         if (((*d)).resolved_sym != nil && (((*((*d)).resolved_sym)).kind == SYM_KIND_LET || ((*((*d)).resolved_sym)).kind == SYM_KIND_CONST))
         {
             /* return value captured before defers */
-            pTSymbol __ret_l1845 = ((*d)).resolved_sym;
-            return __ret_l1845;
+            pTSymbol __ret_l1869 = ((*d)).resolved_sym;
+            return __ret_l1869;
         }
         /* return value captured before defers */
-        pTSymbol __ret_l1847 = nil;
-        return __ret_l1847;
+        pTSymbol __ret_l1871 = nil;
+        return __ret_l1871;
     }
     if (((*d)).kind == NODE_FIELD_ACCESS)
     {
         /* return value captured before defers */
-        pTSymbol __ret_l1850 = semantic_designator_let_root((((*d)).field_access).record_);
-        return __ret_l1850;
+        pTSymbol __ret_l1874 = semantic_designator_let_root((((*d)).field_access).record_);
+        return __ret_l1874;
     }
     if (((*d)).kind == NODE_ARRAY_INDEX)
     {
         /* return value captured before defers */
-        pTSymbol __ret_l1853 = semantic_designator_let_root((((*d)).array_index).array_);
-        return __ret_l1853;
+        pTSymbol __ret_l1877 = semantic_designator_let_root((((*d)).array_index).array_);
+        return __ret_l1877;
     }
     if (((*d)).kind == NODE_UNARY && (((*d)).unary).op == TOK_CARET)
     {
         /* return value captured before defers */
-        pTSymbol __ret_l1856 = semantic_designator_let_root((((*d)).unary).operand);
-        return __ret_l1856;
+        pTSymbol __ret_l1880 = semantic_designator_let_root((((*d)).unary).operand);
+        return __ret_l1880;
     }
     if (((*d)).kind == NODE_PAREN)
     {
         /* return value captured before defers */
-        pTSymbol __ret_l1859 = semantic_designator_let_root((((*d)).paren).expr);
-        return __ret_l1859;
+        pTSymbol __ret_l1883 = semantic_designator_let_root((((*d)).paren).expr);
+        return __ret_l1883;
     }
     /* return value captured before defers */
-    pTSymbol __ret_l1861 = nil;
-    return __ret_l1861;
+    pTSymbol __ret_l1885 = nil;
+    return __ret_l1885;
 }
 
 /**
@@ -2644,15 +2680,15 @@ static char* semantic_arena_strndup(Arena* arena, const char* s, size_t n)
     if (arena == nil || s == nil || n == 0)
     {
         /* return value captured before defers */
-        char* __ret_l2132 = nil;
-        return __ret_l2132;
+        char* __ret_l2156 = nil;
+        return __ret_l2156;
     }
     p = (char*)arena_alloc(arena, n + 1);
     memcpy(p, s, n);
     p[n] = '\0';
     /* return value captured before defers */
-    char* __ret_l2137 = p;
-    return __ret_l2137;
+    char* __ret_l2161 = p;
+    return __ret_l2161;
 }
 
 static pTType semantic_mh_make_type(pTSemanticContext ctx, const MhTypeSpec* spec)
@@ -2663,36 +2699,36 @@ static pTType semantic_mh_make_type(pTSemanticContext ctx, const MhTypeSpec* spe
     if (ctx == nil || spec == nil)
     {
         /* return value captured before defers */
-        pTType __ret_l2152 = nil;
-        return __ret_l2152;
+        pTType __ret_l2176 = nil;
+        return __ret_l2176;
     }
     if (((*spec)).is_array)
     {
         if (((*spec)).element == nil)
         {
             /* return value captured before defers */
-            pTType __ret_l2156 = nil;
-            return __ret_l2156;
+            pTType __ret_l2180 = nil;
+            return __ret_l2180;
         }
         el = semantic_mh_make_type(ctx, ((*spec)).element);
         if (el == nil)
         {
             /* return value captured before defers */
-            pTType __ret_l2160 = nil;
-            return __ret_l2160;
+            pTType __ret_l2184 = nil;
+            return __ret_l2184;
         }
         ty = type_create_array(((*ctx)).arena, el, ((*spec)).array_size);
         ((*ty)).is_const = ((*spec)).is_const;
         ((*ty)).is_pointer = ((*spec)).is_pointer;
         /* return value captured before defers */
-        pTType __ret_l2165 = ty;
-        return __ret_l2165;
+        pTType __ret_l2189 = ty;
+        return __ret_l2189;
     }
     if (((*spec)).name == nil || ((*spec)).name_len == 0)
     {
         /* return value captured before defers */
-        pTType __ret_l2168 = nil;
-        return __ret_l2168;
+        pTType __ret_l2192 = nil;
+        return __ret_l2192;
     }
     if (((*spec)).name_len == 6 && memcmp(((*spec)).name, "opaque", 6) == 0)
     {
@@ -2704,8 +2740,8 @@ static pTType semantic_mh_make_type(pTSemanticContext ctx, const MhTypeSpec* spe
         ((*ty)).is_const = ((*spec)).is_const;
         ((*ty)).is_pointer = true;
         /* return value captured before defers */
-        pTType __ret_l2177 = ty;
-        return __ret_l2177;
+        pTType __ret_l2201 = ty;
+        return __ret_l2201;
     }
     nm = semantic_arena_strndup(((*ctx)).arena, ((*spec)).name, ((*spec)).name_len);
     ty = type_create_named(((*ctx)).arena, nm, ((*spec)).name_len);
@@ -2713,8 +2749,8 @@ static pTType semantic_mh_make_type(pTSemanticContext ctx, const MhTypeSpec* spe
     ((*ty)).is_pointer = ((*spec)).is_pointer;
     ((*ty)).width = ((*spec)).width;
     /* return value captured before defers */
-    pTType __ret_l2184 = ty;
-    return __ret_l2184;
+    pTType __ret_l2208 = ty;
+    return __ret_l2208;
 }
 
 static pNode semantic_mh_make_proc_decl(pTSemanticContext ctx, const MhExport* exp, pNode loc, const char* name, size_t name_len, SymbolKind kind)
@@ -2732,14 +2768,14 @@ static pNode semantic_mh_make_proc_decl(pTSemanticContext ctx, const MhExport* e
     if (ctx == nil || exp == nil || !((*exp)).has_signature)
     {
         /* return value captured before defers */
-        pNode __ret_l2209 = nil;
-        return __ret_l2209;
+        pNode __ret_l2233 = nil;
+        return __ret_l2233;
     }
     if (kind != SYM_KIND_PROC && kind != SYM_KIND_FUNC)
     {
         /* return value captured before defers */
-        pNode __ret_l2212 = nil;
-        return __ret_l2212;
+        pNode __ret_l2236 = nil;
+        return __ret_l2236;
     }
     if (loc != nil)
     {
@@ -2783,8 +2819,8 @@ static pNode semantic_mh_make_proc_decl(pTSemanticContext ctx, const MhExport* e
     (((*pl)).param_list).capacity = 0;
     (((*pl)).param_list).has_ellipsis = false;
     {
-        const size_t __for_end_l2259_c5 = (((*exp)).formal_count);
-        for (i = 1; i <= __for_end_l2259_c5; i++)
+        const size_t __for_end_l2283_c5 = (((*exp)).formal_count);
+        for (i = 1; i <= __for_end_l2283_c5; i++)
         {
             {
                 f = &((*exp)).formals[i - 1];
@@ -2830,8 +2866,8 @@ static pNode semantic_mh_make_proc_decl(pTSemanticContext ctx, const MhExport* e
         (((*decl)).proc_decl).return_type = semantic_mh_make_type(ctx, &((*exp)).result);
     }
     /* return value captured before defers */
-    pNode __ret_l2305 = decl;
-    return __ret_l2305;
+    pNode __ret_l2329 = decl;
+    return __ret_l2329;
 }
 
 static void semantic_mh_fill_fields(pTSemanticContext ctx, pNode st, const MhField* fields, size_t count, TToken tok, pNode loc)
@@ -2841,8 +2877,8 @@ static void semantic_mh_fill_fields(pTSemanticContext ctx, pNode st, const MhFie
     pNode field = nil;
     pNode nested = nil;
     {
-        const size_t __for_end_l2317_c5 = (count);
-        for (i = 1; i <= __for_end_l2317_c5; i++)
+        const size_t __for_end_l2341_c5 = (count);
+        for (i = 1; i <= __for_end_l2341_c5; i++)
         {
             {
                 f = &fields[i - 1];
@@ -2891,14 +2927,14 @@ static pNode semantic_mh_make_type_decl(pTSemanticContext ctx, const MhExport* e
     if (ctx == nil || exp == nil)
     {
         /* return value captured before defers */
-        pNode __ret_l2367 = nil;
-        return __ret_l2367;
+        pNode __ret_l2391 = nil;
+        return __ret_l2391;
     }
     if (!((*exp)).is_struct && !((*exp)).is_union)
     {
         /* return value captured before defers */
-        pNode __ret_l2370 = nil;
-        return __ret_l2370;
+        pNode __ret_l2394 = nil;
+        return __ret_l2394;
     }
     if (loc != nil)
     {
@@ -2940,8 +2976,8 @@ static pNode semantic_mh_make_type_decl(pTSemanticContext ctx, const MhExport* e
     (((*decl)).type_decl).is_extern = ((*exp)).is_extern;
     (((*decl)).type_decl).is_forward = false;
     /* return value captured before defers */
-    pNode __ret_l2415 = decl;
-    return __ret_l2415;
+    pNode __ret_l2439 = decl;
+    return __ret_l2439;
 }
 
 static pNode semantic_mh_make_method_type_decl(pTSemanticContext ctx, const MhExport* exp, pNode loc, const char* bind_name, size_t bind_len)
@@ -2959,14 +2995,14 @@ static pNode semantic_mh_make_method_type_decl(pTSemanticContext ctx, const MhEx
     if (ctx == nil || exp == nil || !((*exp)).has_signature)
     {
         /* return value captured before defers */
-        pNode __ret_l2434 = nil;
-        return __ret_l2434;
+        pNode __ret_l2458 = nil;
+        return __ret_l2458;
     }
     if (((*exp)).is_struct || ((*exp)).is_union)
     {
         /* return value captured before defers */
-        pNode __ret_l2437 = nil;
-        return __ret_l2437;
+        pNode __ret_l2461 = nil;
+        return __ret_l2461;
     }
     if (loc != nil)
     {
@@ -2986,8 +3022,8 @@ static pNode semantic_mh_make_method_type_decl(pTSemanticContext ctx, const MhEx
     (((*pl)).param_list).count = 0;
     (((*pl)).param_list).capacity = 0;
     {
-        const size_t __for_end_l2456_c5 = (((*exp)).formal_count);
-        for (i = 1; i <= __for_end_l2456_c5; i++)
+        const size_t __for_end_l2480_c5 = (((*exp)).formal_count);
+        for (i = 1; i <= __for_end_l2480_c5; i++)
         {
             {
                 f = &((*exp)).formals[i - 1];
@@ -3033,8 +3069,8 @@ static pNode semantic_mh_make_method_type_decl(pTSemanticContext ctx, const MhEx
     (((*decl)).type_decl).is_extern = ((*exp)).is_extern;
     (((*decl)).type_decl).is_forward = false;
     /* return value captured before defers */
-    pNode __ret_l2501 = decl;
-    return __ret_l2501;
+    pNode __ret_l2525 = decl;
+    return __ret_l2525;
 }
 
 /**
@@ -3153,8 +3189,8 @@ static void semantic_register_import(pTSemanticContext ctx, pNode root, pNode de
             semantic_error_at(decl, "semantic_register_import: failed to read .mh file");
         }
         {
-            const size_t __for_end_l2622_c6 = ((((*decl)).import_stmt).count);
-            for (i = 1; i <= __for_end_l2622_c6; i++)
+            const size_t __for_end_l2646_c6 = ((((*decl)).import_stmt).count);
+            for (i = 1; i <= __for_end_l2646_c6; i++)
             {
                 {
                     pNode item = (((*decl)).import_stmt).items[i - 1];
@@ -3221,8 +3257,8 @@ static void semantic_register_import(pTSemanticContext ctx, pNode root, pNode de
     else
     {
         {
-            const size_t __for_end_l2732_c6 = ((((*decl)).import_stmt).count);
-            for (i = 1; i <= __for_end_l2732_c6; i++)
+            const size_t __for_end_l2756_c6 = ((((*decl)).import_stmt).count);
+            for (i = 1; i <= __for_end_l2756_c6; i++)
             {
                 {
                     semantic_register_import_item(ctx, (((*decl)).import_stmt).items[i - 1]);
@@ -3240,67 +3276,67 @@ static void semantic_register_param_list(pTSemanticContext ctx, pNode* params, s
     size_t i = 0;
     size_t j = 0;
     {
-        const size_t __for_end_l2747_c5 = (count);
-        for (i = 1; i <= __for_end_l2747_c5; i++)
+        const size_t __for_end_l2771_c5 = (count);
+        for (i = 1; i <= __for_end_l2771_c5; i++)
         {
             {
-                pNode param_l2748_c12 = params[i - 1];
-                if (param_l2748_c12 == nil || ((*param_l2748_c12)).kind != NODE_PARAM)
+                pNode param_l2772_c12 = params[i - 1];
+                if (param_l2772_c12 == nil || ((*param_l2772_c12)).kind != NODE_PARAM)
                 {
-                    semantic_error_at(param_l2748_c12, "semantic_register_param_list: internal error: expected parameter");
+                    semantic_error_at(param_l2772_c12, "semantic_register_param_list: internal error: expected parameter");
                 }
-                if ((((*param_l2748_c12)).param).name == nil || (((*param_l2748_c12)).param).name_len == 0)
+                if ((((*param_l2772_c12)).param).name == nil || (((*param_l2772_c12)).param).name_len == 0)
                 {
-                    semantic_error_at(param_l2748_c12, "semantic_register_param_list: parameter has no name");
+                    semantic_error_at(param_l2772_c12, "semantic_register_param_list: parameter has no name");
                 }
-                if ((((*param_l2748_c12)).param).param_type != nil)
+                if ((((*param_l2772_c12)).param).param_type != nil)
                 {
-                    semantic_resolve_type(ctx, (((*param_l2748_c12)).param).param_type, param_l2748_c12);
+                    semantic_resolve_type(ctx, (((*param_l2772_c12)).param).param_type, param_l2772_c12);
                 }
-                semantic_define(ctx, SYM_KIND_PARAM, (((*param_l2748_c12)).param).name, (((*param_l2748_c12)).param).name_len, (((*param_l2748_c12)).param).param_type, param_l2748_c12, false);
+                semantic_define(ctx, SYM_KIND_PARAM, (((*param_l2772_c12)).param).name, (((*param_l2772_c12)).param).name_len, (((*param_l2772_c12)).param).param_type, param_l2772_c12, false);
             }
         }
     }
     {
-        const size_t __for_end_l2765_c5 = (count);
-        for (i = 1; i <= __for_end_l2765_c5; i++)
+        const size_t __for_end_l2789_c5 = (count);
+        for (i = 1; i <= __for_end_l2789_c5; i++)
         {
             {
-                pNode param_l2766_c12 = params[i - 1];
+                pNode param_l2790_c12 = params[i - 1];
                 char expect[264] = {0};
                 size_t elen = 0;
-                if (param_l2766_c12 == nil || (((*param_l2766_c12)).param).param_type == nil || (((*param_l2766_c12)).param).name == nil || (((*param_l2766_c12)).param).name_len == 0)
+                if (param_l2790_c12 == nil || (((*param_l2790_c12)).param).param_type == nil || (((*param_l2790_c12)).param).name == nil || (((*param_l2790_c12)).param).name_len == 0)
                 {
                                         /* INVARIANT (on loop exit) */
                     continue;
                 }
-                if (!semantic_type_is_open_slice((((*param_l2766_c12)).param).param_type))
+                if (!semantic_type_is_open_slice((((*param_l2790_c12)).param).param_type))
                 {
                                         /* INVARIANT (on loop exit) */
                     continue;
                 }
-                if ((((*param_l2766_c12)).param).name_len + 7 > 255)
+                if ((((*param_l2790_c12)).param).name_len + 7 > 255)
                 {
                                         /* INVARIANT (on loop exit) */
                     continue;
                 }
-                elen = (((*param_l2766_c12)).param).name_len + 7;
-                memcpy(&expect[0], (((*param_l2766_c12)).param).name, (((*param_l2766_c12)).param).name_len);
-                memcpy(&expect[(((*param_l2766_c12)).param).name_len], "_length", 7);
+                elen = (((*param_l2790_c12)).param).name_len + 7;
+                memcpy(&expect[0], (((*param_l2790_c12)).param).name, (((*param_l2790_c12)).param).name_len);
+                memcpy(&expect[(((*param_l2790_c12)).param).name_len], "_length", 7);
                 {
-                    const size_t __for_end_l2783_c6 = (count);
-                    for (j = 1; j <= __for_end_l2783_c6; j++)
+                    const size_t __for_end_l2807_c6 = (count);
+                    for (j = 1; j <= __for_end_l2807_c6; j++)
                     {
                         {
-                            pNode other_l2784_c13 = params[j - 1];
-                            if (other_l2784_c13 == nil || (((*other_l2784_c13)).param).name == nil)
+                            pNode other_l2808_c13 = params[j - 1];
+                            if (other_l2808_c13 == nil || (((*other_l2808_c13)).param).name == nil)
                             {
                                                                 /* INVARIANT (on loop exit) */
                                 continue;
                             }
-                            if ((((*other_l2784_c13)).param).name_len == elen && memcmp((((*other_l2784_c13)).param).name, &expect[0], elen) == 0)
+                            if ((((*other_l2808_c13)).param).name_len == elen && memcmp((((*other_l2808_c13)).param).name, &expect[0], elen) == 0)
                             {
-                                semantic_error_at(param_l2766_c12, "semantic_register_param_list: slice length name collides with a parameter");
+                                semantic_error_at(param_l2790_c12, "semantic_register_param_list: slice length name collides with a parameter");
                             }
                         }
                     }
@@ -3358,32 +3394,32 @@ static bool semantic_is_literal_ident(const char* name, size_t name_len)
     if (name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l2848 = false;
-        return __ret_l2848;
+        bool __ret_l2872 = false;
+        return __ret_l2872;
     }
     else if (name_len == 3)
     {
         /* return value captured before defers */
-        bool __ret_l2850 = strncasecmp(name, "nil", 3) == 0 || memcmp(name, "NaN", 3) == 0;
-        return __ret_l2850;
+        bool __ret_l2874 = strncasecmp(name, "nil", 3) == 0 || memcmp(name, "NaN", 3) == 0;
+        return __ret_l2874;
     }
     else if (name_len == 4)
     {
         /* return value captured before defers */
-        bool __ret_l2853 = strncasecmp(name, "true", 4) == 0;
-        return __ret_l2853;
+        bool __ret_l2877 = strncasecmp(name, "true", 4) == 0;
+        return __ret_l2877;
     }
     else if (name_len == 5)
     {
         /* return value captured before defers */
-        bool __ret_l2855 = strncasecmp(name, "false", 5) == 0;
-        return __ret_l2855;
+        bool __ret_l2879 = strncasecmp(name, "false", 5) == 0;
+        return __ret_l2879;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l2857 = false;
-        return __ret_l2857;
+        bool __ret_l2881 = false;
+        return __ret_l2881;
     }
 }
 
@@ -3456,8 +3492,8 @@ static char* semantic_mangle_method(Arena* arena, const char* owner, size_t owne
     memcpy(buf + owner_len + 2, method, method_len);
     buf[total] = '\0';
     /* return value captured before defers */
-    char* __ret_l2937 = buf;
-    return __ret_l2937;
+    char* __ret_l2961 = buf;
+    return __ret_l2961;
 }
 
 /**
@@ -3477,8 +3513,8 @@ static TProcSymName semantic_proc_sym_name(pTSemanticContext ctx, pNode decl)
         (result).length = (((*decl)).proc_decl).name_len;
     }
     /* return value captured before defers */
-    TProcSymName __ret_l2958 = result;
-    return __ret_l2958;
+    TProcSymName __ret_l2982 = result;
+    return __ret_l2982;
 }
 
 /**
@@ -3499,60 +3535,60 @@ static bool semantic_method_is_instance(pTSemanticContext ctx, pNode decl)
     if (decl == nil)
     {
         /* return value captured before defers */
-        bool __ret_l2979 = false;
-        return __ret_l2979;
+        bool __ret_l3003 = false;
+        return __ret_l3003;
     }
     if (((*decl)).kind != NODE_PROC_DECL && ((*decl)).kind != NODE_FUNC_DECL)
     {
         /* return value captured before defers */
-        bool __ret_l2983 = false;
-        return __ret_l2983;
+        bool __ret_l3007 = false;
+        return __ret_l3007;
     }
     owner = (((*decl)).proc_decl).method_owner;
     owner_len = (((*decl)).proc_decl).method_owner_len;
     if (owner == nil || owner_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l2989 = false;
-        return __ret_l2989;
+        bool __ret_l3013 = false;
+        return __ret_l3013;
     }
     params_list = (((*decl)).proc_decl).params;
     if (params_list == nil || ((*params_list)).kind != NODE_PARAM_LIST || (((*params_list)).param_list).count == 0)
     {
         /* return value captured before defers */
-        bool __ret_l2995 = false;
-        return __ret_l2995;
+        bool __ret_l3019 = false;
+        return __ret_l3019;
     }
     self_param = (((*params_list)).param_list).params[0];
     if (self_param == nil || ((*self_param)).kind != NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l3000 = false;
-        return __ret_l3000;
+        bool __ret_l3024 = false;
+        return __ret_l3024;
     }
     pt = (((*self_param)).param).param_type;
     if (pt == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3005 = false;
-        return __ret_l3005;
+        bool __ret_l3029 = false;
+        return __ret_l3029;
     }
     semantic_resolve_type(ctx, pt, self_param);
     if (((*pt)).is_pointer || ((*pt)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l3017 = false;
-        return __ret_l3017;
+        bool __ret_l3041 = false;
+        return __ret_l3041;
     }
     if (((*pt)).name == nil || ((*pt)).name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l3020 = false;
-        return __ret_l3020;
+        bool __ret_l3044 = false;
+        return __ret_l3044;
     }
     /* return value captured before defers */
-    bool __ret_l3022 = semantic_names_equal(((*pt)).name, ((*pt)).name_len, owner, owner_len);
-    return __ret_l3022;
+    bool __ret_l3046 = semantic_names_equal(((*pt)).name, ((*pt)).name_len, owner, owner_len);
+    return __ret_l3046;
 }
 
 /**
@@ -3575,8 +3611,8 @@ static pNode semantic_method_type_node(pTSemanticContext ctx, pTType ty)
     if (ctx == nil || t == nil)
     {
         /* return value captured before defers */
-        pNode __ret_l3051 = nil;
-        return __ret_l3051;
+        pNode __ret_l3075 = nil;
+        return __ret_l3075;
     }
     if (((*t)).resolved_type != nil)
     {
@@ -3585,25 +3621,25 @@ static pNode semantic_method_type_node(pTSemanticContext ctx, pTType ty)
     if (((*t)).name == nil || ((*t)).name_len == 0)
     {
         /* return value captured before defers */
-        pNode __ret_l3057 = nil;
-        return __ret_l3057;
+        pNode __ret_l3081 = nil;
+        return __ret_l3081;
     }
     sym = symtab_lookup(((*ctx)).scope, ((*t)).name, ((*t)).name_len);
     if (sym == nil || ((*sym)).kind != SYM_KIND_TYPE || ((*sym)).decl == nil)
     {
         /* return value captured before defers */
-        pNode __ret_l3061 = nil;
-        return __ret_l3061;
+        pNode __ret_l3085 = nil;
+        return __ret_l3085;
     }
     if (((*((*sym)).decl)).kind != NODE_TYPE_DECL)
     {
         /* return value captured before defers */
-        pNode __ret_l3064 = nil;
-        return __ret_l3064;
+        pNode __ret_l3088 = nil;
+        return __ret_l3088;
     }
     /* return value captured before defers */
-    pNode __ret_l3066 = (((*((*sym)).decl)).type_decl).method_type;
-    return __ret_l3066;
+    pNode __ret_l3090 = (((*((*sym)).decl)).type_decl).method_type;
+    return __ret_l3090;
 }
 
 /**
@@ -3616,8 +3652,8 @@ static pTType semantic_field_type_on(pTSemanticContext ctx, pTType recv_ty, cons
     if (ctx == nil || recv_ty == nil || fname == nil)
     {
         /* return value captured before defers */
-        pTType __ret_l3080 = nil;
-        return __ret_l3080;
+        pTType __ret_l3104 = nil;
+        return __ret_l3104;
     }
     st = semantic_struct_body_of_type(ctx, recv_ty);
     while (st != nil)
@@ -3627,21 +3663,21 @@ static pTType semantic_field_type_on(pTSemanticContext ctx, pTType recv_ty, cons
             if (f != nil)
             {
                 /* return value captured before defers */
-                pTType __ret_l3086 = (((*f)).field_decl).field_type;
-                return __ret_l3086;
+                pTType __ret_l3110 = (((*f)).field_decl).field_type;
+                return __ret_l3110;
             }
             if ((((*st)).struct_decl).extends_type == nil)
             {
                 /* return value captured before defers */
-                pTType __ret_l3089 = nil;
-                return __ret_l3089;
+                pTType __ret_l3113 = nil;
+                return __ret_l3113;
             }
             st = semantic_struct_body_of_type(ctx, (((*st)).struct_decl).extends_type);
         }
     }
     /* return value captured before defers */
-    pTType __ret_l3093 = nil;
-    return __ret_l3093;
+    pTType __ret_l3117 = nil;
+    return __ret_l3117;
 }
 
 /**
@@ -3652,18 +3688,18 @@ static bool semantic_sym_is_method_value(pTSemanticContext ctx, pTSymbol sym)
     if (sym == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3103 = false;
-        return __ret_l3103;
+        bool __ret_l3127 = false;
+        return __ret_l3127;
     }
     if (((*sym)).kind != SYM_KIND_VAR && ((*sym)).kind != SYM_KIND_PARAM && ((*sym)).kind != SYM_KIND_LET && ((*sym)).kind != SYM_KIND_CONST)
     {
         /* return value captured before defers */
-        bool __ret_l3107 = false;
-        return __ret_l3107;
+        bool __ret_l3131 = false;
+        return __ret_l3131;
     }
     /* return value captured before defers */
-    bool __ret_l3109 = semantic_method_type_node(ctx, ((*sym)).symbol_type) != nil;
-    return __ret_l3109;
+    bool __ret_l3133 = semantic_method_type_node(ctx, ((*sym)).symbol_type) != nil;
+    return __ret_l3133;
 }
 
 /**
@@ -3683,8 +3719,8 @@ static bool semantic_chain_depth_to_name(pTSemanticContext ctx, pTType ty, const
     if (ctx == nil || t == nil || name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l3129 = false;
-        return __ret_l3129;
+        bool __ret_l3153 = false;
+        return __ret_l3153;
     }
     if (((*t)).resolved_type != nil)
     {
@@ -3693,8 +3729,8 @@ static bool semantic_chain_depth_to_name(pTSemanticContext ctx, pTType ty, const
     if (((*t)).name != nil && semantic_names_equal(((*t)).name, ((*t)).name_len, name, name_len))
     {
         /* return value captured before defers */
-        bool __ret_l3135 = true;
-        return __ret_l3135;
+        bool __ret_l3159 = true;
+        return __ret_l3159;
     }
     st = semantic_struct_body_of_type(ctx, t);
     while (st != nil && (((*st)).struct_decl).extends_type != nil)
@@ -3709,15 +3745,15 @@ static bool semantic_chain_depth_to_name(pTSemanticContext ctx, pTType ty, const
                     (*out_depth) = depth;
                 }
                 /* return value captured before defers */
-                bool __ret_l3146 = true;
-                return __ret_l3146;
+                bool __ret_l3170 = true;
+                return __ret_l3170;
             }
             st = semantic_struct_body_of_type(ctx, parent_ty);
         }
     }
     /* return value captured before defers */
-    bool __ret_l3150 = false;
-    return __ret_l3150;
+    bool __ret_l3174 = false;
+    return __ret_l3174;
 }
 
 /**
@@ -3745,8 +3781,8 @@ static TMethodChainHit semantic_find_instance_on_chain(pTSemanticContext ctx, pT
     if (ctx == nil || ty == nil || method == nil || method_len == 0)
     {
         /* return value captured before defers */
-        TMethodChainHit __ret_l3180 = result;
-        return __ret_l3180;
+        TMethodChainHit __ret_l3204 = result;
+        return __ret_l3204;
     }
     while (ty != nil)
     {
@@ -3756,8 +3792,8 @@ static TMethodChainHit semantic_find_instance_on_chain(pTSemanticContext ctx, pT
             if (owner == nil || owner_len == 0)
             {
                 /* return value captured before defers */
-                TMethodChainHit __ret_l3190 = result;
-                return __ret_l3190;
+                TMethodChainHit __ret_l3214 = result;
+                return __ret_l3214;
             }
             lookup_owner = owner;
             lookup_len = owner_len;
@@ -3777,28 +3813,28 @@ static TMethodChainHit semantic_find_instance_on_chain(pTSemanticContext ctx, pT
                 if (((*sym)).is_method_instance || (((*sym)).decl != nil && semantic_method_is_instance(ctx, ((*sym)).decl)))
                 {
                     /* return value captured before defers */
-                    TMethodChainHit __ret_l3210 = result;
-                    return __ret_l3210;
+                    TMethodChainHit __ret_l3234 = result;
+                    return __ret_l3234;
                 }
                 (result).is_static = true;
                 /* return value captured before defers */
-                TMethodChainHit __ret_l3213 = result;
-                return __ret_l3213;
+                TMethodChainHit __ret_l3237 = result;
+                return __ret_l3237;
             }
             st = semantic_struct_body_of_type(ctx, ty);
             if (st == nil || (((*st)).struct_decl).extends_type == nil)
             {
                 /* return value captured before defers */
-                TMethodChainHit __ret_l3217 = result;
-                return __ret_l3217;
+                TMethodChainHit __ret_l3241 = result;
+                return __ret_l3241;
             }
             ty = (((*st)).struct_decl).extends_type;
             depth = depth + 1;
         }
     }
     /* return value captured before defers */
-    TMethodChainHit __ret_l3222 = result;
-    return __ret_l3222;
+    TMethodChainHit __ret_l3246 = result;
+    return __ret_l3246;
 }
 
 /**
@@ -3811,12 +3847,12 @@ static bool semantic_sym_is_named_type(pTSymbol sym)
     if (sym == nil || ((*sym)).kind != SYM_KIND_TYPE || ((*sym)).decl == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3234 = false;
-        return __ret_l3234;
+        bool __ret_l3258 = false;
+        return __ret_l3258;
     }
     /* return value captured before defers */
-    bool __ret_l3236 = true;
-    return __ret_l3236;
+    bool __ret_l3260 = true;
+    return __ret_l3260;
 }
 
 /**
@@ -3831,37 +3867,37 @@ static bool semantic_formal_needs_address(pNode formal)
     if (formal == nil || ((*formal)).kind != NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l3251 = false;
-        return __ret_l3251;
+        bool __ret_l3275 = false;
+        return __ret_l3275;
     }
     if (!(((*formal)).param).is_var && !(((*formal)).param).is_ref)
     {
         /* return value captured before defers */
-        bool __ret_l3254 = false;
-        return __ret_l3254;
+        bool __ret_l3278 = false;
+        return __ret_l3278;
     }
     ty = (((*formal)).param).param_type;
     if (ty == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3258 = false;
-        return __ret_l3258;
+        bool __ret_l3282 = false;
+        return __ret_l3282;
     }
     if (semantic_array_param_view(ty) != nil)
     {
         /* return value captured before defers */
-        bool __ret_l3261 = false;
-        return __ret_l3261;
+        bool __ret_l3285 = false;
+        return __ret_l3285;
     }
     if (((*ty)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l3264 = (((*formal)).param).is_var;
-        return __ret_l3264;
+        bool __ret_l3288 = (((*formal)).param).is_var;
+        return __ret_l3288;
     }
     /* return value captured before defers */
-    bool __ret_l3266 = true;
-    return __ret_l3266;
+    bool __ret_l3290 = true;
+    return __ret_l3290;
 }
 
 /**
@@ -3893,20 +3929,20 @@ static bool semantic_actual_is_designator(pNode n)
             else if (((*d)).kind == NODE_IDENT)
             {
                 /* return value captured before defers */
-                bool __ret_l3288 = true;
-                return __ret_l3288;
+                bool __ret_l3312 = true;
+                return __ret_l3312;
             }
             else
             {
                 /* return value captured before defers */
-                bool __ret_l3290 = false;
-                return __ret_l3290;
+                bool __ret_l3314 = false;
+                return __ret_l3314;
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l3293 = false;
-    return __ret_l3293;
+    bool __ret_l3317 = false;
+    return __ret_l3317;
 }
 
 /** 
@@ -4107,8 +4143,8 @@ static void semantic_resolve_call(pTSemanticContext ctx, pNode n)
         ((*n)).resolved_sym = sym;
     }
     {
-        const size_t __for_end_l3515_c5 = ((((*n)).call).argc);
-        for (i = 1; i <= __for_end_l3515_c5; i++)
+        const size_t __for_end_l3539_c5 = ((((*n)).call).argc);
+        for (i = 1; i <= __for_end_l3539_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*n)).call).args[i - 1]);
@@ -4168,8 +4204,8 @@ static void semantic_resolve_call(pTSemanticContext ctx, pNode n)
             formal_index = 0;
         }
         {
-            const size_t __for_end_l3586_c6 = ((((*n)).call).argc);
-            for (fi = 1; fi <= __for_end_l3586_c6; fi++)
+            const size_t __for_end_l3610_c6 = ((((*n)).call).argc);
+            for (fi = 1; fi <= __for_end_l3610_c6; fi++)
             {
                 {
                     if (formal_index >= fcount)
@@ -4206,8 +4242,8 @@ static void semantic_resolve_call(pTSemanticContext ctx, pNode n)
             formal_index = 0;
         }
         {
-            const size_t __for_end_l3617_c6 = ((((*n)).call).argc);
-            for (fi = 1; fi <= __for_end_l3617_c6; fi++)
+            const size_t __for_end_l3641_c6 = ((((*n)).call).argc);
+            for (fi = 1; fi <= __for_end_l3641_c6; fi++)
             {
                 {
                     int* slot = nil;
@@ -4480,8 +4516,8 @@ static void semantic_resolve_expr(pTSemanticContext ctx, pNode n)
         {
             size_t i = 0;
             {
-                const size_t __for_end_l3857_c7 = ((((*n)).array_literal).count);
-                for (i = 1; i <= __for_end_l3857_c7; i++)
+                const size_t __for_end_l3881_c7 = ((((*n)).array_literal).count);
+                for (i = 1; i <= __for_end_l3881_c7; i++)
                 {
                     {
                         pNode elem = (((*n)).array_literal).elements[i - 1];
@@ -4554,57 +4590,57 @@ static void semantic_register_var_decl(pTSemanticContext ctx, pNode decl, Symbol
         semantic_error_at(decl, "semantic_register_var_decl: internal error: unexpected var/const/let decl");
     }
     {
-        const size_t __for_end_l3912_c5 = (count);
-        for (i = 1; i <= __for_end_l3912_c5; i++)
+        const size_t __for_end_l3936_c5 = (count);
+        for (i = 1; i <= __for_end_l3936_c5; i++)
         {
             {
-                pNode item_l3913_c11 = items[i - 1];
-                if (item_l3913_c11 == nil || (((*item_l3913_c11)).var_item).name == nil || (((*item_l3913_c11)).var_item).name_len == 0)
+                pNode item_l3937_c11 = items[i - 1];
+                if (item_l3937_c11 == nil || (((*item_l3937_c11)).var_item).name == nil || (((*item_l3937_c11)).var_item).name_len == 0)
                 {
                     semantic_error_at(decl, "semantic_register_var_decl: declaration item has no name");
                 }
-                if ((((*item_l3913_c11)).var_item).initializer != nil)
+                if ((((*item_l3937_c11)).var_item).initializer != nil)
                 {
-                    semantic_resolve_expr(ctx, (((*item_l3913_c11)).var_item).initializer);
+                    semantic_resolve_expr(ctx, (((*item_l3937_c11)).var_item).initializer);
                 }
-                if ((((*item_l3913_c11)).var_item).item_type == nil && (((*item_l3913_c11)).var_item).initializer != nil)
+                if ((((*item_l3937_c11)).var_item).item_type == nil && (((*item_l3937_c11)).var_item).initializer != nil)
                 {
-                    (((*item_l3913_c11)).var_item).item_type = semantic_type_of_expr(ctx, (((*item_l3913_c11)).var_item).initializer);
-                    if ((((*item_l3913_c11)).var_item).item_type == nil)
+                    (((*item_l3937_c11)).var_item).item_type = semantic_type_of_expr(ctx, (((*item_l3937_c11)).var_item).initializer);
+                    if ((((*item_l3937_c11)).var_item).item_type == nil)
                     {
-                        semantic_error_at(item_l3913_c11, "semantic_register_var_decl: cannot infer type from initializer");
+                        semantic_error_at(item_l3937_c11, "semantic_register_var_decl: cannot infer type from initializer");
                     }
                 }
-                if ((((*item_l3913_c11)).var_item).item_type != nil)
+                if ((((*item_l3937_c11)).var_item).item_type != nil)
                 {
-                    semantic_resolve_type(ctx, (((*item_l3913_c11)).var_item).item_type, item_l3913_c11);
+                    semantic_resolve_type(ctx, (((*item_l3937_c11)).var_item).item_type, item_l3937_c11);
                 }
-                if ((((*item_l3913_c11)).var_item).initializer != nil && (((*item_l3913_c11)).var_item).item_type != nil)
+                if ((((*item_l3937_c11)).var_item).initializer != nil && (((*item_l3937_c11)).var_item).item_type != nil)
                 {
-                    semantic_maybe_upcast(ctx, (((*item_l3913_c11)).var_item).initializer, (((*item_l3913_c11)).var_item).item_type);
+                    semantic_maybe_upcast(ctx, (((*item_l3937_c11)).var_item).initializer, (((*item_l3937_c11)).var_item).item_type);
                 }
                 if (((*decl)).kind == NODE_VAR_DECL && (((*decl)).var_decl).is_extern)
                 {
-                    semantic_define_or_refine(ctx, kind, (((*item_l3913_c11)).var_item).name, (((*item_l3913_c11)).var_item).name_len, (((*item_l3913_c11)).var_item).item_type, item_l3913_c11, is_exported);
+                    semantic_define_or_refine(ctx, kind, (((*item_l3937_c11)).var_item).name, (((*item_l3937_c11)).var_item).name_len, (((*item_l3937_c11)).var_item).item_type, item_l3937_c11, is_exported);
                 }
                 else
                 {
-                    semantic_define(ctx, kind, (((*item_l3913_c11)).var_item).name, (((*item_l3913_c11)).var_item).name_len, (((*item_l3913_c11)).var_item).item_type, item_l3913_c11, is_exported);
+                    semantic_define(ctx, kind, (((*item_l3937_c11)).var_item).name, (((*item_l3937_c11)).var_item).name_len, (((*item_l3937_c11)).var_item).item_type, item_l3937_c11, is_exported);
                 }
-                if (kind == SYM_KIND_CONST && (((*item_l3913_c11)).var_item).initializer != nil)
+                if (kind == SYM_KIND_CONST && (((*item_l3937_c11)).var_item).initializer != nil)
                 {
                     pTSymbol csym = nil;
                     integer cval = 0;
-                    csym = symtab_lookup_current(((*ctx)).scope, (((*item_l3913_c11)).var_item).name, (((*item_l3913_c11)).var_item).name_len);
+                    csym = symtab_lookup_current(((*ctx)).scope, (((*item_l3937_c11)).var_item).name, (((*item_l3937_c11)).var_item).name_len);
                     if (csym == nil)
                     {
-                        semantic_error_at(item_l3913_c11, "semantic_register_var_decl: CONST not in scope after define");
+                        semantic_error_at(item_l3937_c11, "semantic_register_var_decl: CONST not in scope after define");
                     }
-                    if (semantic_try_eval_const_expr(ctx, (((*item_l3913_c11)).var_item).initializer, &cval, nil))
+                    if (semantic_try_eval_const_expr(ctx, (((*item_l3937_c11)).var_item).initializer, &cval, nil))
                     {
                         ((*csym)).has_const_value = true;
                         ((*csym)).const_value = cval;
-                        ((*item_l3913_c11)).resolved_sym = csym;
+                        ((*item_l3937_c11)).resolved_sym = csym;
                     }
                 }
             }
@@ -4623,8 +4659,8 @@ static bool semantic_for_type_is_stepable(pTSemanticContext ctx, pTType ty)
     if (seen == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3976 = false;
-        return __ret_l3976;
+        bool __ret_l4000 = false;
+        return __ret_l4000;
     }
     if (((*seen)).resolved_type != nil)
     {
@@ -4633,37 +4669,37 @@ static bool semantic_for_type_is_stepable(pTSemanticContext ctx, pTType ty)
     if (((*seen)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l3982 = true;
-        return __ret_l3982;
+        bool __ret_l4006 = true;
+        return __ret_l4006;
     }
     if (((*seen)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l3985 = false;
-        return __ret_l3985;
+        bool __ret_l4009 = false;
+        return __ret_l4009;
     }
     if (semantic_type_name_is(seen, "integer", 7) || semantic_type_name_is(seen, "int", 3) || semantic_type_name_is(seen, "char", 4) || semantic_type_name_is(seen, "byte", 4) || semantic_type_name_is(seen, "size_t", 6) || semantic_type_name_is(seen, "cardinal", 8))
     {
         /* return value captured before defers */
-        bool __ret_l3993 = true;
-        return __ret_l3993;
+        bool __ret_l4017 = true;
+        return __ret_l4017;
     }
     if (((*seen)).name == nil || ((*seen)).name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l3996 = false;
-        return __ret_l3996;
+        bool __ret_l4020 = false;
+        return __ret_l4020;
     }
     sym = symtab_lookup(((*ctx)).scope, ((*seen)).name, ((*seen)).name_len);
     if (sym != nil && ((*sym)).kind == SYM_KIND_TYPE && ((*sym)).decl != nil && ((*((*sym)).decl)).kind == NODE_TYPE_DECL && (((*((*sym)).decl)).type_decl).enum_type != nil)
     {
         /* return value captured before defers */
-        bool __ret_l4002 = true;
-        return __ret_l4002;
+        bool __ret_l4026 = true;
+        return __ret_l4026;
     }
     /* return value captured before defers */
-    bool __ret_l4004 = false;
-    return __ret_l4004;
+    bool __ret_l4028 = false;
+    return __ret_l4028;
 }
 
 /**
@@ -4779,8 +4815,8 @@ static void semantic_switch_note(pTSemanticContext ctx, pNode lab, ppvoid seen, 
     {
         arr = (ppvoid)(*seen);
         {
-            const size_t __for_end_l4114_c6 = ((*seen_count));
-            for (i = 1; i <= __for_end_l4114_c6; i++)
+            const size_t __for_end_l4138_c6 = ((*seen_count));
+            for (i = 1; i <= __for_end_l4138_c6; i++)
             {
                 {
                     prev = (SwitchSeen*)(arr[i - 1]);
@@ -4898,8 +4934,8 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
                 }
             }
             {
-                const size_t __for_end_l4219_c7 = ((((*n)).for_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4219_c7; i++)
+                const size_t __for_end_l4243_c7 = ((((*n)).for_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4243_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).for_stmt).invariants[i - 1]);
@@ -4920,8 +4956,8 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
             semantic_resolve_expr(ctx, (((*n)).while_stmt).cond);
             semantic_bind_loop_bound(ctx, n, (((*n)).while_stmt).bound_expr);
             {
-                const size_t __for_end_l4232_c7 = ((((*n)).while_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4232_c7; i++)
+                const size_t __for_end_l4256_c7 = ((((*n)).while_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4256_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).while_stmt).invariants[i - 1]);
@@ -4937,8 +4973,8 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
             semantic_bind_loop_bound(ctx, n, (((*n)).repeat_until).bound_expr);
             semantic_resolve_expr(ctx, (((*n)).repeat_until).cond);
             {
-                const size_t __for_end_l4241_c7 = ((((*n)).repeat_until).invariant_count);
-                for (i = 1; i <= __for_end_l4241_c7; i++)
+                const size_t __for_end_l4265_c7 = ((((*n)).repeat_until).invariant_count);
+                for (i = 1; i <= __for_end_l4265_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).repeat_until).invariants[i - 1]);
@@ -4951,8 +4987,8 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
         {
             semantic_bind_loop_bound(ctx, n, (((*n)).loop_stmt).bound_expr);
             {
-                const size_t __for_end_l4247_c7 = ((((*n)).loop_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4247_c7; i++)
+                const size_t __for_end_l4271_c7 = ((((*n)).loop_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4271_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).loop_stmt).invariants[i - 1]);
@@ -5022,16 +5058,16 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
                 size_t seen_count = 0;
                 size_t seen_cap = 0;
                 {
-                    const size_t __for_end_l4294_c8 = ((((*n)).switch_stmt).case_count);
-                    for (i = 1; i <= __for_end_l4294_c8; i++)
+                    const size_t __for_end_l4318_c8 = ((((*n)).switch_stmt).case_count);
+                    for (i = 1; i <= __for_end_l4318_c8; i++)
                     {
                         {
                             sc = (((*n)).switch_stmt).cases[i - 1];
                             if (sc != nil)
                             {
                                 {
-                                    const size_t __for_end_l4297_c10 = (((*sc)).label_count);
-                                    for (j = 1; j <= __for_end_l4297_c10; j++)
+                                    const size_t __for_end_l4321_c10 = (((*sc)).label_count);
+                                    for (j = 1; j <= __for_end_l4321_c10; j++)
                                     {
                                         {
                                             semantic_resolve_expr(ctx, ((*sc)).labels[j - 1]);
@@ -5045,8 +5081,8 @@ static void semantic_resolve_stmt(pTSemanticContext ctx, pNode n)
                     }
                 }
                 {
-                    const size_t __for_end_l4304_c8 = ((((*n)).switch_stmt).else_label_count);
-                    for (j = 1; j <= __for_end_l4304_c8; j++)
+                    const size_t __for_end_l4328_c8 = ((((*n)).switch_stmt).else_label_count);
+                    for (j = 1; j <= __for_end_l4328_c8; j++)
                     {
                         {
                             semantic_resolve_expr(ctx, (((*n)).switch_stmt).else_labels[j - 1]);
@@ -5086,8 +5122,8 @@ static void semantic_analyze_block_body(pTSemanticContext ctx, pNode block)
                 return;
     }
     {
-        const size_t __for_end_l4334_c5 = ((((*block)).block).require_count);
-        for (i = 1; i <= __for_end_l4334_c5; i++)
+        const size_t __for_end_l4358_c5 = ((((*block)).block).require_count);
+        for (i = 1; i <= __for_end_l4358_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*block)).block).requires[i - 1]);
@@ -5095,31 +5131,31 @@ static void semantic_analyze_block_body(pTSemanticContext ctx, pNode block)
         }
     }
     {
-        const size_t __for_end_l4338_c5 = ((((*block)).block).count);
-        for (i = 1; i <= __for_end_l4338_c5; i++)
+        const size_t __for_end_l4362_c5 = ((((*block)).block).count);
+        for (i = 1; i <= __for_end_l4362_c5; i++)
         {
             {
-                pNode stmt_l4339_c11 = (((*block)).block).stmts[i - 1];
-                if (stmt_l4339_c11 == nil)
+                pNode stmt_l4363_c11 = (((*block)).block).stmts[i - 1];
+                if (stmt_l4363_c11 == nil)
                 {
                                         /* INVARIANT (on loop exit) */
                     continue;
                 }
-                switch (((*stmt_l4339_c11)).kind)
+                switch (((*stmt_l4363_c11)).kind)
                 {
                     case NODE_VAR_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l4339_c11, SYM_KIND_VAR);
+                        semantic_register_var_decl(ctx, stmt_l4363_c11, SYM_KIND_VAR);
                     }
                     break;
                     case NODE_CONST_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l4339_c11, SYM_KIND_CONST);
+                        semantic_register_var_decl(ctx, stmt_l4363_c11, SYM_KIND_CONST);
                     }
                     break;
                     case NODE_LET_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l4339_c11, SYM_KIND_LET);
+                        semantic_register_var_decl(ctx, stmt_l4363_c11, SYM_KIND_LET);
                     }
                     break;
                     case NODE_BLOCK:
@@ -5127,13 +5163,13 @@ static void semantic_analyze_block_body(pTSemanticContext ctx, pNode block)
                         inner = symtab_create(((*ctx)).arena, ((*ctx)).scope);
                         saved = ((*ctx)).scope;
                         ((*ctx)).scope = inner;
-                        semantic_analyze_block_body(ctx, stmt_l4339_c11);
+                        semantic_analyze_block_body(ctx, stmt_l4363_c11);
                         ((*ctx)).scope = saved;
                     }
                     break;
                     default:
                     {
-                        semantic_resolve_stmt(ctx, stmt_l4339_c11);
+                        semantic_resolve_stmt(ctx, stmt_l4363_c11);
                     }
                     break;
                 }
@@ -5141,8 +5177,8 @@ static void semantic_analyze_block_body(pTSemanticContext ctx, pNode block)
         }
     }
     {
-        const size_t __for_end_l4380_c5 = ((((*block)).block).ensure_count);
-        for (i = 1; i <= __for_end_l4380_c5; i++)
+        const size_t __for_end_l4404_c5 = ((((*block)).block).ensure_count);
+        for (i = 1; i <= __for_end_l4404_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*block)).block).ensures[i - 1]);
@@ -5247,20 +5283,20 @@ static pNode semantic_make_unit_entry_decl(pTSemanticContext ctx, pNode root)
     if (ctx == nil || root == nil || ((*root)).kind != NODE_PROGRAM)
     {
         /* return value captured before defers */
-        pNode __ret_l4480 = nil;
-        return __ret_l4480;
+        pNode __ret_l4504 = nil;
+        return __ret_l4504;
     }
     if ((((*root)).program_decl).unit_kind != TOK_KEYWORD_MODULE)
     {
         /* return value captured before defers */
-        pNode __ret_l4483 = nil;
-        return __ret_l4483;
+        pNode __ret_l4507 = nil;
+        return __ret_l4507;
     }
     if ((((*root)).program_decl).name == nil || (((*root)).program_decl).name_len == 0)
     {
         /* return value captured before defers */
-        pNode __ret_l4486 = nil;
-        return __ret_l4486;
+        pNode __ret_l4510 = nil;
+        return __ret_l4510;
     }
     if ((((*root)).program_decl).return_type != nil)
     {
@@ -5285,8 +5321,8 @@ static pNode semantic_make_unit_entry_decl(pTSemanticContext ctx, pNode root)
     (((*pl)).param_list).capacity = (((*root)).program_decl).param_capacity;
     (((*decl)).proc_decl).params = pl;
     /* return value captured before defers */
-    pNode __ret_l4513 = decl;
-    return __ret_l4513;
+    pNode __ret_l4537 = decl;
+    return __ret_l4537;
 }
 
 /**
@@ -5308,27 +5344,27 @@ static void semantic_analyze_program(pTSemanticContext ctx, pNode root)
     ((*ctx)).scope = global;
     semantic_register_prelude(ctx);
     {
-        const size_t __for_end_l4539_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l4539_c5; i++)
+        const size_t __for_end_l4563_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l4563_c5; i++)
         {
             {
-                pNode decl_l4540_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l4540_c11 != nil && ((*decl_l4540_c11)).kind == NODE_IMPORT)
+                pNode decl_l4564_c11 = (((*root)).program_decl).decls[i - 1];
+                if (decl_l4564_c11 != nil && ((*decl_l4564_c11)).kind == NODE_IMPORT)
                 {
-                    semantic_register_import(ctx, root, decl_l4540_c11);
+                    semantic_register_import(ctx, root, decl_l4564_c11);
                 }
             }
         }
     }
     {
-        const size_t __for_end_l4547_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l4547_c5; i++)
+        const size_t __for_end_l4571_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l4571_c5; i++)
         {
             {
-                pNode decl_l4548_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l4548_c11 != nil && ((*decl_l4548_c11)).kind != NODE_IMPORT)
+                pNode decl_l4572_c11 = (((*root)).program_decl).decls[i - 1];
+                if (decl_l4572_c11 != nil && ((*decl_l4572_c11)).kind != NODE_IMPORT)
                 {
-                    semantic_register_decl(ctx, decl_l4548_c11);
+                    semantic_register_decl(ctx, decl_l4572_c11);
                 }
             }
         }
@@ -5349,30 +5385,30 @@ static void semantic_analyze_program(pTSemanticContext ctx, pNode root)
     if ((((*root)).program_decl).unit_kind == TOK_KEYWORD_HEADER)
     {
         {
-            const size_t __for_end_l4572_c6 = ((((*root)).program_decl).count);
-            for (i = 1; i <= __for_end_l4572_c6; i++)
+            const size_t __for_end_l4596_c6 = ((((*root)).program_decl).count);
+            for (i = 1; i <= __for_end_l4596_c6; i++)
             {
                 {
-                    pNode decl_l4573_c12 = (((*root)).program_decl).decls[i - 1];
-                    if (decl_l4573_c12 != nil && (((*decl_l4573_c12)).kind == NODE_PROC_DECL || ((*decl_l4573_c12)).kind == NODE_FUNC_DECL) && (((*decl_l4573_c12)).proc_decl).body != nil)
+                    pNode decl_l4597_c12 = (((*root)).program_decl).decls[i - 1];
+                    if (decl_l4597_c12 != nil && (((*decl_l4597_c12)).kind == NODE_PROC_DECL || ((*decl_l4597_c12)).kind == NODE_FUNC_DECL) && (((*decl_l4597_c12)).proc_decl).body != nil)
                     {
-                        semantic_error_at((((*decl_l4573_c12)).proc_decl).body, "BEGIN is not allowed in a HEADER unit");
+                        semantic_error_at((((*decl_l4597_c12)).proc_decl).body, "BEGIN is not allowed in a HEADER unit");
                     }
                 }
             }
         }
     }
     {
-        const size_t __for_end_l4583_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l4583_c5; i++)
+        const size_t __for_end_l4607_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l4607_c5; i++)
         {
             {
-                pNode decl_l4584_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l4584_c11 != nil)
+                pNode decl_l4608_c11 = (((*root)).program_decl).decls[i - 1];
+                if (decl_l4608_c11 != nil)
                 {
-                    if (((*decl_l4584_c11)).kind == NODE_PROC_DECL || ((*decl_l4584_c11)).kind == NODE_FUNC_DECL)
+                    if (((*decl_l4608_c11)).kind == NODE_PROC_DECL || ((*decl_l4608_c11)).kind == NODE_FUNC_DECL)
                     {
-                        semantic_analyze_proc(ctx, decl_l4584_c11, global);
+                        semantic_analyze_proc(ctx, decl_l4608_c11, global);
                     }
                 }
             }

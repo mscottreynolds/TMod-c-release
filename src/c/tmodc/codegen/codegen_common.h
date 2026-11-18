@@ -248,6 +248,14 @@ void emit_var_decl(pDynBuf out, const char* name, size_t name_len, const TType* 
 void emit_let_binding_name(pDynBuf out, const char* name, size_t name_len, const TNode* binding_decl);
 
 /**
+ * LET of an anonymous array. The mangled name sites inside the declarator:
+ * integer row_l8_c5[3]. A named alias such as Vector3 uses emit_let_binding_name.
+ */
+
+/* === PROC/FUNC EXPORT === */
+void emit_let_value_array(pDynBuf out, const TType* ty, const TNode* binding_decl);
+
+/**
  * True for a folded integer declaration CONST.
  * An enumeration constant keeps its C name.
  */

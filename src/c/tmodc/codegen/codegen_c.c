@@ -67,6 +67,9 @@ static void codegen_c_emit_defers_to_loop(CodegenContext ctx);
 static void codegen_c_return_stmt(const TNode* n, CodegenContext ctx);
 static void codegen_c_break_stmt(const TNode* n, CodegenContext ctx);
 static void codegen_c_continue_stmt(const TNode* n, CodegenContext ctx);
+static void codegen_c_emit_item_name(const TNode* n, const TNode* item, CodegenContext ctx);
+static void codegen_c_emit_array_value(const TNode* n, const TType* ty, CodegenContext ctx);
+static void codegen_c_emit_array_copy(const TNode* n, const TNode* item, CodegenContext ctx);
 static void codegen_c_stmt(const TNode* n, CodegenContext ctx);
 static void codegen_c_block(const TNode* n, CodegenContext ctx);
 static void codegen_c_emit_program_call(const TNode* n, CodegenContext ctx);
@@ -215,8 +218,8 @@ static void codegen_c_if_stmt(const TNode* n, CodegenContext ctx)
 static bool codegen_c_bound_active(bool has_bound, int bound_value, CodegenContext ctx)
 {
     /* return value captured before defers */
-    bool __ret_l241 = has_bound && (bound_value > 0) && !(ctx).assert_off;
-    return __ret_l241;
+    bool __ret_l242 = has_bound && (bound_value > 0) && !(ctx).assert_off;
+    return __ret_l242;
 }
 
 static void codegen_c_emit_bound_name(CodegenContext ctx, const TNode* n)
@@ -511,8 +514,8 @@ static void codegen_c_switch_stmt(const TNode* n, CodegenContext ctx)
         size_t k = {0};
         (arm_ctx).indent = (ctx).indent + 1;
         {
-            const size_t __for_end_l558_c12 = (((*(n)).switch_stmt).case_count);
-            for (i = 1; i <= __for_end_l558_c12; i++)
+            const size_t __for_end_l559_c12 = (((*(n)).switch_stmt).case_count);
+            for (i = 1; i <= __for_end_l559_c12; i++)
             {
                 {
                     TSwitchCase* c = ((*(n)).switch_stmt).cases[i - 1];
@@ -523,8 +526,8 @@ static void codegen_c_switch_stmt(const TNode* n, CodegenContext ctx)
                         continue;
                     }
                     {
-                        const size_t __for_end_l566_c16 = ((*(c)).label_count);
-                        for (j = 1; j <= __for_end_l566_c16; j++)
+                        const size_t __for_end_l567_c16 = ((*(c)).label_count);
+                        for (j = 1; j <= __for_end_l567_c16; j++)
                         {
                             {
                                 emit_indent((ctx).out, (arm_ctx).indent);
@@ -541,8 +544,8 @@ static void codegen_c_switch_stmt(const TNode* n, CodegenContext ctx)
             }
         }
         {
-            const size_t __for_end_l584_c12 = (((*(n)).switch_stmt).else_label_count);
-            for (k = 1; k <= __for_end_l584_c12; k++)
+            const size_t __for_end_l585_c12 = (((*(n)).switch_stmt).else_label_count);
+            for (k = 1; k <= __for_end_l585_c12; k++)
             {
                 {
                     emit_indent((ctx).out, (arm_ctx).indent);
@@ -589,26 +592,26 @@ static size_t codegen_c_block_stmt_index(const TNode* block, const TNode* stmt)
     if (block == nil || (*(block)).kind != NODE_BLOCK || stmt == nil)
     {
         /* return value captured before defers */
-        size_t __ret_l636 = (size_t)(-1);
-        return __ret_l636;
+        size_t __ret_l637 = (size_t)(-1);
+        return __ret_l637;
     }
     {
-        const size_t __for_end_l639_c8 = (((*(block)).block).count);
-        for (i = 1; i <= __for_end_l639_c8; i++)
+        const size_t __for_end_l640_c8 = (((*(block)).block).count);
+        for (i = 1; i <= __for_end_l640_c8; i++)
         {
             {
                 if (((*(block)).block).stmts[i - 1] == stmt)
                 {
                     /* return value captured before defers */
-                    size_t __ret_l641 = i - 1;
-                    return __ret_l641;
+                    size_t __ret_l642 = i - 1;
+                    return __ret_l642;
                 }
             }
         }
     }
     /* return value captured before defers */
-    size_t __ret_l644 = (size_t)(-1);
-    return __ret_l644;
+    size_t __ret_l645 = (size_t)(-1);
+    return __ret_l645;
 }
 
 static bool codegen_c_block_has_reached_defer(const TNode* block, size_t cutoff)
@@ -618,12 +621,12 @@ static bool codegen_c_block_has_reached_defer(const TNode* block, size_t cutoff)
     if (block == nil || (*(block)).kind != NODE_BLOCK)
     {
         /* return value captured before defers */
-        bool __ret_l655 = false;
-        return __ret_l655;
+        bool __ret_l656 = false;
+        return __ret_l656;
     }
     {
-        const size_t __for_end_l658_c8 = (((*(block)).block).defer_count);
-        for (i = 1; i <= __for_end_l658_c8; i++)
+        const size_t __for_end_l659_c8 = (((*(block)).block).defer_count);
+        for (i = 1; i <= __for_end_l659_c8; i++)
         {
             {
                 const TNode* d = ((*(block)).block).defers[i - 1];
@@ -636,15 +639,15 @@ static bool codegen_c_block_has_reached_defer(const TNode* block, size_t cutoff)
                 if (at != (size_t)(-1) && at < cutoff)
                 {
                     /* return value captured before defers */
-                    bool __ret_l665 = true;
-                    return __ret_l665;
+                    bool __ret_l666 = true;
+                    return __ret_l666;
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l668 = false;
-    return __ret_l668;
+    bool __ret_l669 = false;
+    return __ret_l669;
 }
 
 /**
@@ -663,8 +666,8 @@ static void codegen_c_emit_defers(const TNode* block_node, CodegenContext ctx)
     }
     cutoff = (ctx).stmt_index;
     {
-        const size_t __for_end_l691_c8 = (1);
-        for (i = ((*(block_node)).block).defer_count; i >= __for_end_l691_c8; i--)
+        const size_t __for_end_l692_c8 = (1);
+        for (i = ((*(block_node)).block).defer_count; i >= __for_end_l692_c8; i--)
         {
             {
                 const TNode* d = ((*(block_node)).block).defers[i - 1];
@@ -827,6 +830,95 @@ static void codegen_c_continue_stmt(const TNode* n, CodegenContext ctx)
     dynbuf_append((ctx).out, "continue;\n");
 }
 
+static void codegen_c_emit_item_name(const TNode* n, const TNode* item, CodegenContext ctx)
+{
+    if ((*(n)).kind == NODE_LET_DECL)
+    {
+        emit_let_binding_name((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len, item);
+    }
+    else
+    {
+        dynbuf_appendn((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len);
+    }
+}
+
+static void codegen_c_emit_array_value(const TNode* n, const TType* ty, CodegenContext ctx)
+{
+    if (n == nil)
+    {
+                return;
+    }
+    if ((*(n)).kind == NODE_ARRAY_LITERAL)
+    {
+        dynbuf_append_char((ctx).out, '(');
+        emit_array_type((ctx).out, ty, nil, 0);
+        dynbuf_append_char((ctx).out, ')');
+        codegen_common_array_literal(n, ctx);
+    }
+    else if ((*(n)).kind == NODE_TERNARY)
+    {
+        dynbuf_append_char((ctx).out, '(');
+        codegen_common_expr(((*(n)).ternary).cond, ctx);
+        dynbuf_append((ctx).out, " ? ");
+        codegen_c_emit_array_value(((*(n)).ternary).then_expr, ty, ctx);
+        dynbuf_append((ctx).out, " : ");
+        codegen_c_emit_array_value(((*(n)).ternary).else_expr, ty, ctx);
+        dynbuf_append_char((ctx).out, ')');
+    }
+    else if ((*(n)).kind == NODE_PAREN)
+    {
+        codegen_c_emit_array_value(((*(n)).paren).expr, ty, ctx);
+    }
+    else
+    {
+        codegen_common_expr(n, ctx);
+    }
+}
+
+static void codegen_c_emit_array_copy(const TNode* n, const TNode* item, CodegenContext ctx)
+{
+    char buf[512] = {0};
+    integer ind = 0;
+    ind = (ctx).indent;
+    dynbuf_append((ctx).out, "{\n");
+    ind = ind + 1;
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "unsigned char *__ad_l%d_c%d;\n", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "const unsigned char *__as_l%d_c%d;\n", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "integer __an_l%d_c%d;\n", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "integer __ai_l%d_c%d;\n", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "__ad_l%d_c%d = (unsigned char *)", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    codegen_c_emit_item_name(n, item, ctx);
+    dynbuf_append((ctx).out, ";\n");
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "__as_l%d_c%d = (const unsigned char*)(", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    codegen_c_emit_array_value(((*(item)).var_item).initializer, ((*(item)).var_item).item_type, ctx);
+    dynbuf_append((ctx).out, ");\n");
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "__an_l%d_c%d = (integer)sizeof(", ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    codegen_c_emit_item_name(n, item, ctx);
+    dynbuf_append((ctx).out, ");\n");
+    emit_indent((ctx).out, ind);
+    snprintf(buf, ((integer)sizeof(buf)), "for (__ai_l%d_c%d = 0; __ai_l%d_c%d < __an_l%d_c%d; __ai_l%d_c%d++)\n", ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, ind + 1);
+    snprintf(buf, ((integer)sizeof(buf)), "__ad_l%d_c%d[__ai_l%d_c%d] = __as_l%d_c%d[__ai_l%d_c%d];\n", ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column, ((*(item)).token).line, ((*(item)).token).column);
+    dynbuf_append((ctx).out, buf);
+    emit_indent((ctx).out, (ctx).indent);
+    dynbuf_append((ctx).out, "}\n");
+}
+
 /**
  * Emit a single statement
  */
@@ -933,8 +1025,8 @@ static void codegen_c_stmt(const TNode* n, CodegenContext ctx)
             size_t i = {0};
             bool emitted = false;
             {
-                const size_t __for_end_l936_c16 = (((*(n)).var_decl).count);
-                for (i = 1; i <= __for_end_l936_c16; i++)
+                const size_t __for_end_l1046_c16 = (((*(n)).var_decl).count);
+                for (i = 1; i <= __for_end_l1046_c16; i++)
                 {
                     {
                         const TNode* item = ((*(n)).var_decl).items[i - 1];
@@ -967,22 +1059,37 @@ static void codegen_c_stmt(const TNode* n, CodegenContext ctx)
                         }
                         if ((*(n)).kind == NODE_LET_DECL)
                         {
-                            if (((*(item)).var_item).item_type != nil)
+                            if (((*(item)).var_item).item_type != nil && (*(((*(item)).var_item).item_type)).is_array && (*(((*(item)).var_item).item_type)).element_type != nil && !(*(((*(item)).var_item).item_type)).is_pointer)
+                            {
+                                emit_let_value_array((ctx).out, ((*(item)).var_item).item_type, item);
+                            }
+                            else if (((*(item)).var_item).item_type != nil)
                             {
                                 emit_type_specifier((ctx).out, ((*(item)).var_item).item_type, nil, 0, false, false, false, false);
                                 dynbuf_append_char((ctx).out, ' ');
+                                emit_let_binding_name((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len, item);
                             }
                             else
                             {
                                 dynbuf_append((ctx).out, "int ");
+                                emit_let_binding_name((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len, item);
                             }
-                            emit_let_binding_name((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len, item);
                         }
                         else
                         {
                             emit_var_decl((ctx).out, ((*(item)).var_item).name, ((*(item)).var_item).name_len, ((*(item)).var_item).item_type);
                         }
-                        if (!((*(n)).var_decl).is_extern)
+                        if (!((*(n)).var_decl).is_extern && ((*(item)).var_item).initializer != nil && ((*((*(item)).var_item).initializer)).kind != NODE_ARRAY_LITERAL && ((*(item)).var_item).item_type != nil && (*(((*(item)).var_item).item_type)).is_array && (*(((*(item)).var_item).item_type)).element_type != nil && !(*(((*(item)).var_item).item_type)).is_pointer)
+                        {
+                            if ((*(n)).kind == NODE_CONST_DECL || ((*(n)).var_decl).is_static || (ctx).parent_node == nil)
+                            {
+                                fprintf(stderr, "codegen_c: a const or static array initializer must be a brace list\n");
+                                exit(1);
+                            }
+                            dynbuf_append((ctx).out, ";\n");
+                            codegen_c_emit_array_copy(n, item, ctx);
+                        }
+                        else if (!((*(n)).var_decl).is_extern)
                         {
                             if (((*(item)).var_item).initializer != nil)
                             {
@@ -1082,8 +1189,8 @@ static void codegen_c_block(const TNode* n, CodegenContext ctx)
         (child_ctx).indent = (ctx).indent + 1;
         codegen_dbc_emit_requires(n, child_ctx);
         {
-            const size_t __for_end_l1048_c12 = (((*(n)).block).count);
-            for (i = 1; i <= __for_end_l1048_c12; i++)
+            const size_t __for_end_l1182_c12 = (((*(n)).block).count);
+            for (i = 1; i <= __for_end_l1182_c12; i++)
             {
                 {
                     (child_ctx).stmt_index = i - 1;
@@ -1124,8 +1231,8 @@ static void codegen_c_emit_program_call(const TNode* n, CodegenContext ctx)
                 return;
     }
     {
-        const size_t __for_end_l1095_c8 = (((*(n)).program_decl).param_count);
-        for (i = 1; i <= __for_end_l1095_c8; i++)
+        const size_t __for_end_l1229_c8 = (((*(n)).program_decl).param_count);
+        for (i = 1; i <= __for_end_l1229_c8; i++)
         {
             {
                 param = ((*(n)).program_decl).params[i - 1];
@@ -1270,38 +1377,38 @@ static bool codegen_c_text_equal(const char* a, size_t a_len, const char* b, siz
     if (a_len != b_len)
     {
         /* return value captured before defers */
-        bool __ret_l1242 = false;
-        return __ret_l1242;
+        bool __ret_l1376 = false;
+        return __ret_l1376;
     }
     if (a_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l1245 = true;
-        return __ret_l1245;
+        bool __ret_l1379 = true;
+        return __ret_l1379;
     }
     if (a == nil || b == nil)
     {
         /* return value captured before defers */
-        bool __ret_l1248 = false;
-        return __ret_l1248;
+        bool __ret_l1382 = false;
+        return __ret_l1382;
     }
     {
-        const size_t __for_end_l1250_c8 = (a_len);
-        for (i = 1; i <= __for_end_l1250_c8; i++)
+        const size_t __for_end_l1384_c8 = (a_len);
+        for (i = 1; i <= __for_end_l1384_c8; i++)
         {
             {
                 if (a[i - 1] != b[i - 1])
                 {
                     /* return value captured before defers */
-                    bool __ret_l1252 = false;
-                    return __ret_l1252;
+                    bool __ret_l1386 = false;
+                    return __ret_l1386;
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l1255 = true;
-    return __ret_l1255;
+    bool __ret_l1389 = true;
+    return __ret_l1389;
 }
 
 static bool codegen_c_same_proc(const TNode* a, const TNode* b)
@@ -1309,18 +1416,18 @@ static bool codegen_c_same_proc(const TNode* a, const TNode* b)
     if (a == nil || b == nil)
     {
         /* return value captured before defers */
-        bool __ret_l1262 = false;
-        return __ret_l1262;
+        bool __ret_l1396 = false;
+        return __ret_l1396;
     }
     if ((*(a)).kind != (*(b)).kind)
     {
         /* return value captured before defers */
-        bool __ret_l1265 = false;
-        return __ret_l1265;
+        bool __ret_l1399 = false;
+        return __ret_l1399;
     }
     /* return value captured before defers */
-    bool __ret_l1267 = codegen_c_text_equal(((*(a)).proc_decl).name, ((*(a)).proc_decl).name_len, ((*(b)).proc_decl).name, ((*(b)).proc_decl).name_len) && codegen_c_text_equal(((*(a)).proc_decl).method_owner, ((*(a)).proc_decl).method_owner_len, ((*(b)).proc_decl).method_owner, ((*(b)).proc_decl).method_owner_len);
-    return __ret_l1267;
+    bool __ret_l1401 = codegen_c_text_equal(((*(a)).proc_decl).name, ((*(a)).proc_decl).name_len, ((*(b)).proc_decl).name, ((*(b)).proc_decl).name_len) && codegen_c_text_equal(((*(a)).proc_decl).method_owner, ((*(a)).proc_decl).method_owner_len, ((*(b)).proc_decl).method_owner, ((*(b)).proc_decl).method_owner_len);
+    return __ret_l1401;
 }
 
 static const TNode* codegen_c_completing_body(const TNode* prog, const TNode* sig)
@@ -1330,12 +1437,12 @@ static const TNode* codegen_c_completing_body(const TNode* prog, const TNode* si
     if (prog == nil || (*(prog)).kind != NODE_PROGRAM || ((*(prog)).program_decl).decls == nil)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1280 = nil;
-        return __ret_l1280;
+        const TNode* __ret_l1414 = nil;
+        return __ret_l1414;
     }
     {
-        const size_t __for_end_l1282_c8 = (((*(prog)).program_decl).count);
-        for (i = 1; i <= __for_end_l1282_c8; i++)
+        const size_t __for_end_l1416_c8 = (((*(prog)).program_decl).count);
+        for (i = 1; i <= __for_end_l1416_c8; i++)
         {
             {
                 d = ((*(prog)).program_decl).decls[i - 1];
@@ -1357,15 +1464,15 @@ static const TNode* codegen_c_completing_body(const TNode* prog, const TNode* si
                 if (codegen_c_same_proc(sig, d))
                 {
                     /* return value captured before defers */
-                    const TNode* __ret_l1294 = d;
-                    return __ret_l1294;
+                    const TNode* __ret_l1428 = d;
+                    return __ret_l1428;
                 }
             }
         }
     }
     /* return value captured before defers */
-    const TNode* __ret_l1297 = nil;
-    return __ret_l1297;
+    const TNode* __ret_l1431 = nil;
+    return __ret_l1431;
 }
 
 static bool codegen_c_defer_proc(const TNode* prog, const TNode* d)
@@ -1373,30 +1480,30 @@ static bool codegen_c_defer_proc(const TNode* prog, const TNode* d)
     if (d == nil)
     {
         /* return value captured before defers */
-        bool __ret_l1304 = false;
-        return __ret_l1304;
+        bool __ret_l1438 = false;
+        return __ret_l1438;
     }
     if ((*(d)).kind != NODE_PROC_DECL && (*(d)).kind != NODE_FUNC_DECL)
     {
         /* return value captured before defers */
-        bool __ret_l1307 = false;
-        return __ret_l1307;
+        bool __ret_l1441 = false;
+        return __ret_l1441;
     }
     if (((*(d)).proc_decl).is_extern)
     {
         /* return value captured before defers */
-        bool __ret_l1310 = false;
-        return __ret_l1310;
+        bool __ret_l1444 = false;
+        return __ret_l1444;
     }
     if (((*(d)).proc_decl).body != nil)
     {
         /* return value captured before defers */
-        bool __ret_l1313 = true;
-        return __ret_l1313;
+        bool __ret_l1447 = true;
+        return __ret_l1447;
     }
     /* return value captured before defers */
-    bool __ret_l1315 = codegen_c_completing_body(prog, d) != nil;
-    return __ret_l1315;
+    bool __ret_l1449 = codegen_c_completing_body(prog, d) != nil;
+    return __ret_l1449;
 }
 
 static size_t codegen_c_prev_index(const TNode* prog, size_t index)
@@ -1405,8 +1512,8 @@ static size_t codegen_c_prev_index(const TNode* prog, size_t index)
     if (prog == nil || ((*(prog)).program_decl).decls == nil || index <= 1)
     {
         /* return value captured before defers */
-        size_t __ret_l1324 = 0;
-        return __ret_l1324;
+        size_t __ret_l1458 = 0;
+        return __ret_l1458;
     }
     j = index - 1;
     while (j >= 1)
@@ -1415,21 +1522,21 @@ static size_t codegen_c_prev_index(const TNode* prog, size_t index)
             if (((*(prog)).program_decl).decls[j - 1] != nil)
             {
                 /* return value captured before defers */
-                size_t __ret_l1329 = j;
-                return __ret_l1329;
+                size_t __ret_l1463 = j;
+                return __ret_l1463;
             }
             if (j == 1)
             {
                 /* return value captured before defers */
-                size_t __ret_l1332 = 0;
-                return __ret_l1332;
+                size_t __ret_l1466 = 0;
+                return __ret_l1466;
             }
             j = j - 1;
         }
     }
     /* return value captured before defers */
-    size_t __ret_l1336 = 0;
-    return __ret_l1336;
+    size_t __ret_l1470 = 0;
+    return __ret_l1470;
 }
 
 static size_t codegen_c_next_index(const TNode* prog, size_t index)
@@ -1439,8 +1546,8 @@ static size_t codegen_c_next_index(const TNode* prog, size_t index)
     if (prog == nil || ((*(prog)).program_decl).decls == nil)
     {
         /* return value captured before defers */
-        size_t __ret_l1346 = 0;
-        return __ret_l1346;
+        size_t __ret_l1480 = 0;
+        return __ret_l1480;
     }
     count = ((*(prog)).program_decl).count;
     j = index + 1;
@@ -1450,15 +1557,15 @@ static size_t codegen_c_next_index(const TNode* prog, size_t index)
             if (((*(prog)).program_decl).decls[j - 1] != nil)
             {
                 /* return value captured before defers */
-                size_t __ret_l1352 = j;
-                return __ret_l1352;
+                size_t __ret_l1486 = j;
+                return __ret_l1486;
             }
             j = j + 1;
         }
     }
     /* return value captured before defers */
-    size_t __ret_l1356 = 0;
-    return __ret_l1356;
+    size_t __ret_l1490 = 0;
+    return __ret_l1490;
 }
 
 static const TNode* codegen_c_doc_before(const TNode* prog, size_t index)
@@ -1469,19 +1576,19 @@ static const TNode* codegen_c_doc_before(const TNode* prog, size_t index)
     if (prev == 0)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1367 = nil;
-        return __ret_l1367;
+        const TNode* __ret_l1501 = nil;
+        return __ret_l1501;
     }
     d = ((*(prog)).program_decl).decls[prev - 1];
     if ((*(d)).kind != NODE_DOC_COMMENT)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1371 = nil;
-        return __ret_l1371;
+        const TNode* __ret_l1505 = nil;
+        return __ret_l1505;
     }
     /* return value captured before defers */
-    const TNode* __ret_l1373 = d;
-    return __ret_l1373;
+    const TNode* __ret_l1507 = d;
+    return __ret_l1507;
 }
 
 static bool codegen_c_hold_doc(const TNode* prog, size_t index)
@@ -1491,26 +1598,26 @@ static bool codegen_c_hold_doc(const TNode* prog, size_t index)
     if (prog == nil || ((*(prog)).program_decl).decls == nil || index == 0 || index > ((*(prog)).program_decl).count)
     {
         /* return value captured before defers */
-        bool __ret_l1384 = false;
-        return __ret_l1384;
+        bool __ret_l1518 = false;
+        return __ret_l1518;
     }
     d = ((*(prog)).program_decl).decls[index - 1];
     if (d == nil || (*(d)).kind != NODE_DOC_COMMENT)
     {
         /* return value captured before defers */
-        bool __ret_l1388 = false;
-        return __ret_l1388;
+        bool __ret_l1522 = false;
+        return __ret_l1522;
     }
     next = codegen_c_next_index(prog, index);
     if (next == 0)
     {
         /* return value captured before defers */
-        bool __ret_l1392 = true;
-        return __ret_l1392;
+        bool __ret_l1526 = true;
+        return __ret_l1526;
     }
     /* return value captured before defers */
-    bool __ret_l1394 = codegen_c_defer_proc(prog, ((*(prog)).program_decl).decls[next - 1]);
-    return __ret_l1394;
+    bool __ret_l1528 = codegen_c_defer_proc(prog, ((*(prog)).program_decl).decls[next - 1]);
+    return __ret_l1528;
 }
 
 static const TNode* codegen_c_body_comment(const TNode* prog, size_t index, const TNode* body)
@@ -1522,18 +1629,18 @@ static const TNode* codegen_c_body_comment(const TNode* prog, size_t index, cons
     if (direct != nil)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1407 = direct;
-        return __ret_l1407;
+        const TNode* __ret_l1541 = direct;
+        return __ret_l1541;
     }
     if (prog == nil || ((*(prog)).program_decl).decls == nil || body == nil)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1410 = nil;
-        return __ret_l1410;
+        const TNode* __ret_l1544 = nil;
+        return __ret_l1544;
     }
     {
-        const size_t __for_end_l1412_c8 = (((*(prog)).program_decl).count);
-        for (i = 1; i <= __for_end_l1412_c8; i++)
+        const size_t __for_end_l1546_c8 = (((*(prog)).program_decl).count);
+        for (i = 1; i <= __for_end_l1546_c8; i++)
         {
             {
                 d = ((*(prog)).program_decl).decls[i - 1];
@@ -1558,14 +1665,14 @@ static const TNode* codegen_c_body_comment(const TNode* prog, size_t index, cons
                     continue;
                 }
                 /* return value captured before defers */
-                const TNode* __ret_l1426 = codegen_c_doc_before(prog, i);
-                return __ret_l1426;
+                const TNode* __ret_l1560 = codegen_c_doc_before(prog, i);
+                return __ret_l1560;
             }
         }
     }
     /* return value captured before defers */
-    const TNode* __ret_l1428 = nil;
-    return __ret_l1428;
+    const TNode* __ret_l1562 = nil;
+    return __ret_l1562;
 }
 
 static const TNode* codegen_c_entry_comment(const TNode* prog)
@@ -1576,12 +1683,12 @@ static const TNode* codegen_c_entry_comment(const TNode* prog)
     if (prog == nil || ((*(prog)).program_decl).decls == nil)
     {
         /* return value captured before defers */
-        const TNode* __ret_l1439 = nil;
-        return __ret_l1439;
+        const TNode* __ret_l1573 = nil;
+        return __ret_l1573;
     }
     {
-        const size_t __for_end_l1441_c8 = (((*(prog)).program_decl).count);
-        for (i = 1; i <= __for_end_l1441_c8; i++)
+        const size_t __for_end_l1575_c8 = (((*(prog)).program_decl).count);
+        for (i = 1; i <= __for_end_l1575_c8; i++)
         {
             {
                 if (((*(prog)).program_decl).decls[i - 1] != nil)
@@ -1594,13 +1701,13 @@ static const TNode* codegen_c_entry_comment(const TNode* prog)
     if (last == 0 || !codegen_c_hold_doc(prog, last))
     {
         /* return value captured before defers */
-        const TNode* __ret_l1447 = nil;
-        return __ret_l1447;
+        const TNode* __ret_l1581 = nil;
+        return __ret_l1581;
     }
     d = ((*(prog)).program_decl).decls[last - 1];
     /* return value captured before defers */
-    const TNode* __ret_l1450 = d;
-    return __ret_l1450;
+    const TNode* __ret_l1584 = d;
+    return __ret_l1584;
 }
 
 static void codegen_c_emit_proc_prototypes(const TNode* prog, CodegenContext ctx)
@@ -1612,8 +1719,8 @@ static void codegen_c_emit_proc_prototypes(const TNode* prog, CodegenContext ctx
                 return;
     }
     {
-        const size_t __for_end_l1462_c8 = (((*(prog)).program_decl).count);
-        for (i = 1; i <= __for_end_l1462_c8; i++)
+        const size_t __for_end_l1596_c8 = (((*(prog)).program_decl).count);
+        for (i = 1; i <= __for_end_l1596_c8; i++)
         {
             {
                 d = ((*(prog)).program_decl).decls[i - 1];
@@ -1649,8 +1756,8 @@ static void codegen_c_emit_proc_bodies(const TNode* prog, CodegenContext ctx)
                 return;
     }
     {
-        const size_t __for_end_l1489_c8 = (((*(prog)).program_decl).count);
-        for (i = 1; i <= __for_end_l1489_c8; i++)
+        const size_t __for_end_l1623_c8 = (((*(prog)).program_decl).count);
+        for (i = 1; i <= __for_end_l1623_c8; i++)
         {
             {
                 d = ((*(prog)).program_decl).decls[i - 1];
@@ -1738,8 +1845,8 @@ static void codegen_c_program(const TNode* n, CodegenContext ctx)
             dynbuf_append((ctx).out, "/********** Top Level Declarations ********/\n\n");
         }
         {
-            const size_t __for_end_l1567_c12 = (((*(n)).program_decl).count);
-            for (i = 1; i <= __for_end_l1567_c12; i++)
+            const size_t __for_end_l1701_c12 = (((*(n)).program_decl).count);
+            for (i = 1; i <= __for_end_l1701_c12; i++)
             {
                 {
                     const TNode* d = ((*(n)).program_decl).decls[i - 1];

@@ -92,6 +92,7 @@ Features (Early Design Goals)
 - Folded integer `CONST` (0.27.7.243): a folded integer emits no C object. An ordinary use emits the integer. An exported folded integer is on the `.mh` line. A value that does not fold stays `static const`. An enumeration constant stays its C name. `DEFINE` stays the macro
 - Complete self-host (0.27.8.250): compiler sources are `.mc`. `src/tmodc/node.mc` is the AST (`TNode`). `src/tmodc/version.mc` is `header version`. `make version` rewrites it. Generated C is under `src/c/tmodc/`
 - `IMPORT … AS` (0.27.8.253): `import Name as Alias` and `import Type::name as Alias`. The alias is one identifier and is the name in this unit. Generated C keeps the original spelling. `Type::name as Alias` is a free call. `IMPORT *` stays later
+- Brace-list inference (0.27.8.254): a non-empty `{ … }` whose elements share one static type is `array[N] of T`. A written `:` stays the type. A decimal with a dot or an exponent has type `real`
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -101,6 +102,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.8.254** (17 November 2026): brace-list inference (21a). A non-empty `{ … }` whose elements share one static type is `array[N] of T`. A written `:` stays the type. A decimal with a dot or an exponent has type `real`. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported that all tests pass on gcc, clang, and tcc. Session archive: `docs/grok_report-20261117-2142.md`.
 - **0.27.8.253** (16 November 2026): `IMPORT … AS`. The alias is one identifier and is the name in this unit. Generated C keeps the original spelling. `AS` is not the portable bind. `Type::name as Alias` is a free name. `IMPORT *` and the module-name prefix stay later. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. No separate grok report.
 - **0.27.8.252** (14 November 2026): builtin type names. `bit` is no longer a prelude type. `signed` and `unsigned` are reserved C spellings. A bare `signed` lowers to C `signed`. A bare `unsigned` lowers to C `unsigned`. The documented prelude is unchanged. Branch **`TMod-c_0.27`**. Stem **0.27.8**. No suite result is recorded for this promote. No separate grok report.
 - **0.27.8.251** (9 November 2026): self-host cleanup. Makefile self-host and bootstrap comments match the recipes. Parser messages use `parse_switch_stmt`, `ELSE labels`, and `after`. `tests/test_forward.mc` drops `procedure ProcD() forward`. The keyword stays. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive remains `docs/grok_report-20261109-2011.md`.

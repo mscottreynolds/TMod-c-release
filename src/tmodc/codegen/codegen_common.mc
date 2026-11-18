@@ -30,7 +30,7 @@ import DynBuf, pDynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
 IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_DIV_EQ, 
     TOK_MOD_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
     TOK_KEYWORD_DIV, TOK_POWER, TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_MOD, 
-    TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER,
+    TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER, TOK_REAL,
     from tmodc.lexer.Lexer
 import mh_path_is_mh, mh_format_h_include,
     from tmodc.mh.mh_reader    
@@ -767,6 +767,27 @@ begin
 end emit_var_decl
 
 
+(*
+ * LET binding spelling: name_l{line}_c{column}. Writes buf and returns
+ * the length. Exits when the name does not fit.
+ *)
+function format_let_binding_name(buf: ^char, buf_len: size_t,
+        name: const ^char, name_len: size_t,
+        binding_decl: const ^TNode): size_t
+begin
+    var n: int = 0
+
+    n := snprintf(buf, buf_len, "%.*s_l%d_c%d",
+        name_len as int, name,
+        binding_decl.token.line, binding_decl.token.column)
+    if n < 0 or (n as size_t) >= buf_len then
+        fprintf(stderr, "format_let_binding_name: binding name exceeds %zu\n", buf_len)
+        exit(1)
+    end
+    return n as size_t
+end format_let_binding_name
+
+
 (**
  * Emit a LET binding name: name_l{line}_c{col}
  * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
@@ -774,20 +795,40 @@ end emit_var_decl
 export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t, 
         binding_decl: const ^TNode)
 begin
-    var buf: array[32] of char
+    var buf: array[512] of char
+    var n: size_t = 0
 
     if out == nil or name == nil or name_len == 0 or binding_decl == nil then
         return
     end
 
-    dynbuf_appendn(out, name, name_len)
-    dynbuf_append(out, "_l")
-    snprintf(buf, sizeof(buf), "%d", binding_decl.token.line)
-    dynbuf_append(out, buf)
-    dynbuf_append(out, "_c")
-    snprintf(buf, sizeof(buf), "%d", binding_decl.token.column)
-    dynbuf_append(out, buf)
+    n := format_let_binding_name(buf, sizeof(buf), name, name_len, binding_decl)
+    dynbuf_appendn(out, buf, n)
 end emit_let_binding_name
+
+
+(**
+ * LET of an anonymous array. The mangled name sites inside the declarator:
+ * integer row_l8_c5[3]. A named alias such as Vector3 uses emit_let_binding_name.
+ *)
+export procedure emit_let_value_array(out: pDynBuf, ty: const ^TType,
+        binding_decl: const ^TNode)
+begin
+    var buf: array[512] of char
+    var n: size_t = 0
+
+    if out == nil or ty == nil or binding_decl == nil or
+            binding_decl.var_item.name == nil or
+            binding_decl.var_item.name_len == 0 then
+        return
+    end
+
+    n := format_let_binding_name(buf, sizeof(buf),
+        binding_decl.var_item.name,
+        binding_decl.var_item.name_len,
+        binding_decl)
+    emit_array_type(out, ty, buf, n)
+end emit_let_value_array
 
 
 (*
@@ -2135,7 +2176,7 @@ begin
         return
     end
 
-    if n.token.kind <> TOK_NUMBER then
+    if n.token.kind <> TOK_NUMBER and n.token.kind <> TOK_REAL then
         // String char, etc. - emit as-is
         dynbuf_appendn(ctx.out, n.token.start, n.token.length)
         return
@@ -2147,7 +2188,7 @@ begin
         var len: size_t = n.token.length
         var i: size_t
 
-        if len >= 2 and s[0] == '0' then
+        if n.token.kind == TOK_NUMBER and len >= 2 and s[0] == '0' then
             var prefix: char = s[1]
 
             if prefix == 'x' or prefix == 'X' then

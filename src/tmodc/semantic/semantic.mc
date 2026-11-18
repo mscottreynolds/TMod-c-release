@@ -1087,9 +1087,33 @@ begin
 				return then_ty
 			end
 
-		// Brace lists take their type from a written target.
+		// Non-empty brace list, one static type: array[n] of that type.
+		// Empty, untyped, or mixed stays untyped. A written ":" does not
+		// come through here.
 		case NODE_ARRAY_LITERAL:
-			return nil
+			begin
+				var first: pTType = nil
+				var elem: pTType = nil
+				var one: pNode = nil
+				var i: size_t = 0
+
+				if n^.array_literal.count == 0 or n^.array_literal.elements == nil then
+					return nil
+				end
+				one := n^.array_literal.elements[0]
+				first := semantic_type_of_expr(ctx, one)
+				if first == nil then
+					return nil
+				end
+				for i := 2 to n^.array_literal.count do
+					one := n^.array_literal.elements[i - 1]
+					elem := semantic_type_of_expr(ctx, one)
+					if elem == nil or not semantic_types_same(first, elem) then
+						return nil
+					end
+				end
+				return type_create_array(ctx^.arena, first, n^.array_literal.count)
+			end
 
 		else:
 			return nil

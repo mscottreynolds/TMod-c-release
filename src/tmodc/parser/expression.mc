@@ -30,7 +30,7 @@ import TOK_QUESTION, TOK_COLON, TOK_KEYWORD_OR, TOK_KEYWORD_AND, TOK_EQ_EQ, TOK_
 	TOK_LPAREN, TOK_RPAREN, TOK_KEYWORD_INC, TOK_KEYWORD_DEC, TOK_COMMA, TOK_NOT,
 	TOK_KEYWORD_NOT, TOK_BITWISE_NOT, TOK_AT, TOK_KEYWORD_CAST, TOK_KEYWORD_AS,
 	TOK_EOF, TOK_LBRACKET, TOK_RBRACKET, TOK_DOT, TOK_COLON_COLON, TOK_STRING,
-	TOK_NUMBER, TOK_CHAR, TOK_LBRACE, TOK_RBRACE, TToken, TokenKind, TOK_KEYWORD_COUNTOF,
+	TOK_NUMBER, TOK_REAL, TOK_CHAR, TOK_LBRACE, TOK_RBRACE, TToken, TokenKind, TOK_KEYWORD_COUNTOF,
 	from tmodc.lexer.Lexer
 
 
@@ -830,6 +830,7 @@ begin
 		return ident
 	elsif p^.current.kind == TOK_STRING or
 			p^.current.kind == TOK_NUMBER or
+			p^.current.kind == TOK_REAL or
 			p^.current.kind == TOK_CHAR then
 		var lit: pNode = node_create(p^.arena, NODE_LITERAL, p^.current)
 

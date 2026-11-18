@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 16 November 2026.  
+**Last updated:** 17 November 2026.  
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -452,7 +452,8 @@ range-expression = additive-expression ".." additive-expression ; (* inclusive *
 
 array-literal = "{" [ expression { "," expression } ] [","] "}" ;
 
-    (* Also the Planned set constructor (SET OF enum). Semantic: set vs array by type. *)
+    (* No target and one element type: array[N] of T. Language Report §6.3.
+       A written target stays that type. Also the Planned set constructor. *)
 
 literal = integer-literal | real-literal | char-literal | string-literal
     | "TRUE" | "FALSE" | "NIL" ;

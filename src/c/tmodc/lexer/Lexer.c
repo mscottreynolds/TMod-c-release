@@ -72,6 +72,7 @@ static bool scan_char_escape(TLexer* l);
 static TToken make_token(TLexer* l, TokenKind kind, pcchar start);
 static TToken make_token_len(TLexer* l, TokenKind kind, pcchar start, size_t length);
 static TToken error_token(TLexer* l, pcchar msg);
+static TokenKind scan_decimal_number(TLexer* l);
 /**
  * Debug print a token (kind, location, text snippet).
  * For debugging and error reporting.
@@ -360,6 +361,67 @@ static TToken error_token(TLexer* l, pcchar msg)
     return __ret_l546;
 }
 
+static TokenKind scan_decimal_number(TLexer* l)
+{
+    bool is_real = false;
+    char mark = '\0';
+    while (isdigit((uchar)(*((*l)).current)) || (*((*l)).current) == '_')
+    {
+        {
+            advance(&(*l));
+        }
+    }
+    if ((*((*l)).current) == '.' && isdigit((uchar)peek2(&(*l))))
+    {
+        is_real = true;
+        advance(&(*l));
+        while (isdigit((uchar)(*((*l)).current)) || (*((*l)).current) == '_')
+        {
+            {
+                advance(&(*l));
+            }
+        }
+    }
+    if ((*((*l)).current) == 'e' || (*((*l)).current) == 'E')
+    {
+        mark = peek2(&(*l));
+        if (isdigit((uchar)mark) || ((mark == '+' || mark == '-') && isdigit((uchar)((*l)).current[2])))
+        {
+            is_real = true;
+            advance(&(*l));
+            if ((*((*l)).current) == '+' || (*((*l)).current) == '-')
+            {
+                advance(&(*l));
+            }
+            while (isdigit((uchar)(*((*l)).current)) || (*((*l)).current) == '_')
+            {
+                {
+                    advance(&(*l));
+                }
+            }
+        }
+    }
+    if (!is_real)
+    {
+        while ((*((*l)).current) == 'u' || (*((*l)).current) == 'U' || (*((*l)).current) == 'l' || (*((*l)).current) == 'L')
+        {
+            {
+                advance(&(*l));
+            }
+        }
+        /* return value captured before defers */
+        TokenKind __ret_l593 = TOK_NUMBER;
+        return __ret_l593;
+    }
+    if ((*((*l)).current) == 'f' || (*((*l)).current) == 'F' || (*((*l)).current) == 'l' || (*((*l)).current) == 'L')
+    {
+        advance(&(*l));
+    }
+    /* return value captured before defers */
+    TokenKind __ret_l599 = TOK_REAL;
+    return __ret_l599;
+}
+
 /**
  * Initialize lexer state.
  */
@@ -401,22 +463,22 @@ TToken TLexer__next(TLexer* l)
             break;
         }
     }
-    const char* start_l591_c11 = ((*l)).current;
-    char c_l592_c7 = (*((*l)).current);
-    if (c_l592_c7 == '\0')
+    const char* start_l644_c11 = ((*l)).current;
+    char c_l645_c7 = (*((*l)).current);
+    if (c_l645_c7 == '\0')
     {
         /* return value captured before defers */
-        TToken __ret_l595 = make_token(&(*l), TOK_EOF, start_l591_c11);
-        return __ret_l595;
+        TToken __ret_l648 = make_token(&(*l), TOK_EOF, start_l644_c11);
+        return __ret_l648;
     }
-    if (c_l592_c7 == '\n')
+    if (c_l645_c7 == '\n')
     {
         advance(&(*l));
         /* return value captured before defers */
-        TToken __ret_l601 = make_token(&(*l), TOK_NEWLINE, start_l591_c11);
-        return __ret_l601;
+        TToken __ret_l654 = make_token(&(*l), TOK_NEWLINE, start_l644_c11);
+        return __ret_l654;
     }
-    if (c_l592_c7 == '#' && ((*l)).column == 1)
+    if (c_l645_c7 == '#' && ((*l)).column == 1)
     {
         while ((*((*l)).current) != '\0' && (*((*l)).current) != '\n')
         {
@@ -431,10 +493,10 @@ TToken TLexer__next(TLexer* l)
             }
         }
         /* return value captured before defers */
-        TToken __ret_l613 = make_token_len(&(*l), TOK_PREPROCESSOR, start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l613;
+        TToken __ret_l666 = make_token_len(&(*l), TOK_PREPROCESSOR, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l666;
     }
-    if (is_ident_start(c_l592_c7))
+    if (is_ident_start(c_l645_c7))
     {
         while (is_ident_char((*((*l)).current)))
         {
@@ -442,52 +504,57 @@ TToken TLexer__next(TLexer* l)
                 advance(&(*l));
             }
         }
-        size_t length_l622_c13 = (size_t)(((*l)).current - start_l591_c11);
-        if (length_l622_c13 > 255)
+        size_t length_l675_c13 = (size_t)(((*l)).current - start_l644_c11);
+        if (length_l675_c13 > 255)
         {
-            TToken t = make_token_len(&(*l), TOK_ERROR, start_l591_c11, length_l622_c13);
+            TToken t = make_token_len(&(*l), TOK_ERROR, start_l644_c11, length_l675_c13);
             (t).error_msg = "identifier longer than 255 characters";
             /* return value captured before defers */
-            TToken __ret_l626 = t;
-            return __ret_l626;
+            TToken __ret_l679 = t;
+            return __ret_l679;
         }
         /* return value captured before defers */
-        TToken __ret_l628 = make_token_len(&(*l), lookup_keyword(start_l591_c11, length_l622_c13), start_l591_c11, length_l622_c13);
-        return __ret_l628;
+        TToken __ret_l681 = make_token_len(&(*l), lookup_keyword(start_l644_c11, length_l675_c13), start_l644_c11, length_l675_c13);
+        return __ret_l681;
     }
-    if (isdigit((uchar)c_l592_c7) || (c_l592_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B')))
+    if (isdigit((uchar)c_l645_c7) || (c_l645_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B')))
     {
-        if (c_l592_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B'))
+        TokenKind kind = TOK_NUMBER;
+        if (c_l645_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B'))
         {
                         advance(&(*l));
             advance(&(*l));
-        }
-        while (isdigit((uchar)(*((*l)).current)) || (*((*l)).current) == '_' || (*((*l)).current) == '.' || (*((*l)).current) == 'u' || (*((*l)).current) == 'U' || (*((*l)).current) == 'l' || (*((*l)).current) == 'L' || ((*((*l)).current) >= 'a' && (*((*l)).current) <= 'f') || ((*((*l)).current) >= 'A' && (*((*l)).current) <= 'F'))
-        {
+            while (isdigit((uchar)(*((*l)).current)) || (*((*l)).current) == '_' || (*((*l)).current) == 'u' || (*((*l)).current) == 'U' || (*((*l)).current) == 'l' || (*((*l)).current) == 'L' || ((*((*l)).current) >= 'a' && (*((*l)).current) <= 'f') || ((*((*l)).current) >= 'A' && (*((*l)).current) <= 'F'))
             {
-                advance(&(*l));
+                {
+                    advance(&(*l));
+                }
             }
         }
+        else
+        {
+            kind = scan_decimal_number(&(*l));
+        }
         /* return value captured before defers */
-        TToken __ret_l653 = make_token_len(&(*l), TOK_NUMBER, start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l653;
+        TToken __ret_l710 = make_token_len(&(*l), kind, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l710;
     }
-    if (c_l592_c7 == SINGLE_QUOTE)
+    if (c_l645_c7 == SINGLE_QUOTE)
     {
         advance(&(*l));
         if ((*((*l)).current) == '\0' || (*((*l)).current) == '\n')
         {
             /* return value captured before defers */
-            TToken __ret_l660 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
-            return __ret_l660;
+            TToken __ret_l717 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
+            return __ret_l717;
         }
         if ((*((*l)).current) == '\\')
         {
             if (!scan_char_escape(&(*l)))
             {
                 /* return value captured before defers */
-                TToken __ret_l666 = error_token(&(*l), "TLexer::next: Invalid character escape.");
-                return __ret_l666;
+                TToken __ret_l723 = error_token(&(*l), "TLexer::next: Invalid character escape.");
+                return __ret_l723;
             }
         }
         else
@@ -497,14 +564,14 @@ TToken TLexer__next(TLexer* l)
         if (!match(&(*l), SINGLE_QUOTE))
         {
             /* return value captured before defers */
-            TToken __ret_l672 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
-            return __ret_l672;
+            TToken __ret_l729 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
+            return __ret_l729;
         }
         /* return value captured before defers */
-        TToken __ret_l674 = make_token_len(&(*l), TOK_CHAR, start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l674;
+        TToken __ret_l731 = make_token_len(&(*l), TOK_CHAR, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l731;
     }
-    if (c_l592_c7 == DOUBLE_QUOTE)
+    if (c_l645_c7 == DOUBLE_QUOTE)
     {
         advance(&(*l));
         while ((*((*l)).current) != '\0' && (*((*l)).current) != DOUBLE_QUOTE)
@@ -521,8 +588,8 @@ TToken TLexer__next(TLexer* l)
                 else if ((*((*l)).current) == '\n')
                 {
                     /* return value captured before defers */
-                    TToken __ret_l686 = error_token(&(*l), "TLexer::next: Unterminated string literal.");
-                    return __ret_l686;
+                    TToken __ret_l743 = error_token(&(*l), "TLexer::next: Unterminated string literal.");
+                    return __ret_l743;
                 }
                 advance(&(*l));
             }
@@ -530,15 +597,15 @@ TToken TLexer__next(TLexer* l)
         if ((*((*l)).current) != DOUBLE_QUOTE)
         {
             /* return value captured before defers */
-            TToken __ret_l691 = error_token(&(*l), "TLexer::next: Unterminated string literal,");
-            return __ret_l691;
+            TToken __ret_l748 = error_token(&(*l), "TLexer::next: Unterminated string literal,");
+            return __ret_l748;
         }
         advance(&(*l));
         /* return value captured before defers */
-        TToken __ret_l694 = make_token_len(&(*l), TOK_STRING, start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l694;
+        TToken __ret_l751 = make_token_len(&(*l), TOK_STRING, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l751;
     }
-    if (c_l592_c7 == '/' && peek2(&(*l)) == '/')
+    if (c_l645_c7 == '/' && peek2(&(*l)) == '/')
     {
         advance(&(*l));
         advance(&(*l));
@@ -549,14 +616,14 @@ TToken TLexer__next(TLexer* l)
             }
         }
         /* return value captured before defers */
-        TToken __ret_l704 = make_token_len(&(*l), TOK_COMMENT_SINGLE, start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l704;
+        TToken __ret_l761 = make_token_len(&(*l), TOK_COMMENT_SINGLE, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l761;
     }
-    if (c_l592_c7 == '/' && peek2(&(*l)) == '*')
+    if (c_l645_c7 == '/' && peek2(&(*l)) == '*')
     {
         advance(&(*l));
         advance(&(*l));
-        bool is_doc_l712_c13 = peek(&(*l)) == '*';
+        bool is_doc_l769_c13 = peek(&(*l)) == '*';
         while ((*((*l)).current) != '\0')
         {
             {
@@ -573,19 +640,19 @@ TToken TLexer__next(TLexer* l)
         if ((*((*l)).current) == '\0')
         {
             /* return value captured before defers */
-            TToken __ret_l723 = error_token(&(*l), "TLexer::next: Unterminated multi-line comment. /* */");
-            return __ret_l723;
+            TToken __ret_l780 = error_token(&(*l), "TLexer::next: Unterminated multi-line comment. /* */");
+            return __ret_l780;
         }
         /* return value captured before defers */
-        TToken __ret_l726 = make_token_len(&(*l), ((is_doc_l712_c13 ? TOK_DOC_COMMENT : TOK_COMMENT_MULTI)), start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l726;
+        TToken __ret_l783 = make_token_len(&(*l), ((is_doc_l769_c13 ? TOK_DOC_COMMENT : TOK_COMMENT_MULTI)), start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l783;
     }
-    if (c_l592_c7 == '(' && peek2(&(*l)) == '*')
+    if (c_l645_c7 == '(' && peek2(&(*l)) == '*')
     {
         integer nesting = {0};
         advance(&(*l));
         advance(&(*l));
-        bool is_doc_l736_c13 = peek(&(*l)) == '*';
+        bool is_doc_l793_c13 = peek(&(*l)) == '*';
         nesting = 1;
         while ((*((*l)).current) != '\0' && nesting > 0)
         {
@@ -612,77 +679,77 @@ TToken TLexer__next(TLexer* l)
         if (nesting > 0)
         {
             /* return value captured before defers */
-            TToken __ret_l755 = error_token(&(*l), "TLexer::next: Unterminated Pascal-style comment (* *)");
-            return __ret_l755;
+            TToken __ret_l812 = error_token(&(*l), "TLexer::next: Unterminated Pascal-style comment (* *)");
+            return __ret_l812;
         }
         /* return value captured before defers */
-        TToken __ret_l757 = make_token_len(&(*l), ((is_doc_l736_c13 ? TOK_DOC_COMMENT : TOK_COMMENT_PASCAL)), start_l591_c11, (size_t)(((*l)).current - start_l591_c11));
-        return __ret_l757;
+        TToken __ret_l814 = make_token_len(&(*l), ((is_doc_l793_c13 ? TOK_DOC_COMMENT : TOK_COMMENT_PASCAL)), start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
+        return __ret_l814;
     }
-    switch (c_l592_c7)
+    switch (c_l645_c7)
     {
         case '(':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l763 = make_token_len(&(*l), TOK_LPAREN, start_l591_c11, 1);
-            return __ret_l763;
+            TToken __ret_l820 = make_token_len(&(*l), TOK_LPAREN, start_l644_c11, 1);
+            return __ret_l820;
         }
         break;
         case ')':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l764 = make_token_len(&(*l), TOK_RPAREN, start_l591_c11, 1);
-            return __ret_l764;
+            TToken __ret_l821 = make_token_len(&(*l), TOK_RPAREN, start_l644_c11, 1);
+            return __ret_l821;
         }
         break;
         case '{':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l765 = make_token_len(&(*l), TOK_LBRACE, start_l591_c11, 1);
-            return __ret_l765;
+            TToken __ret_l822 = make_token_len(&(*l), TOK_LBRACE, start_l644_c11, 1);
+            return __ret_l822;
         }
         break;
         case '}':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l766 = make_token_len(&(*l), TOK_RBRACE, start_l591_c11, 1);
-            return __ret_l766;
+            TToken __ret_l823 = make_token_len(&(*l), TOK_RBRACE, start_l644_c11, 1);
+            return __ret_l823;
         }
         break;
         case '[':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l767 = make_token_len(&(*l), TOK_LBRACKET, start_l591_c11, 1);
-            return __ret_l767;
+            TToken __ret_l824 = make_token_len(&(*l), TOK_LBRACKET, start_l644_c11, 1);
+            return __ret_l824;
         }
         break;
         case ']':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l768 = make_token_len(&(*l), TOK_RBRACKET, start_l591_c11, 1);
-            return __ret_l768;
+            TToken __ret_l825 = make_token_len(&(*l), TOK_RBRACKET, start_l644_c11, 1);
+            return __ret_l825;
         }
         break;
         case ';':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l769 = make_token_len(&(*l), TOK_SEMICOLON, start_l591_c11, 1);
-            return __ret_l769;
+            TToken __ret_l826 = make_token_len(&(*l), TOK_SEMICOLON, start_l644_c11, 1);
+            return __ret_l826;
         }
         break;
         case ',':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l770 = make_token_len(&(*l), TOK_COMMA, start_l591_c11, 1);
-            return __ret_l770;
+            TToken __ret_l827 = make_token_len(&(*l), TOK_COMMA, start_l644_c11, 1);
+            return __ret_l827;
         }
         break;
         case '+':
@@ -691,14 +758,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l774 = make_token_len(&(*l), TOK_ADD_EQ, start_l591_c11, 2);
-                return __ret_l774;
+                TToken __ret_l831 = make_token_len(&(*l), TOK_ADD_EQ, start_l644_c11, 2);
+                return __ret_l831;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l776 = make_token_len(&(*l), TOK_ADD, start_l591_c11, 1);
-                return __ret_l776;
+                TToken __ret_l833 = make_token_len(&(*l), TOK_ADD, start_l644_c11, 1);
+                return __ret_l833;
             }
         }
         break;
@@ -708,14 +775,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l781 = make_token_len(&(*l), TOK_SUB_EQ, start_l591_c11, 2);
-                return __ret_l781;
+                TToken __ret_l838 = make_token_len(&(*l), TOK_SUB_EQ, start_l644_c11, 2);
+                return __ret_l838;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l783 = make_token_len(&(*l), TOK_SUB, start_l591_c11, 1);
-                return __ret_l783;
+                TToken __ret_l840 = make_token_len(&(*l), TOK_SUB, start_l644_c11, 1);
+                return __ret_l840;
             }
         }
         break;
@@ -725,18 +792,18 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '*'))
             {
                 /* return value captured before defers */
-                TToken __ret_l787 = make_token_len(&(*l), TOK_POWER, start_l591_c11, 2);
-                return __ret_l787;
+                TToken __ret_l844 = make_token_len(&(*l), TOK_POWER, start_l644_c11, 2);
+                return __ret_l844;
             }
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l788 = make_token_len(&(*l), TOK_MUL_EQ, start_l591_c11, 2);
-                return __ret_l788;
+                TToken __ret_l845 = make_token_len(&(*l), TOK_MUL_EQ, start_l644_c11, 2);
+                return __ret_l845;
             }
             /* return value captured before defers */
-            TToken __ret_l789 = make_token_len(&(*l), TOK_MUL, start_l591_c11, 1);
-            return __ret_l789;
+            TToken __ret_l846 = make_token_len(&(*l), TOK_MUL, start_l644_c11, 1);
+            return __ret_l846;
         }
         break;
         case '/':
@@ -745,14 +812,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l793 = make_token_len(&(*l), TOK_DIV_EQ, start_l591_c11, 2);
-                return __ret_l793;
+                TToken __ret_l850 = make_token_len(&(*l), TOK_DIV_EQ, start_l644_c11, 2);
+                return __ret_l850;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l795 = make_token_len(&(*l), TOK_DIV, start_l591_c11, 1);
-                return __ret_l795;
+                TToken __ret_l852 = make_token_len(&(*l), TOK_DIV, start_l644_c11, 1);
+                return __ret_l852;
             }
         }
         break;
@@ -762,14 +829,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l800 = make_token_len(&(*l), TOK_MOD_EQ, start_l591_c11, 2);
-                return __ret_l800;
+                TToken __ret_l857 = make_token_len(&(*l), TOK_MOD_EQ, start_l644_c11, 2);
+                return __ret_l857;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l802 = make_token_len(&(*l), TOK_MOD, start_l591_c11, 1);
-                return __ret_l802;
+                TToken __ret_l859 = make_token_len(&(*l), TOK_MOD, start_l644_c11, 1);
+                return __ret_l859;
             }
         }
         break;
@@ -779,14 +846,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l807 = make_token_len(&(*l), TOK_EQ_EQ, start_l591_c11, 2);
-                return __ret_l807;
+                TToken __ret_l864 = make_token_len(&(*l), TOK_EQ_EQ, start_l644_c11, 2);
+                return __ret_l864;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l809 = make_token_len(&(*l), TOK_EQ, start_l591_c11, 1);
-                return __ret_l809;
+                TToken __ret_l866 = make_token_len(&(*l), TOK_EQ, start_l644_c11, 1);
+                return __ret_l866;
             }
         }
         break;
@@ -796,14 +863,14 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l814 = make_token_len(&(*l), TOK_NOT_EQ, start_l591_c11, 2);
-                return __ret_l814;
+                TToken __ret_l871 = make_token_len(&(*l), TOK_NOT_EQ, start_l644_c11, 2);
+                return __ret_l871;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l816 = make_token_len(&(*l), TOK_NOT, start_l591_c11, 1);
-                return __ret_l816;
+                TToken __ret_l873 = make_token_len(&(*l), TOK_NOT, start_l644_c11, 1);
+                return __ret_l873;
             }
         }
         break;
@@ -815,33 +882,33 @@ TToken TLexer__next(TLexer* l)
                 if (match(&(*l), '='))
                 {
                     /* return value captured before defers */
-                    TToken __ret_l822 = make_token_len(&(*l), TOK_LSHIFT_EQ, start_l591_c11, 3);
-                    return __ret_l822;
+                    TToken __ret_l879 = make_token_len(&(*l), TOK_LSHIFT_EQ, start_l644_c11, 3);
+                    return __ret_l879;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    TToken __ret_l824 = make_token_len(&(*l), TOK_BITWISE_LSHIFT, start_l591_c11, 2);
-                    return __ret_l824;
+                    TToken __ret_l881 = make_token_len(&(*l), TOK_BITWISE_LSHIFT, start_l644_c11, 2);
+                    return __ret_l881;
                 }
             }
             else if (match(&(*l), '>'))
             {
                 /* return value captured before defers */
-                TToken __ret_l827 = make_token_len(&(*l), TOK_NOT_EQ, start_l591_c11, 2);
-                return __ret_l827;
+                TToken __ret_l884 = make_token_len(&(*l), TOK_NOT_EQ, start_l644_c11, 2);
+                return __ret_l884;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l829 = make_token_len(&(*l), TOK_LESS_EQ, start_l591_c11, 2);
-                return __ret_l829;
+                TToken __ret_l886 = make_token_len(&(*l), TOK_LESS_EQ, start_l644_c11, 2);
+                return __ret_l886;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l831 = make_token_len(&(*l), TOK_LESS, start_l591_c11, 1);
-                return __ret_l831;
+                TToken __ret_l888 = make_token_len(&(*l), TOK_LESS, start_l644_c11, 1);
+                return __ret_l888;
             }
         }
         break;
@@ -853,27 +920,27 @@ TToken TLexer__next(TLexer* l)
                 if (match(&(*l), '='))
                 {
                     /* return value captured before defers */
-                    TToken __ret_l837 = make_token_len(&(*l), TOK_RSHIFT_EQ, start_l591_c11, 3);
-                    return __ret_l837;
+                    TToken __ret_l894 = make_token_len(&(*l), TOK_RSHIFT_EQ, start_l644_c11, 3);
+                    return __ret_l894;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    TToken __ret_l839 = make_token_len(&(*l), TOK_BITWISE_RSHIFT, start_l591_c11, 2);
-                    return __ret_l839;
+                    TToken __ret_l896 = make_token_len(&(*l), TOK_BITWISE_RSHIFT, start_l644_c11, 2);
+                    return __ret_l896;
                 }
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l842 = make_token_len(&(*l), TOK_GREATER_EQ, start_l591_c11, 2);
-                return __ret_l842;
+                TToken __ret_l899 = make_token_len(&(*l), TOK_GREATER_EQ, start_l644_c11, 2);
+                return __ret_l899;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l844 = make_token_len(&(*l), TOK_GREATER, start_l591_c11, 1);
-                return __ret_l844;
+                TToken __ret_l901 = make_token_len(&(*l), TOK_GREATER, start_l644_c11, 1);
+                return __ret_l901;
             }
         }
         break;
@@ -883,20 +950,20 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), ':'))
             {
                 /* return value captured before defers */
-                TToken __ret_l849 = make_token_len(&(*l), TOK_COLON_COLON, start_l591_c11, 2);
-                return __ret_l849;
+                TToken __ret_l906 = make_token_len(&(*l), TOK_COLON_COLON, start_l644_c11, 2);
+                return __ret_l906;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l851 = make_token_len(&(*l), TOK_COLON_EQ, start_l591_c11, 2);
-                return __ret_l851;
+                TToken __ret_l908 = make_token_len(&(*l), TOK_COLON_EQ, start_l644_c11, 2);
+                return __ret_l908;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l853 = make_token_len(&(*l), TOK_COLON, start_l591_c11, 1);
-                return __ret_l853;
+                TToken __ret_l910 = make_token_len(&(*l), TOK_COLON, start_l644_c11, 1);
+                return __ret_l910;
             }
         }
         break;
@@ -908,21 +975,21 @@ TToken TLexer__next(TLexer* l)
                 if (match(&(*l), '.'))
                 {
                     /* return value captured before defers */
-                    TToken __ret_l859 = make_token_len(&(*l), TOK_DOT_DOT_DOT, start_l591_c11, 3);
-                    return __ret_l859;
+                    TToken __ret_l916 = make_token_len(&(*l), TOK_DOT_DOT_DOT, start_l644_c11, 3);
+                    return __ret_l916;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    TToken __ret_l861 = make_token_len(&(*l), TOK_DOT_DOT, start_l591_c11, 2);
-                    return __ret_l861;
+                    TToken __ret_l918 = make_token_len(&(*l), TOK_DOT_DOT, start_l644_c11, 2);
+                    return __ret_l918;
                 }
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l864 = make_token_len(&(*l), TOK_DOT, start_l591_c11, 1);
-                return __ret_l864;
+                TToken __ret_l921 = make_token_len(&(*l), TOK_DOT, start_l644_c11, 1);
+                return __ret_l921;
             }
         }
         break;
@@ -932,20 +999,20 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '&'))
             {
                 /* return value captured before defers */
-                TToken __ret_l869 = make_token_len(&(*l), TOK_KEYWORD_AND, start_l591_c11, 2);
-                return __ret_l869;
+                TToken __ret_l926 = make_token_len(&(*l), TOK_KEYWORD_AND, start_l644_c11, 2);
+                return __ret_l926;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l871 = make_token_len(&(*l), TOK_AND_EQ, start_l591_c11, 2);
-                return __ret_l871;
+                TToken __ret_l928 = make_token_len(&(*l), TOK_AND_EQ, start_l644_c11, 2);
+                return __ret_l928;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l873 = make_token_len(&(*l), TOK_BITWISE_AND, start_l591_c11, 1);
-                return __ret_l873;
+                TToken __ret_l930 = make_token_len(&(*l), TOK_BITWISE_AND, start_l644_c11, 1);
+                return __ret_l930;
             }
         }
         break;
@@ -955,20 +1022,20 @@ TToken TLexer__next(TLexer* l)
             if (match(&(*l), '|'))
             {
                 /* return value captured before defers */
-                TToken __ret_l878 = make_token_len(&(*l), TOK_KEYWORD_OR, start_l591_c11, 2);
-                return __ret_l878;
+                TToken __ret_l935 = make_token_len(&(*l), TOK_KEYWORD_OR, start_l644_c11, 2);
+                return __ret_l935;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                TToken __ret_l880 = make_token_len(&(*l), TOK_OR_EQ, start_l591_c11, 2);
-                return __ret_l880;
+                TToken __ret_l937 = make_token_len(&(*l), TOK_OR_EQ, start_l644_c11, 2);
+                return __ret_l937;
             }
             else
             {
                 /* return value captured before defers */
-                TToken __ret_l882 = make_token_len(&(*l), TOK_BITWISE_OR, start_l591_c11, 1);
-                return __ret_l882;
+                TToken __ret_l939 = make_token_len(&(*l), TOK_BITWISE_OR, start_l644_c11, 1);
+                return __ret_l939;
             }
         }
         break;
@@ -976,40 +1043,40 @@ TToken TLexer__next(TLexer* l)
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l884 = make_token_len(&(*l), TOK_CARET, start_l591_c11, 1);
-            return __ret_l884;
+            TToken __ret_l941 = make_token_len(&(*l), TOK_CARET, start_l644_c11, 1);
+            return __ret_l941;
         }
         break;
         case '~':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l885 = make_token_len(&(*l), TOK_BITWISE_NOT, start_l591_c11, 1);
-            return __ret_l885;
+            TToken __ret_l942 = make_token_len(&(*l), TOK_BITWISE_NOT, start_l644_c11, 1);
+            return __ret_l942;
         }
         break;
         case '?':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l886 = make_token_len(&(*l), TOK_QUESTION, start_l591_c11, 1);
-            return __ret_l886;
+            TToken __ret_l943 = make_token_len(&(*l), TOK_QUESTION, start_l644_c11, 1);
+            return __ret_l943;
         }
         break;
         case '@':
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l887 = make_token_len(&(*l), TOK_AT, start_l591_c11, 1);
-            return __ret_l887;
+            TToken __ret_l944 = make_token_len(&(*l), TOK_AT, start_l644_c11, 1);
+            return __ret_l944;
         }
         break;
         default:
         {
             advance(&(*l));
             /* return value captured before defers */
-            TToken __ret_l891 = error_token(&(*l), "TLexer::next: Unexpected character");
-            return __ret_l891;
+            TToken __ret_l948 = error_token(&(*l), "TLexer::next: Unexpected character");
+            return __ret_l948;
         }
         break;
     }
@@ -1025,904 +1092,904 @@ const char* TokenKind__string(const TokenKind k)
         case TOK_EOF:
         {
             /* return value captured before defers */
-            const char* __ret_l902 = "EOF";
-            return __ret_l902;
+            const char* __ret_l959 = "EOF";
+            return __ret_l959;
         }
         break;
         case TOK_IDENT:
         {
             /* return value captured before defers */
-            const char* __ret_l903 = "IDENT";
-            return __ret_l903;
+            const char* __ret_l960 = "IDENT";
+            return __ret_l960;
         }
         break;
         case TOK_NUMBER:
         {
             /* return value captured before defers */
-            const char* __ret_l904 = "NUMBER";
-            return __ret_l904;
+            const char* __ret_l961 = "NUMBER";
+            return __ret_l961;
         }
         break;
         case TOK_REAL:
         {
             /* return value captured before defers */
-            const char* __ret_l905 = "REAL";
-            return __ret_l905;
+            const char* __ret_l962 = "REAL";
+            return __ret_l962;
         }
         break;
         case TOK_CHAR:
         {
             /* return value captured before defers */
-            const char* __ret_l906 = "CHAR";
-            return __ret_l906;
+            const char* __ret_l963 = "CHAR";
+            return __ret_l963;
         }
         break;
         case TOK_STRING:
         {
             /* return value captured before defers */
-            const char* __ret_l907 = "STRING";
-            return __ret_l907;
+            const char* __ret_l964 = "STRING";
+            return __ret_l964;
         }
         break;
         case TOK_PREPROCESSOR:
         {
             /* return value captured before defers */
-            const char* __ret_l908 = "PREPROC";
-            return __ret_l908;
+            const char* __ret_l965 = "PREPROC";
+            return __ret_l965;
         }
         break;
         case TOK_COMMENT:
         {
             /* return value captured before defers */
-            const char* __ret_l909 = "COMMENT";
-            return __ret_l909;
+            const char* __ret_l966 = "COMMENT";
+            return __ret_l966;
         }
         break;
         case TOK_COMMENT_SINGLE:
         {
             /* return value captured before defers */
-            const char* __ret_l910 = "// COMMENT";
-            return __ret_l910;
+            const char* __ret_l967 = "// COMMENT";
+            return __ret_l967;
         }
         break;
         case TOK_COMMENT_MULTI:
         {
             /* return value captured before defers */
-            const char* __ret_l911 = "/* COMMENT */";
-            return __ret_l911;
+            const char* __ret_l968 = "/* COMMENT */";
+            return __ret_l968;
         }
         break;
         case TOK_COMMENT_PASCAL:
         {
             /* return value captured before defers */
-            const char* __ret_l912 = "(* COMMENT *)";
-            return __ret_l912;
+            const char* __ret_l969 = "(* COMMENT *)";
+            return __ret_l969;
         }
         break;
         case TOK_DOC_COMMENT:
         {
             /* return value captured before defers */
-            const char* __ret_l913 = "/** DOC COMMENT */";
-            return __ret_l913;
+            const char* __ret_l970 = "/** DOC COMMENT */";
+            return __ret_l970;
         }
         break;
         case TOK_NEWLINE:
         {
             /* return value captured before defers */
-            const char* __ret_l914 = "NEWLINE";
-            return __ret_l914;
+            const char* __ret_l971 = "NEWLINE";
+            return __ret_l971;
         }
         break;
         case TOK_SEMICOLON:
         {
             /* return value captured before defers */
-            const char* __ret_l915 = ";";
-            return __ret_l915;
+            const char* __ret_l972 = ";";
+            return __ret_l972;
         }
         break;
         case TOK_COLON:
         {
             /* return value captured before defers */
-            const char* __ret_l916 = ":";
-            return __ret_l916;
+            const char* __ret_l973 = ":";
+            return __ret_l973;
         }
         break;
         case TOK_COLON_COLON:
         {
             /* return value captured before defers */
-            const char* __ret_l917 = "::";
-            return __ret_l917;
+            const char* __ret_l974 = "::";
+            return __ret_l974;
         }
         break;
         case TOK_COLON_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l918 = ":=";
-            return __ret_l918;
+            const char* __ret_l975 = ":=";
+            return __ret_l975;
         }
         break;
         case TOK_COMMA:
         {
             /* return value captured before defers */
-            const char* __ret_l919 = ",";
-            return __ret_l919;
+            const char* __ret_l976 = ",";
+            return __ret_l976;
         }
         break;
         case TOK_LPAREN:
         {
             /* return value captured before defers */
-            const char* __ret_l920 = "(";
-            return __ret_l920;
+            const char* __ret_l977 = "(";
+            return __ret_l977;
         }
         break;
         case TOK_RPAREN:
         {
             /* return value captured before defers */
-            const char* __ret_l921 = ")";
-            return __ret_l921;
+            const char* __ret_l978 = ")";
+            return __ret_l978;
         }
         break;
         case TOK_LBRACKET:
         {
             /* return value captured before defers */
-            const char* __ret_l922 = "[";
-            return __ret_l922;
+            const char* __ret_l979 = "[";
+            return __ret_l979;
         }
         break;
         case TOK_RBRACKET:
         {
             /* return value captured before defers */
-            const char* __ret_l923 = "]";
-            return __ret_l923;
+            const char* __ret_l980 = "]";
+            return __ret_l980;
         }
         break;
         case TOK_LBRACE:
         {
             /* return value captured before defers */
-            const char* __ret_l924 = "{";
-            return __ret_l924;
+            const char* __ret_l981 = "{";
+            return __ret_l981;
         }
         break;
         case TOK_RBRACE:
         {
             /* return value captured before defers */
-            const char* __ret_l925 = "}";
-            return __ret_l925;
+            const char* __ret_l982 = "}";
+            return __ret_l982;
         }
         break;
         case TOK_QUESTION:
         {
             /* return value captured before defers */
-            const char* __ret_l926 = "?";
-            return __ret_l926;
+            const char* __ret_l983 = "?";
+            return __ret_l983;
         }
         break;
         case TOK_ADD:
         {
             /* return value captured before defers */
-            const char* __ret_l927 = "+";
-            return __ret_l927;
+            const char* __ret_l984 = "+";
+            return __ret_l984;
         }
         break;
         case TOK_SUB:
         {
             /* return value captured before defers */
-            const char* __ret_l928 = "-";
-            return __ret_l928;
+            const char* __ret_l985 = "-";
+            return __ret_l985;
         }
         break;
         case TOK_MUL:
         {
             /* return value captured before defers */
-            const char* __ret_l929 = "*";
-            return __ret_l929;
+            const char* __ret_l986 = "*";
+            return __ret_l986;
         }
         break;
         case TOK_DIV:
         {
             /* return value captured before defers */
-            const char* __ret_l930 = "/";
-            return __ret_l930;
+            const char* __ret_l987 = "/";
+            return __ret_l987;
         }
         break;
         case TOK_MOD:
         {
             /* return value captured before defers */
-            const char* __ret_l931 = "%";
-            return __ret_l931;
+            const char* __ret_l988 = "%";
+            return __ret_l988;
         }
         break;
         case TOK_CARET:
         {
             /* return value captured before defers */
-            const char* __ret_l932 = "^";
-            return __ret_l932;
+            const char* __ret_l989 = "^";
+            return __ret_l989;
         }
         break;
         case TOK_AT:
         {
             /* return value captured before defers */
-            const char* __ret_l933 = "@";
-            return __ret_l933;
+            const char* __ret_l990 = "@";
+            return __ret_l990;
         }
         break;
         case TOK_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l934 = "=";
-            return __ret_l934;
+            const char* __ret_l991 = "=";
+            return __ret_l991;
         }
         break;
         case TOK_EQ_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l935 = "==";
-            return __ret_l935;
+            const char* __ret_l992 = "==";
+            return __ret_l992;
         }
         break;
         case TOK_LESS_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l936 = "<=";
-            return __ret_l936;
+            const char* __ret_l993 = "<=";
+            return __ret_l993;
         }
         break;
         case TOK_LESS:
         {
             /* return value captured before defers */
-            const char* __ret_l937 = "<";
-            return __ret_l937;
+            const char* __ret_l994 = "<";
+            return __ret_l994;
         }
         break;
         case TOK_GREATER_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l938 = ">=";
-            return __ret_l938;
+            const char* __ret_l995 = ">=";
+            return __ret_l995;
         }
         break;
         case TOK_GREATER:
         {
             /* return value captured before defers */
-            const char* __ret_l939 = ">";
-            return __ret_l939;
+            const char* __ret_l996 = ">";
+            return __ret_l996;
         }
         break;
         case TOK_NOT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l940 = "!=";
-            return __ret_l940;
+            const char* __ret_l997 = "!=";
+            return __ret_l997;
         }
         break;
         case TOK_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l941 = ".";
-            return __ret_l941;
+            const char* __ret_l998 = ".";
+            return __ret_l998;
         }
         break;
         case TOK_DOT_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l942 = "..";
-            return __ret_l942;
+            const char* __ret_l999 = "..";
+            return __ret_l999;
         }
         break;
         case TOK_DOT_DOT_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l943 = "...";
-            return __ret_l943;
+            const char* __ret_l1000 = "...";
+            return __ret_l1000;
         }
         break;
         case TOK_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l944 = "!";
-            return __ret_l944;
+            const char* __ret_l1001 = "!";
+            return __ret_l1001;
         }
         break;
         case TOK_POWER:
         {
             /* return value captured before defers */
-            const char* __ret_l945 = "**";
-            return __ret_l945;
+            const char* __ret_l1002 = "**";
+            return __ret_l1002;
         }
         break;
         case TOK_MUL_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l946 = "*=";
-            return __ret_l946;
+            const char* __ret_l1003 = "*=";
+            return __ret_l1003;
         }
         break;
         case TOK_DIV_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l947 = "/=";
-            return __ret_l947;
+            const char* __ret_l1004 = "/=";
+            return __ret_l1004;
         }
         break;
         case TOK_MOD_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l948 = "%=";
-            return __ret_l948;
+            const char* __ret_l1005 = "%=";
+            return __ret_l1005;
         }
         break;
         case TOK_ADD_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l949 = "+=";
-            return __ret_l949;
+            const char* __ret_l1006 = "+=";
+            return __ret_l1006;
         }
         break;
         case TOK_SUB_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l950 = "-=";
-            return __ret_l950;
+            const char* __ret_l1007 = "-=";
+            return __ret_l1007;
         }
         break;
         case TOK_LSHIFT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l951 = "<<=";
-            return __ret_l951;
+            const char* __ret_l1008 = "<<=";
+            return __ret_l1008;
         }
         break;
         case TOK_RSHIFT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l952 = ">>=";
-            return __ret_l952;
+            const char* __ret_l1009 = ">>=";
+            return __ret_l1009;
         }
         break;
         case TOK_AND_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l953 = "&=";
-            return __ret_l953;
+            const char* __ret_l1010 = "&=";
+            return __ret_l1010;
         }
         break;
         case TOK_OR_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l954 = "|=";
-            return __ret_l954;
+            const char* __ret_l1011 = "|=";
+            return __ret_l1011;
         }
         break;
         case TOK_BITWISE_NOT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l955 = "~|";
-            return __ret_l955;
+            const char* __ret_l1012 = "~|";
+            return __ret_l1012;
         }
         break;
         case TOK_KEYWORD_BEGIN:
         {
             /* return value captured before defers */
-            const char* __ret_l956 = "BEGIN";
-            return __ret_l956;
+            const char* __ret_l1013 = "BEGIN";
+            return __ret_l1013;
         }
         break;
         case TOK_KEYWORD_END:
         {
             /* return value captured before defers */
-            const char* __ret_l957 = "END";
-            return __ret_l957;
+            const char* __ret_l1014 = "END";
+            return __ret_l1014;
         }
         break;
         case TOK_KEYWORD_IF:
         {
             /* return value captured before defers */
-            const char* __ret_l958 = "IF";
-            return __ret_l958;
+            const char* __ret_l1015 = "IF";
+            return __ret_l1015;
         }
         break;
         case TOK_KEYWORD_THEN:
         {
             /* return value captured before defers */
-            const char* __ret_l959 = "THEN";
-            return __ret_l959;
+            const char* __ret_l1016 = "THEN";
+            return __ret_l1016;
         }
         break;
         case TOK_KEYWORD_ELSE:
         {
             /* return value captured before defers */
-            const char* __ret_l960 = "ELSE";
-            return __ret_l960;
+            const char* __ret_l1017 = "ELSE";
+            return __ret_l1017;
         }
         break;
         case TOK_KEYWORD_ELSIF:
         {
             /* return value captured before defers */
-            const char* __ret_l961 = "ELSIF";
-            return __ret_l961;
+            const char* __ret_l1018 = "ELSIF";
+            return __ret_l1018;
         }
         break;
         case TOK_KEYWORD_FOR:
         {
             /* return value captured before defers */
-            const char* __ret_l962 = "FOR";
-            return __ret_l962;
+            const char* __ret_l1019 = "FOR";
+            return __ret_l1019;
         }
         break;
         case TOK_KEYWORD_TO:
         {
             /* return value captured before defers */
-            const char* __ret_l963 = "TO";
-            return __ret_l963;
+            const char* __ret_l1020 = "TO";
+            return __ret_l1020;
         }
         break;
         case TOK_KEYWORD_BY:
         {
             /* return value captured before defers */
-            const char* __ret_l964 = "BY";
-            return __ret_l964;
+            const char* __ret_l1021 = "BY";
+            return __ret_l1021;
         }
         break;
         case TOK_KEYWORD_BOUND:
         {
             /* return value captured before defers */
-            const char* __ret_l965 = "BOUND";
-            return __ret_l965;
+            const char* __ret_l1022 = "BOUND";
+            return __ret_l1022;
         }
         break;
         case TOK_KEYWORD_DO:
         {
             /* return value captured before defers */
-            const char* __ret_l966 = "DO";
-            return __ret_l966;
+            const char* __ret_l1023 = "DO";
+            return __ret_l1023;
         }
         break;
         case TOK_KEYWORD_DOWNTO:
         {
             /* return value captured before defers */
-            const char* __ret_l967 = "DOWNTO";
-            return __ret_l967;
+            const char* __ret_l1024 = "DOWNTO";
+            return __ret_l1024;
         }
         break;
         case TOK_KEYWORD_PROGRAM:
         {
             /* return value captured before defers */
-            const char* __ret_l968 = "PROGRAM";
-            return __ret_l968;
+            const char* __ret_l1025 = "PROGRAM";
+            return __ret_l1025;
         }
         break;
         case TOK_KEYWORD_MODULE:
         {
             /* return value captured before defers */
-            const char* __ret_l969 = "MODULE";
-            return __ret_l969;
+            const char* __ret_l1026 = "MODULE";
+            return __ret_l1026;
         }
         break;
         case TOK_KEYWORD_HEADER:
         {
             /* return value captured before defers */
-            const char* __ret_l970 = "HEADER";
-            return __ret_l970;
+            const char* __ret_l1027 = "HEADER";
+            return __ret_l1027;
         }
         break;
         case TOK_KEYWORD_IMPORT:
         {
             /* return value captured before defers */
-            const char* __ret_l971 = "IMPORT";
-            return __ret_l971;
+            const char* __ret_l1028 = "IMPORT";
+            return __ret_l1028;
         }
         break;
         case TOK_KEYWORD_FROM:
         {
             /* return value captured before defers */
-            const char* __ret_l972 = "FROM";
-            return __ret_l972;
+            const char* __ret_l1029 = "FROM";
+            return __ret_l1029;
         }
         break;
         case TOK_KEYWORD_PROCEDURE:
         {
             /* return value captured before defers */
-            const char* __ret_l973 = "PROCEDURE";
-            return __ret_l973;
+            const char* __ret_l1030 = "PROCEDURE";
+            return __ret_l1030;
         }
         break;
         case TOK_KEYWORD_FUNCTION:
         {
             /* return value captured before defers */
-            const char* __ret_l974 = "FUNCTION";
-            return __ret_l974;
+            const char* __ret_l1031 = "FUNCTION";
+            return __ret_l1031;
         }
         break;
         case TOK_KEYWORD_FORWARD:
         {
             /* return value captured before defers */
-            const char* __ret_l975 = "FORWARD";
-            return __ret_l975;
+            const char* __ret_l1032 = "FORWARD";
+            return __ret_l1032;
         }
         break;
         case TOK_KEYWORD_EXPORT:
         {
             /* return value captured before defers */
-            const char* __ret_l976 = "EXPORT";
-            return __ret_l976;
+            const char* __ret_l1033 = "EXPORT";
+            return __ret_l1033;
         }
         break;
         case TOK_KEYWORD_VAR:
         {
             /* return value captured before defers */
-            const char* __ret_l977 = "VAR";
-            return __ret_l977;
+            const char* __ret_l1034 = "VAR";
+            return __ret_l1034;
         }
         break;
         case TOK_KEYWORD_COUNTOF:
         {
             /* return value captured before defers */
-            const char* __ret_l978 = "COUNTOF";
-            return __ret_l978;
+            const char* __ret_l1035 = "COUNTOF";
+            return __ret_l1035;
         }
         break;
         case TOK_KEYWORD_LET:
         {
             /* return value captured before defers */
-            const char* __ret_l979 = "LET";
-            return __ret_l979;
+            const char* __ret_l1036 = "LET";
+            return __ret_l1036;
         }
         break;
         case TOK_KEYWORD_CONST:
         {
             /* return value captured before defers */
-            const char* __ret_l980 = "CONST";
-            return __ret_l980;
+            const char* __ret_l1037 = "CONST";
+            return __ret_l1037;
         }
         break;
         case TOK_KEYWORD_WHILE:
         {
             /* return value captured before defers */
-            const char* __ret_l981 = "WHILE";
-            return __ret_l981;
+            const char* __ret_l1038 = "WHILE";
+            return __ret_l1038;
         }
         break;
         case TOK_KEYWORD_LOOP:
         {
             /* return value captured before defers */
-            const char* __ret_l982 = "LOOP";
-            return __ret_l982;
+            const char* __ret_l1039 = "LOOP";
+            return __ret_l1039;
         }
         break;
         case TOK_KEYWORD_REPEAT:
         {
             /* return value captured before defers */
-            const char* __ret_l983 = "REPEAT";
-            return __ret_l983;
+            const char* __ret_l1040 = "REPEAT";
+            return __ret_l1040;
         }
         break;
         case TOK_KEYWORD_UNTIL:
         {
             /* return value captured before defers */
-            const char* __ret_l984 = "UNTIL";
-            return __ret_l984;
+            const char* __ret_l1041 = "UNTIL";
+            return __ret_l1041;
         }
         break;
         case TOK_KEYWORD_INC:
         {
             /* return value captured before defers */
-            const char* __ret_l985 = "INC";
-            return __ret_l985;
+            const char* __ret_l1042 = "INC";
+            return __ret_l1042;
         }
         break;
         case TOK_KEYWORD_DEC:
         {
             /* return value captured before defers */
-            const char* __ret_l986 = "DEC";
-            return __ret_l986;
+            const char* __ret_l1043 = "DEC";
+            return __ret_l1043;
         }
         break;
         case TOK_KEYWORD_TYPE:
         {
             /* return value captured before defers */
-            const char* __ret_l987 = "TYPE";
-            return __ret_l987;
+            const char* __ret_l1044 = "TYPE";
+            return __ret_l1044;
         }
         break;
         case TOK_KEYWORD_AS:
         {
             /* return value captured before defers */
-            const char* __ret_l988 = "AS";
-            return __ret_l988;
+            const char* __ret_l1045 = "AS";
+            return __ret_l1045;
         }
         break;
         case TOK_KEYWORD_CAST:
         {
             /* return value captured before defers */
-            const char* __ret_l989 = "CAST";
-            return __ret_l989;
+            const char* __ret_l1046 = "CAST";
+            return __ret_l1046;
         }
         break;
         case TOK_KEYWORD_DIV:
         {
             /* return value captured before defers */
-            const char* __ret_l990 = "DIV";
-            return __ret_l990;
+            const char* __ret_l1047 = "DIV";
+            return __ret_l1047;
         }
         break;
         case TOK_KEYWORD_MOD:
         {
             /* return value captured before defers */
-            const char* __ret_l991 = "MOD";
-            return __ret_l991;
+            const char* __ret_l1048 = "MOD";
+            return __ret_l1048;
         }
         break;
         case TOK_KEYWORD_XOR:
         {
             /* return value captured before defers */
-            const char* __ret_l992 = "XOR";
-            return __ret_l992;
+            const char* __ret_l1049 = "XOR";
+            return __ret_l1049;
         }
         break;
         case TOK_KEYWORD_AND:
         {
             /* return value captured before defers */
-            const char* __ret_l993 = "AND";
-            return __ret_l993;
+            const char* __ret_l1050 = "AND";
+            return __ret_l1050;
         }
         break;
         case TOK_KEYWORD_OF:
         {
             /* return value captured before defers */
-            const char* __ret_l994 = "OF";
-            return __ret_l994;
+            const char* __ret_l1051 = "OF";
+            return __ret_l1051;
         }
         break;
         case TOK_KEYWORD_OR:
         {
             /* return value captured before defers */
-            const char* __ret_l995 = "OR";
-            return __ret_l995;
+            const char* __ret_l1052 = "OR";
+            return __ret_l1052;
         }
         break;
         case TOK_KEYWORD_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l996 = "NOT";
-            return __ret_l996;
+            const char* __ret_l1053 = "NOT";
+            return __ret_l1053;
         }
         break;
         case TOK_KEYWORD_REQUIRE:
         {
             /* return value captured before defers */
-            const char* __ret_l997 = "REQUIRE";
-            return __ret_l997;
+            const char* __ret_l1054 = "REQUIRE";
+            return __ret_l1054;
         }
         break;
         case TOK_KEYWORD_ENSURE:
         {
             /* return value captured before defers */
-            const char* __ret_l998 = "ENSURE";
-            return __ret_l998;
+            const char* __ret_l1055 = "ENSURE";
+            return __ret_l1055;
         }
         break;
         case TOK_KEYWORD_INVARIANT:
         {
             /* return value captured before defers */
-            const char* __ret_l999 = "INVARIANT";
-            return __ret_l999;
+            const char* __ret_l1056 = "INVARIANT";
+            return __ret_l1056;
         }
         break;
         case TOK_KEYWORD_SWITCH:
         {
             /* return value captured before defers */
-            const char* __ret_l1000 = "SWITCH";
-            return __ret_l1000;
+            const char* __ret_l1057 = "SWITCH";
+            return __ret_l1057;
         }
         break;
         case TOK_KEYWORD_CASE:
         {
             /* return value captured before defers */
-            const char* __ret_l1001 = "CASE";
-            return __ret_l1001;
+            const char* __ret_l1058 = "CASE";
+            return __ret_l1058;
         }
         break;
         case TOK_KEYWORD_DEFAULT:
         {
             /* return value captured before defers */
-            const char* __ret_l1002 = "DEFAULT";
-            return __ret_l1002;
+            const char* __ret_l1059 = "DEFAULT";
+            return __ret_l1059;
         }
         break;
         case TOK_KEYWORD_BREAK:
         {
             /* return value captured before defers */
-            const char* __ret_l1003 = "BREAK";
-            return __ret_l1003;
+            const char* __ret_l1060 = "BREAK";
+            return __ret_l1060;
         }
         break;
         case TOK_KEYWORD_CONTINUE:
         {
             /* return value captured before defers */
-            const char* __ret_l1004 = "CONTINUE";
-            return __ret_l1004;
+            const char* __ret_l1061 = "CONTINUE";
+            return __ret_l1061;
         }
         break;
         case TOK_KEYWORD_RETURN:
         {
             /* return value captured before defers */
-            const char* __ret_l1005 = "RETURN";
-            return __ret_l1005;
+            const char* __ret_l1062 = "RETURN";
+            return __ret_l1062;
         }
         break;
         case TOK_KEYWORD_DEFER:
         {
             /* return value captured before defers */
-            const char* __ret_l1006 = "DEFER";
-            return __ret_l1006;
+            const char* __ret_l1063 = "DEFER";
+            return __ret_l1063;
         }
         break;
         case TOK_KEYWORD_DEBUG:
         {
             /* return value captured before defers */
-            const char* __ret_l1007 = "DEBUG";
-            return __ret_l1007;
+            const char* __ret_l1064 = "DEBUG";
+            return __ret_l1064;
         }
         break;
         case TOK_KEYWORD_RECURSIVE:
         {
             /* return value captured before defers */
-            const char* __ret_l1008 = "RECURSIVE";
-            return __ret_l1008;
+            const char* __ret_l1065 = "RECURSIVE";
+            return __ret_l1065;
         }
         break;
         case TOK_KEYWORD_STRUCT:
         {
             /* return value captured before defers */
-            const char* __ret_l1009 = "STRUCT";
-            return __ret_l1009;
+            const char* __ret_l1066 = "STRUCT";
+            return __ret_l1066;
         }
         break;
         case TOK_KEYWORD_EXTENDS:
         {
             /* return value captured before defers */
-            const char* __ret_l1010 = "EXTENDS";
-            return __ret_l1010;
+            const char* __ret_l1067 = "EXTENDS";
+            return __ret_l1067;
         }
         break;
         case TOK_KEYWORD_ARRAY:
         {
             /* return value captured before defers */
-            const char* __ret_l1013 = "ARRAY";
-            return __ret_l1013;
+            const char* __ret_l1070 = "ARRAY";
+            return __ret_l1070;
         }
         break;
         case TOK_KEYWORD_POINTER:
         {
             /* return value captured before defers */
-            const char* __ret_l1014 = "POINTER";
-            return __ret_l1014;
+            const char* __ret_l1071 = "POINTER";
+            return __ret_l1071;
         }
         break;
         case TOK_KEYWORD_OPAQUE:
         {
             /* return value captured before defers */
-            const char* __ret_l1015 = "OPAQUE";
-            return __ret_l1015;
+            const char* __ret_l1072 = "OPAQUE";
+            return __ret_l1072;
         }
         break;
         case TOK_KEYWORD_REF:
         {
             /* return value captured before defers */
-            const char* __ret_l1016 = "REF";
-            return __ret_l1016;
+            const char* __ret_l1073 = "REF";
+            return __ret_l1073;
         }
         break;
         case TOK_KEYWORD_IN:
         {
             /* return value captured before defers */
-            const char* __ret_l1017 = "IN";
-            return __ret_l1017;
+            const char* __ret_l1074 = "IN";
+            return __ret_l1074;
         }
         break;
         case TOK_KEYWORD_IS:
         {
             /* return value captured before defers */
-            const char* __ret_l1018 = "IS";
-            return __ret_l1018;
+            const char* __ret_l1075 = "IS";
+            return __ret_l1075;
         }
         break;
         case TOK_KEYWORD_ENUM:
         {
             /* return value captured before defers */
-            const char* __ret_l1019 = "ENUM";
-            return __ret_l1019;
+            const char* __ret_l1076 = "ENUM";
+            return __ret_l1076;
         }
         break;
         case TOK_KEYWORD_ASSERT:
         {
             /* return value captured before defers */
-            const char* __ret_l1020 = "ASSERT";
-            return __ret_l1020;
+            const char* __ret_l1077 = "ASSERT";
+            return __ret_l1077;
         }
         break;
         case TOK_KEYWORD_SIZEOF:
         {
             /* return value captured before defers */
-            const char* __ret_l1021 = "SIZEOF";
-            return __ret_l1021;
+            const char* __ret_l1078 = "SIZEOF";
+            return __ret_l1078;
         }
         break;
         case TOK_KEYWORD_EXTERN:
         {
             /* return value captured before defers */
-            const char* __ret_l1022 = "EXTERN";
-            return __ret_l1022;
+            const char* __ret_l1079 = "EXTERN";
+            return __ret_l1079;
         }
         break;
         case TOK_KEYWORD_STATIC:
         {
             /* return value captured before defers */
-            const char* __ret_l1023 = "STATIC";
-            return __ret_l1023;
+            const char* __ret_l1080 = "STATIC";
+            return __ret_l1080;
         }
         break;
         case TOK_KEYWORD_PACKED:
         {
             /* return value captured before defers */
-            const char* __ret_l1024 = "PACKED";
-            return __ret_l1024;
+            const char* __ret_l1081 = "PACKED";
+            return __ret_l1081;
         }
         break;
         case TOK_KEYWORD_DEFINE:
         {
             /* return value captured before defers */
-            const char* __ret_l1025 = "DEFINE";
-            return __ret_l1025;
+            const char* __ret_l1082 = "DEFINE";
+            return __ret_l1082;
         }
         break;
         case TOK_BITWISE_AND:
         {
             /* return value captured before defers */
-            const char* __ret_l1026 = "&";
-            return __ret_l1026;
+            const char* __ret_l1083 = "&";
+            return __ret_l1083;
         }
         break;
         case TOK_BITWISE_OR:
         {
             /* return value captured before defers */
-            const char* __ret_l1027 = "|";
-            return __ret_l1027;
+            const char* __ret_l1084 = "|";
+            return __ret_l1084;
         }
         break;
         case TOK_BITWISE_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l1028 = "~";
-            return __ret_l1028;
+            const char* __ret_l1085 = "~";
+            return __ret_l1085;
         }
         break;
         case TOK_BITWISE_LSHIFT:
         {
             /* return value captured before defers */
-            const char* __ret_l1029 = "<<";
-            return __ret_l1029;
+            const char* __ret_l1086 = "<<";
+            return __ret_l1086;
         }
         break;
         case TOK_BITWISE_RSHIFT:
         {
             /* return value captured before defers */
-            const char* __ret_l1030 = ">>";
-            return __ret_l1030;
+            const char* __ret_l1087 = ">>";
+            return __ret_l1087;
         }
         break;
         case TOK_ERROR:
         {
             /* return value captured before defers */
-            const char* __ret_l1031 = "ERROR";
-            return __ret_l1031;
+            const char* __ret_l1088 = "ERROR";
+            return __ret_l1088;
         }
         break;
         default:
         {
             /* return value captured before defers */
-            const char* __ret_l1032 = "UNKNOWN";
-            return __ret_l1032;
+            const char* __ret_l1089 = "UNKNOWN";
+            return __ret_l1089;
         }
         break;
     }
@@ -1933,8 +2000,8 @@ const char* TokenKind__string(const TokenKind k)
  */
 void TToken__print(TToken* t)
 {
-    const char* kind_name_l1047_c15 = TokenKind__string(((*t)).kind);
-    printf("Token { kind: '%-12s', line: %3d, column: %3d, ", kind_name_l1047_c15, ((*t)).line, ((*t)).column);
+    const char* kind_name_l1104_c15 = TokenKind__string(((*t)).kind);
+    printf("Token { kind: '%-12s', line: %3d, column: %3d, ", kind_name_l1104_c15, ((*t)).line, ((*t)).column);
     if (((*t)).length > 0 && ((*t)).start != nil)
     {
         printf("text: '%.*s', ", (int)((*t)).length, ((*t)).start);

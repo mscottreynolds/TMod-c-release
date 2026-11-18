@@ -31,7 +31,7 @@ import pNode, TNode, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNT
     NODE_IMPORT, NODE_IMPORT_ITEM, NODE_FIELD_DECL, NODE_METHOD_TYPE, NODE_ARRAY_TYPE,
     NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, NODE_FIELD_ACCESS, NODE_ELSIF, NODE_ELSE,
     NODE_SIZEOF, NODE_COUNTOF, NODE_BINARY, NODE_UNARY, NODE_TERNARY, NODE_CAST,
-    NODE_LITERAL, NODE_IDENT, NODE_CALL, NODE_PAREN,
+    NODE_LITERAL, NODE_IDENT, NODE_CALL, NODE_PAREN, TVarItem,
     from tmodc.node
 import size_t
     from "stddef.h"
@@ -52,10 +52,11 @@ import TType
 import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_expr,
     emit_indent, codegen_common_type_decl, emit_return_type, emit_doc_comment_as_c,
     codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
-    emit_let_binding_name, emit_var_decl, codegen_common_inc_dec, emit_param_list,
-    codegen_common_module_prototype, codegen_common_import, codegen_type_is_open_slice,
-    codegen_decl_opens_type_order, codegen_type_in_file, codegen_const_is_value,
-    codegen_emit_type_preamble, codegen_type_order_skip,
+    emit_let_binding_name, emit_let_value_array, emit_var_decl, codegen_common_inc_dec, 
+    emit_array_type, codegen_common_array_literal, emit_param_list,
+    codegen_common_module_prototype, codegen_common_import,
+    codegen_type_is_open_slice, codegen_decl_opens_type_order, codegen_type_in_file, 
+    codegen_const_is_value, codegen_emit_type_preamble, codegen_type_order_skip,
     codegen_type_order_after_type, codegen_type_order_check,
     from tmodc.codegen.codegen_common
 import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
@@ -864,6 +865,115 @@ begin
 end codegen_c_continue_stmt
 
 
+(*
+ * C name of one VAR / COST / LET item.
+ *)
+procedure codegen_c_emit_item_name(n: const ^TNode, item: const ^TNode, ctx: CodegenContext)
+begin
+    if n.kind == NODE_LET_DECL then
+        emit_let_binding_name(ctx.out, item.var_item.name, item.var_item.name_len, item)
+    else
+        dynbuf_appendn(ctx.out, item.var_item.name, item.var_item.name_len)
+    end
+end codegen_c_emit_item_name
+
+
+(*
+ * Brace list used as a value. C has no brace expression, so the list
+ * is a compound literal of ty. Nested braces stay initializer lists.
+ * A ternary repeats the same array type on each brace arm.
+ *)
+recursive procedure codegen_c_emit_array_value(n: const ^TNode, ty: const ^TType, ctx: CodegenContext)
+begin
+    if n == nil then
+        return
+    end
+    if n.kind == NODE_ARRAY_LITERAL then
+        dynbuf_append_char(ctx.out, '(')
+        emit_array_type(ctx.out, ty, nil, 0)
+        dynbuf_append_char(ctx.out, ')')
+        codegen_common_array_literal(n, ctx)
+    elsif n.kind == NODE_TERNARY then
+        dynbuf_append_char(ctx.out, '(')
+        codegen_common_expr(n.ternary.cond, ctx)
+        dynbuf_append(ctx.out, " ? ")
+        codegen_c_emit_array_value(n.ternary.then_expr, ty, ctx)
+        dynbuf_append(ctx.out, " : ")
+        codegen_c_emit_array_value(n.ternary.else_expr, ty, ctx)
+        dynbuf_append_char(ctx.out, ')')
+    elsif n.kind == NODE_PAREN then
+        codegen_c_emit_array_value(n.paren.expr, ty, ctx)
+    else
+        codegen_common_expr(n, ctx)
+    end
+end codegen_c_emit_array_value
+
+
+(*
+ * Local array whose initializer is not a brace list. Copy the value
+ * in. unsigned char may alias the object.
+ *)
+procedure codegen_c_emit_array_copy(n: const ^TNode, item: const ^TNode, ctx: CodegenContext)
+begin
+    var buf: array[512] of char
+    var ind: integer = 0
+
+    ind := ctx.indent
+    dynbuf_append(ctx.out, "{\n")
+    ind := ind + 1
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "unsigned char *__ad_l%d_c%d;\n",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "const unsigned char *__as_l%d_c%d;\n",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "integer __an_l%d_c%d;\n",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "integer __ai_l%d_c%d;\n",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "__ad_l%d_c%d = (unsigned char *)",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    codegen_c_emit_item_name(n, item, ctx)
+    dynbuf_append(ctx.out, ";\n")
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "__as_l%d_c%d = (const unsigned char*)(",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    codegen_c_emit_array_value(item.var_item.initializer, item.var_item.item_type, ctx)
+    dynbuf_append(ctx.out, ");\n")
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "__an_l%d_c%d = (integer)sizeof(",
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    codegen_c_emit_item_name(n, item, ctx)
+    dynbuf_append(ctx.out, ");\n")
+    emit_indent(ctx.out, ind)
+    snprintf(buf, sizeof(buf), "for (__ai_l%d_c%d = 0; __ai_l%d_c%d < __an_l%d_c%d; __ai_l%d_c%d++)\n",
+        item.token.line, item.token.column,
+        item.token.line, item.token.column,
+        item.token.line, item.token.column,
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ind + 1)
+    snprintf(buf, sizeof(buf), "__ad_l%d_c%d[__ai_l%d_c%d] = __as_l%d_c%d[__ai_l%d_c%d];\n",
+        item.token.line, item.token.column,
+        item.token.line, item.token.column,
+        item.token.line, item.token.column,
+        item.token.line, item.token.column)
+    dynbuf_append(ctx.out, buf)
+    emit_indent(ctx.out, ctx.indent)
+    dynbuf_append(ctx.out, "}\n")
+end codegen_c_emit_array_copy
+
+
 (**
  * Emit a single statement
  *)
@@ -961,17 +1071,26 @@ begin
                 end
 
                 if n.kind == NODE_LET_DECL then
-                    if item.var_item.item_type <> nil then
+                    if  item.var_item.item_type <> nil and
+                        item.var_item.item_type.is_array and
+                        item.var_item.item_type.element_type <> nil and
+                    not item.var_item.item_type.is_pointer then
+                        emit_let_value_array(ctx.out, item.var_item.item_type, item)
+                    elsif item.var_item.item_type <> nil then
                         emit_type_specifier(ctx.out, item.var_item.item_type,
                             nil, 0, false, false, false, false)
                         dynbuf_append_char(ctx.out, ' ')
+                        emit_let_binding_name(ctx.out,
+                            item.var_item.name,
+                            item.var_item.name_len,
+                            item)
                     else
                         dynbuf_append(ctx.out, "int ")
+                        emit_let_binding_name(ctx.out,
+                            item.var_item.name,
+                            item.var_item.name_len,
+                            item)
                     end
-                    emit_let_binding_name(ctx.out, 
-                        item.var_item.name,
-                        item.var_item.name_len,
-                        item)
                 else
                     emit_var_decl(ctx.out,
                         item.var_item.name,
@@ -979,7 +1098,22 @@ begin
                         item.var_item.item_type)
                 end
 
-                if not n.var_decl.is_extern then
+                // if not n.var_decl.is_extern then
+                if not n.var_decl.is_extern and
+                        item.var_item.initializer <> nil and
+                        item.var_item.initializer^.kind <> NODE_ARRAY_LITERAL and
+                        item.var_item.item_type <> nil and
+                        item.var_item.item_type.is_array and
+                        item.var_item.item_type.element_type <> nil and
+                        not item.var_item.item_type.is_pointer then
+                    if n.kind == NODE_CONST_DECL or n.var_decl.is_static or
+                            ctx.parent_node == nil then
+                        fprintf(stderr, "codegen_c: a const or static array initializer must be a brace list\n")
+                        exit(1)
+                    end
+                    dynbuf_append(ctx.out, ";\n")
+                    codegen_c_emit_array_copy(n, item, ctx)
+                elsif not n.var_decl.is_extern then
                     if item.var_item.initializer <> nil then
                         dynbuf_append(ctx.out, " = ")
                         codegen_common_expr(item.var_item.initializer, ctx)

@@ -281,7 +281,7 @@ end
 
 Quoted `FROM "stdio.h"` does **not** parse the C header. The item list is the programmer’s claim that C will provide those names after the include.
 
-**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. An array type-spec uses the same suffix as source (`Node[]`, `^Node[]`, `integer 32[4]`) or the keyword form (`^array[] of Node`, `array[] of integer[4]`) when a suffix would not round-trip (**0.27.1.217**). A line with no array suffix still parses. An anonymous nested union inside that field list is `union (a: Arm, b: integer)` (**0.27.4.228**). The word `union` followed by `:` is a field name. An older compiler rejects a line that contains `union (`. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct.
+**`.mh` export lines** (`modc-mh/1`, `@format 1`): one physical line per export. Signatures, field lists, method-type RHS, width tails (`integer 32`), and **alias RHS** (`export type integer complete integer 64`) are described in §3.2 of earlier revisions and in `CURRENT.md`. An array type-spec uses the same suffix as source (`Node[]`, `^Node[]`, `integer 32[4]`) or the keyword form (`^array[] of Node`, `array[] of integer[4]`) when a suffix would not round-trip (**0.27.1.217**). A line with no array suffix still parses. An anonymous nested union inside that field list is `union (a: Arm, b: integer)` (**0.27.4.228**). The word `union` followed by `:` is a field name. An older compiler rejects a line that contains `union (`. Parent fields on `EXTENDS` require the parent type imported. Field call-through requires importing the method type as well as the struct. A pointer field peels only when the struct that declares it is imported (§5.3).
 
 **Example** (generated `.mh` line, not source):
 
@@ -424,6 +424,7 @@ var x, y: real
 var s: string = "ok"
 
 let n = f()           (* type inferred from initializer *)
+let xs = { 1, 2, 3 }  (* array[3] of integer; §6.3 *)
 let msg: string = "done"
 (* n := 3  — illegal: LET does not rebind *)
 i := 0                (* VAR *)
@@ -598,7 +599,7 @@ let q = p^
 x := q^
 ```
 
-over `x := p^^`. v1 does **not** make `p^^` a parse error. A later lint may warn. Field auto-deref is **one** implied peel per `.` selector, not sugar for `^^`. Linked-list `p.next.next` is multiple peels via fields (Oberon allows it; rule 9 is stricter on that shape — review, not a grammar ban). Index auto-deref is the same rule for `[]` when `p` is a pointer-to-array. `argv: ^char[]` stays one index (`s := argv[i]` is `^char`, not a peel of a pointer-to-array-of-char). Explicit `p^[i]` emits parenthesized C `(*(p))[i]` so `[]` does not bind tighter than unary `*`. If `p` is `^T` and `T` is not an array, `p[i]` is the `i`-th `T` (C `p[i]`); that is pointer arithmetic, not a peel (**0.26.7.191**).
+over `x := p^^`. v1 does **not** make `p^^` a parse error. A later lint may warn. Field auto-deref is **one** implied peel per `.` selector, not sugar for `^^`. Linked-list `p.next.next` is multiple peels via fields (Oberon allows it; rule 9 is stricter on that shape — review, not a grammar ban). A peel is emitted only when this unit can see that the left side is a pointer. A declaration written here is visible, so `var p: ^Node` and a field `next: ^Node` on a struct in this file make `p.next.value` peel at `p` and again at `next`. An imported field peels only when the struct that declares that field is imported. `import TNode` is enough for `item.var_item` when `item` is `^TNode` and `var_item` is a field of `TNode`. `item.var_item.item_type.is_array` peels at `item_type` only when `TVarItem` is imported as well, because that struct declares `item_type: ^TType`. `TType` must be imported for `is_array` to be a known field. Without `TVarItem`, the field name is still accepted and the generated C has no peel. A written `item_type^.is_array` peels without that import. Index auto-deref is the same rule for `[]` when `p` is a pointer-to-array. `argv: ^char[]` stays one index (`s := argv[i]` is `^char`, not a peel of a pointer-to-array-of-char). Explicit `p^[i]` emits parenthesized C `(*(p))[i]` so `[]` does not bind tighter than unary `*`. If `p` is `^T` and `T` is not an array, `p[i]` is the `i`-th `T` (C `p[i]`); that is pointer arithmetic, not a peel (**0.26.7.191**).
 
 Rule 9 also objects to **hiding** a dereference in a typedef. Named `type pchar = ^char` is still one visible `^` on that line; `^pchar` is a second pointer type with a name, not a silent `**`. Do not use typedefs to pretend `p^^` is a single star.
 
@@ -720,7 +721,7 @@ s := s - { NODE_FOR }     (* exclude *)
 
 `(* C: typedef uint64_t NodeKindSet;` then `(s & (1ULL << x)) != 0`, union `|`, intersection `&`, difference `& ~`. `*)`
 
-- Constructor `{ a, b, … }` is the same braces as an array literal; the type of the context (or of the elements) decides set vs array. Empty `{}` requires a type ascription.
+- Constructor `{ a, b, … }` is the same braces as an array literal. The written target decides set or array. A brace list with no target is the array rule in §6.3. Empty `{}` requires a type ascription.
 - `x IN s` — membership; `x` has type `E`, `s` has type `SET OF E`.
 - `s + t` union, `s * t` intersection, `s - t` difference; `==` / `!=`. Do not overload `|` / `&` on sets (those remain integer operations).
 - `SET OF E` and `SET OF F` are distinct types. No implicit conversion to `cardinal 64`.
@@ -932,7 +933,7 @@ row[at]        (* ^ERow C-index; type ERow; C row[at] *)
 row[at].updateRow()  (* instance on indexed ^T; C ERow__updateRow(&row[at]) *)
 pp.getX()      (* instance on ^Point; same peel as pp^.getX() *)
 t.left^.key
-t.left.key     (* auto-deref through a pointer field *)
+t.left.key     (* auto-deref through a pointer field; the struct that declares left must be visible, §5.3 *)
 argv[i]        (* ^char[] — one index; not a pointer-to-array peel *)
 @i             (* address-of; expression, not a designator target *)
 (* &i  — illegal as address-of: '&' is bitwise AND; use '@'  — 0.26.5.186 *)
@@ -979,7 +980,9 @@ n as integer 64
 CAST(integer, c)
 ```
 
-`cond ? a : b` has the type of `a` when `a` and `b` have the same static type (**0.26.10.203**). One alias step counts (`type Count = integer` matches `integer`). Name, width, pointer, array, and `const` all count. `integer`, `integer 32`, `cardinal`, and `real` are distinct types. An arm with no type leaves the conditional untyped. A brace list `{ … }` takes its type from a written target. The condition is unchecked, as with `IF`.
+`cond ? a : b` has the type of `a` when `a` and `b` have the same static type (**0.26.10.203**). One alias step counts (`type Count = integer` matches `integer`). Name, width, pointer, array, and `const` all count. `integer`, `integer 32`, `cardinal`, and `real` are distinct types. An arm with no type leaves the conditional untyped. The condition is unchecked, as with `IF`.
+
+A non-empty brace list whose elements share one static type has type `array[N] of T`. `N` is the element count. `T` is that shared type. The comparison is the same one static type as `? :`. A nested brace is an element, so `{ { 1, 2 }, { 3, 4 } }` is `array[2] of array[2] of integer`. An empty `{}`, an element with no type, or two elements that differ has no type. `true`, `false`, and `nil` still have no type, so a brace list of those has no type. A declaration that omits `:` then reports `cannot infer type from initializer`. A written `:` is the type of the declaration. That covers a record initializer (`let q: Point = { 3, 4 }`) and, when implemented, a `SET OF` constructor. The brace list does not replace a written type. Two ternary arms that are brace lists use that same rule: equal bounds and element types give the array type; different bounds are an error.
 
 A string literal has type `string`. In `? :`, `string`, `^char`, and `const ^char` are three types. `as` gives that arm the target type (`"no filetype" as pchar` has type `pchar`).
 
@@ -1679,6 +1682,8 @@ Do not maintain a second full EBNF elsewhere.
 | 14 November 2026 | **§3.2 types (0.27.8.252):** `bit` is not a prelude type. Bare `signed` and bare `unsigned` are reserved C spellings. `unsigned` is still not a modifier on `^T` or on a typedef name. |
 | 16 November 2026 | **§3.2 / §8.3 / §10.1 `IMPORT … AS` (0.27.8.253):** the alias is one identifier and is the binding in this unit. Generated C keeps the original spelling. `AS` is not the portable bind. `Type::name as Alias` is a free name. `IMPORT *` stays deferred. |
 | 16 November 2026 | **§2.2 / §3.2 / §8.3 `IMPORT *` and the C spelling (planned):** `import *` binds the package qualident and no bare name. A selective import is the bare name. `*` is an `.mh` import. `.` and `::` become `__` on an exported C name. A `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. A non-exported procedure stays `static`. The `.mh` line keeps the source name. Not implemented. |
+| 17 November 2026 | **§4.2 / §5.4 / §6.3 brace-list inference (21a, 0.27.8.254):** a non-empty `{ … }` whose elements share one static type is `array[N] of T`. Empty, untyped, or mixed lists stay untyped. A written `:` stays the type. A `SET OF` constructor still needs that written target. |
+| 17 November 2026 | **§3.2 / §5.3 / §6.2 imported pointer fields (0.27.8.254):** a `.` peels only when this unit can see that the left side is a pointer. An imported field peels when the struct that declares it is imported. A written `^.` peels without that import. A field name on an unseen struct is still accepted and emits no peel. |
 
 ---
 

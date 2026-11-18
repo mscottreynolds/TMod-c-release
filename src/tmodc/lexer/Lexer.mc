@@ -547,6 +547,59 @@ begin
 end error_token
 
 
+(*
+ * Decimal number at l.current. A dot with a following digit, or an
+ * exponent, selects TOK_REAL. 1. stays the integer 1. u/l suffixes
+ * stay on the integer.
+ *)
+function scan_decimal_number(ref l: TLexer): TokenKind
+begin
+	var is_real: bool = false
+	var mark: char = '\0'
+
+	while isdigit(l.current^ as uchar) or l.current^ == '_' do
+		advance(l)
+	end
+
+	if l.current^ == '.' and isdigit(peek2(l) as uchar) then
+		is_real := true
+		advance(l)
+		while isdigit(l.current^ as uchar) or l.current^ == '_' do
+			advance(l)
+		end
+	end
+
+	if l.current^ == 'e' or l.current^ == 'E' then
+		mark := peek2(l)
+		if isdigit(mark as uchar) or 
+				((mark == '+' or mark == '-') and
+					isdigit(l.current[2] as uchar)) then
+			is_real := true
+			advance(l)
+			if l.current^ == '+' or l.current^ == '-' then
+				advance(l)
+			end
+			while isdigit(l.current^ as uchar) or l.current^ == '_' do
+				advance(l)
+			end
+		end
+	end
+
+	if not is_real then
+		while l.current^ == 'u' or l.current^ == 'U' or
+				l.current^ == 'l' or l.current^ == 'L' do
+			advance(l)
+		end
+		return TOK_NUMBER
+	end
+	if l.current^ == 'f' or l.current^ == 'F' or
+			l.current^ == 'l' or l.current^ == 'L' then
+		advance(l)
+	end
+	return TOK_REAL
+end scan_decimal_number
+
+
 (**
  * Initialize lexer state.
  *)
@@ -628,11 +681,13 @@ begin
 		return make_token_len(l, lookup_keyword(start, length), start, length)
 	end
 
-	// Number (integer only for phase 1; extend later for floats, bases, etc.)
+	// Number. Decimal point or exponent -> TOK_REAL. 0x/0o/0b stay integers.
 	if isdigit(c as uchar) or
 			(c == '0' and (peek2(l) == 'x' or peek2(l) == 'X' or
 				peek2(l) == 'o' or peek2(l) == 'O' or
 				peek2(l) == 'b' or peek2(l) == 'B')) then
+		var kind: TokenKind = TOK_NUMBER
+
 		// 0x, 0X, 0o, 0O, 0b, 0B pefix
 		if c == '0' and (peek2(l) == 'x' or peek2(l) == 'X' or
 				peek2(l) == 'o' or peek2(l) == 'O' or
@@ -640,17 +695,19 @@ begin
 			DEBUG printf("DEBUG: {TOK_NUMBER=%.*s}\n", 2, start)
 			advance(l)			// consume 0
 			advance(l)			// consume x/o/b
+			while isdigit(l.current^ as uchar) or
+					l.current^ == '_' or
+					l.current^ == 'u' or l.current^ == 'U' or
+					l.current^ == 'l' or l.current^ == 'L' or
+					(l.current^ >= 'a' and l.current^ <= 'f') or
+					(l.current^ >= 'A' and l.current^ <= 'F') do
+				advance(l)
+			end
+		else
+			kind := scan_decimal_number(l)
 		end
 
-		while isdigit(l.current^ as uchar) or
-				l.current^ == '_' or l.current^ == '.' or
-				l.current^ == 'u' or l.current^ == 'U' or 		// unsigned
-				l.current^ == 'l' or l.current^ == 'L' or 		// long
-				(l.current^ >= 'a' and l.current^ <= 'f') or
-				(l.current^ >= 'A' and l.current^ <= 'F') do
-			advance(l)
-		end
-		return make_token_len(l, TOK_NUMBER, start, (l.current - start) as size_t)
+		return make_token_len(l, kind, start, (l.current - start) as size_t)
 	end
 
 	// Character literal
