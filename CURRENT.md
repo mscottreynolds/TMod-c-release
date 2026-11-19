@@ -2,16 +2,16 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.8 (build 254)  
-**Last updated:** 2026-11-17  
+**Version:** 0.27.8 (build 255)  
+**Last updated:** 2026-11-18  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.8.254** is in `changelog.md`, `docs/project_bible.md`, and `docs/grok_report-*.md`. This file is the live focus.
+History through **0.27.8.255** is in `changelog.md`. Session archives and `docs/project_bible.md` run through **0.27.8.254**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.8**, build **254**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **brace-list inference (21a, 0.27.8.254)**. A non-empty brace list whose elements share one static type is `array[N] of T`. A written `:` stays the type. A decimal with a dot or an exponent has type `real`. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.8**, build **255**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote drops the unused keyword `IS` (**0.27.8.255**). `is` is an identifier. `IN` stays reserved. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
 **Next:** **7 remainder.** `IMPORT *` and the package C spelling. The rule is locked in Language Report §3.2 and `docs/syntax-ebnf.md`. The compiler does not do it yet.
 
@@ -23,7 +23,6 @@ History through **0.27.8.254** is in `changelog.md`, `docs/project_bible.md`, an
 - **15a.** Cyclic `IMPORT`. Package directories landed in **0.26.12.213**. The language rule has not. Candidates: extract-common (what `parser_common` does today), an interface/implementation split, a cycle ban, or an interface-only first pass. `parser_main` still meets `declaration`, `expression`, and `statement` through generated C headers and a previously emitted `.mh`.
 - **19 remainder.** A character literal `CONST` still lowers to a C object. A folded integer emits no C object (**0.27.7.243**).
 - **22.** Range expressions stay deferred.
-- **26.** Drop the unused keyword `IS`. The lexer still reserves it. The parser never uses it. `IN` stays reserved for set membership. See [Drop `IS`](#drop-is-no-type-guards).
 - **Instance methods.** A first formal written `^Owner` is still not instance. Language Report §8.3.
 - **Focus 13 / TODO 23.** `SET OF` enum is the plan below. The deferred line also names a stdlib `BitSet` and calls `SET OF` unlikely. Borrowed-buffer `init_at` waits until a stdlib is designed. See [SET OF](#future-plan-set-of-enum-wirth-bitset) and [borrowed buffers](#stdlib-borrowed-buffers-when-designed).
 - **Focus 14.** Shebang / `-run` scripts. `tmodc -run` exists. The parser does not yet accept a leading `#!`. See [shebang](#future-plan-shebang--run-scripts).
@@ -38,19 +37,18 @@ History through **0.27.8.254** is in `changelog.md`, `docs/project_bible.md`, an
 - **8.** `FORWARD … END` / `EXTERN … END` blocks, indefinitely (19 October 2026). Per-line `EXTERN`, postfix `FORWARD`, and `type T FORWARD` stay.
 - **7b.** No generated calls of imported module bodies. Call the module entry explicitly.
 - **24.** Discard `_` is dropped (12 October 2026). `(f())` is the discard.
+- **26.** Drop unused keyword `IS`. Done (**0.27.8.255**). The lexer no longer reserves it. `IN` stays reserved. See [Drop `IS`](#drop-is-no-type-guards).
 - **DbC.** `REQUIRE` / `ENSURE` already resolve like `ASSERT`. A nil-check of a `REF T` is a separate check of `^T`. Side-effect-free contract lint and a `--pot` assertion quota are not planned.
 
 **Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked. Scratch questions are in `TODO-items-for-0.27.md`.
 
 ## Drop `IS` (no type guards)
 
-**Status:** Locked (31 August 2026). **Not implemented.** Lexer still reserves `IS` (`TOK_KEYWORD_IS`); **parser never uses it.** EBNF no longer lists `IS` (relational-op is `IN` only). Language Report §6.3: `IN` is planned set membership; `IS` is dropped.
+**Status:** Done (**0.27.8.255**). `TOK_KEYWORD_IS` is commented out of the lexer enum, the keyword table, and the token-string case. `is` is an identifier. EBNF `relational-op` is `IN` only. Language Report §6.3: `IN` is planned set membership. `IS` is not a type guard. The user reported that the complete test suite passes on gcc, clang, and tcc.
 
-Oberon `IS` is a runtime type test (`p is T`) — needs RTTI or a tag. TMod-c: **no vtables / no `IS` on structs.** Remove the keyword (lexer table, `TokenKind::string`, EBNF `relational-op` / `keyword`, report). `is` becomes a legal identifier.
+Oberon `IS` is a runtime type test (`p is T`) — needs RTTI or a tag. TMod-c: **no vtables / no `IS` on structs.**
 
 **`IN`:** still reserved; unused as an operator. Keep — v1 **`SET OF` enum** membership (not a type guard). See [Future plan: SET OF enum](#future-plan-set-of-enum-wirth-bitset).
-
-**When implementing:** small mechanical drop; any `test3` that used `IS` as a keyword should expect an identifier. Spec in `docs/syntax-ebnf.md` + Language Report. Not 0.26.x calm-path.
 
 ## Future plan: `SET OF` enum (Wirth bitset)
 
@@ -92,9 +90,9 @@ if (LOOP_KINDS & (1ULL << new_parent->kind))
 
 TMod-c still rejects mixing `ColorSet` with `NodeKindSet` even if both are 64-bit in C.
 
-**v1 rejects:** `SET OF integer` / `real` / `struct` / `string`; enumerator `= 1000` or more than 64 members; `SET OF char` (256 bits — later); `FOR x IN s`; `CARD`; hash `Set`. Optional later: `<=` subset, `XOR` symmetric difference, `NOT` complement in `E`, Ada-style `x in (A, B)` sugar.
+**v1 rejects:** `SET OF integer` / `real` / `struct` / `string`; enumerator `= 1000` or more than 64 members; `SET OF char` (256 bits — later); `FOR x IN s`; `CARD`; hash `Set`. Optional later: `<=` subset, `XOR` symmetric difference, `NOT` complement in `E`, Ada-style `x in (A, B)` sugar. `IS` is an identifier. `IN` is the leftover relational keyword.
 
-**When implementing:** keyword `SET`; `set-type` in `type-expression` / `type-specifier`; `IN` in the relational parser (token exists); `{ … }` set vs array in semantic; operator types; tests (`test_*` membership/algebra, `test3_*` bad base type / ordinal out of 0..63). Version bump (not a quiet 0.26.x patch). May land after `IS` drop so `IN` is the only leftover relational keyword.
+**When implementing:** keyword `SET`; `set-type` in `type-expression` / `type-specifier`; `IN` in the relational parser (token exists); `{ … }` set vs array in semantic; operator types; tests (`test_*` membership/algebra, `test3_*` bad base type / ordinal out of 0..63). Version bump (not a quiet 0.26.x patch).
 
 ## Future plan: shebang / `-run` scripts
 
@@ -174,7 +172,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.8.254**, are in `changelog.md` and `docs/project_bible.md`.
+Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.8.255**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.8.254**.
 
 ## Useful Commands
 

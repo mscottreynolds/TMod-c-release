@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.27.8** (see `CURRENT.md` for implementation status).  
-**Last updated:** 9 November 2026  
+**Last updated:** 18 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -986,7 +986,7 @@ A non-empty brace list whose elements share one static type has type `array[N] o
 
 A string literal has type `string`. In `? :`, `string`, `^char`, and `const ^char` are three types. `as` gives that arm the target type (`"no filetype" as pchar` has type `pchar`).
 
-`IN` is *Planned* as set membership (`x IN s` for `SET OF` enum; §5). It is not a type guard. `IS` is **dropped** (no RTTI / no `IS` on structs).
+`IN` is *Planned* as set membership (`x IN s` for `SET OF` enum; §5). It is not a type guard. `IS` is **dropped** (no RTTI / no `IS` on structs). The lexer does not reserve it (**0.27.8.255**). `is` is an identifier.
 
 ### 6.4 Casts
 
@@ -1684,6 +1684,7 @@ Do not maintain a second full EBNF elsewhere.
 | 16 November 2026 | **§2.2 / §3.2 / §8.3 `IMPORT *` and the C spelling (planned):** `import *` binds the package qualident and no bare name. A selective import is the bare name. `*` is an `.mh` import. `.` and `::` become `__` on an exported C name. A `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. A non-exported procedure stays `static`. The `.mh` line keeps the source name. Not implemented. |
 | 17 November 2026 | **§4.2 / §5.4 / §6.3 brace-list inference (21a, 0.27.8.254):** a non-empty `{ … }` whose elements share one static type is `array[N] of T`. Empty, untyped, or mixed lists stay untyped. A written `:` stays the type. A `SET OF` constructor still needs that written target. |
 | 17 November 2026 | **§3.2 / §5.3 / §6.2 imported pointer fields (0.27.8.254):** a `.` peels only when this unit can see that the left side is a pointer. An imported field peels when the struct that declares it is imported. A written `^.` peels without that import. A field name on an unseen struct is still accepted and emits no peel. |
+| 18 November 2026 | **§6.3 `IS` (0.27.8.255):** the lexer no longer reserves `IS`. `is` is an identifier. `IN` stays reserved for set membership. |
 
 ---
 

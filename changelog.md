@@ -2,6 +2,11 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.8.255
+- **Drop `IS` (item 26).** `TOK_KEYWORD_IS` is commented out of the lexer enum, the keyword table, and the token-string case. `is` is an identifier. `IN` stays reserved for set membership. The parser never used `IS`. The EBNF already omitted it.
+- The user reported that the complete test suite passes on gcc, clang, and tcc, and promoted **0.27.8.255**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **255**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, and `docs/language-report.md`.
+
 ## Version 0.27.8.254
 - **Brace-list inference (21a remainder).** A non-empty `{ … }` whose elements share one static type is `array[N] of T`. `N` is the element count. The comparison is the same one `? :` uses. A nested brace is an element. An empty `{}`, an element with no type, or two elements that differ stays untyped, and a declaration that omits `:` reports `cannot infer type from initializer`. A written `:` stays the type, including a record initializer. `true`, `false`, and `nil` still have no type. Two ternary arms that are brace lists follow that rule: equal bounds and element types give the array type; different bounds are an error.
 - A direct brace list stays a C initializer (`integer xs[3] = {1, 2, 3}`). A `LET` of an anonymous array places the mangled name inside the declarator (`integer row_l8_c5[3]`). A local `VAR` or `LET` array whose initializer is not itself a brace list is declared without an initializer and then filled by a byte copy from a compound literal, so `var pick = 0 < 1 ? {7, 8} : {9, 10}` compiles. A `const` or file-scope array whose initializer is not a brace list stops in codegen. A brace list on the right of `:=`, in `return`, or as a call argument is still a raw `{ … }`.

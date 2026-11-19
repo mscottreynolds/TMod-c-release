@@ -145,7 +145,7 @@ export type TokenKind = enum
 	TOK_KEYWORD_OPAQUE,
 	TOK_KEYWORD_REF,
 	TOK_KEYWORD_IN,
-	TOK_KEYWORD_IS,
+	// TOK_KEYWORD_IS,
 	TOK_KEYWORD_OF,
 	TOK_KEYWORD_ENUM,
 	TOK_KEYWORD_ASSERT,
@@ -244,7 +244,7 @@ var keyword_table: array of TKeywordTable = {
 	{ "IN",			TOK_KEYWORD_IN 		   },
 	{ "INC",        TOK_KEYWORD_INC        },
 	{ "INVARIANT",  TOK_KEYWORD_INVARIANT  },
-	{ "IS", 		TOK_KEYWORD_IS 		   },
+	// { "IS", 		TOK_KEYWORD_IS 		   },
 	{ "LET",        TOK_KEYWORD_LET        },
 	{ "LOOP",       TOK_KEYWORD_LOOP       },
 	{ "MOD",        TOK_KEYWORD_MOD        },
@@ -1072,7 +1072,7 @@ begin
 		case TOK_KEYWORD_OPAQUE:	return "OPAQUE"
 		case TOK_KEYWORD_REF:       return "REF"
 		case TOK_KEYWORD_IN: 		return "IN"
-		case TOK_KEYWORD_IS:		return "IS"
+		// case TOK_KEYWORD_IS:		return "IS"
 		case TOK_KEYWORD_ENUM:		return "ENUM"
 		case TOK_KEYWORD_ASSERT:	return "ASSERT"
 		case TOK_KEYWORD_SIZEOF:	return "SIZEOF"
