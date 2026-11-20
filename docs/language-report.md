@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.8** (see `CURRENT.md` for implementation status).  
-**Last updated:** 18 November 2026  
+**Version alignment:** Compiler **0.27.9** (see `CURRENT.md` for implementation status).  
+**Last updated:** 19 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -293,13 +293,13 @@ export function mini_answer complete () : integer
 export procedure Point__print complete instance Point (Point)
 ```
 
-**`IMPORT *` and the C spelling *Planned*.** Not in the compiler yet. `AS` above is the implemented rule.
+**`IMPORT *` and the C spelling (0.27.9.257).** `AS` above stays the selective-import rule. `import * as Alias` is still later.
 
-- `import * from Module` brings that module in under its package qualident. A call, a type, a constant, a variable, or a method is written with that qualident: `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, `tmodc.arena.Point::print`. The star adds no bare name. A qualified `tmodc.pack.integer` is a different name from the prelude `integer`.
-- A selective import is the bare name only. `import arena_init from tmodc.arena` is `import tmodc.arena.arena_init as arena_init`. A star and a selective import from the same module may stand together.
-- `import *` is an `.mh` import. `import * from "stdio.h"` is an error. Include-only `import from` still binds nothing.
+- `import * from Module` brings that module in under its package qualident. The longest imported qualident matches. The next identifier is the export: `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, `tmodc.arena.Point::print`. The module entry is the qualident call, `tmodc.arena()`. A shorter prefix is not a name. A dotted qualident is a type name (`var p: tmodc.arena.TChunk`). The star adds no bare name. A qualified `tmodc.pack.integer` is a different name from the prelude `integer`.
+- A selective import is the bare name only. `import arena_init from tmodc.arena` is `import tmodc.arena.arena_init as arena_init`. A star and a selective import from the same module may stand together. A quoted path such as `"fixtures/i32alias.mh"` is a file path, not a package qualident.
+- `import *` is an `.mh` import. `import * from "stdio.h"` is an error. A second star of the same module is a duplicate. Include-only `import from` still binds nothing.
 - `obj.print()` still needs a selective `import Point::print`. The star supplies `tmodc.arena.Point::print(p)`.
-- Inside the defining unit the source name stays bare: `arena_init`, `Point::print`.
+- Inside the defining unit the source name stays bare: `arena_init`, `Point::print`. A unit with no package path keeps its source names in C. Hosted `main` stays `main`.
 - `import integer from` a width pack still rebinds `integer`. `import integer as i64` does not. `import TPoint as integer` is still a duplicate of the prelude name. The same four names are `integer`, `cardinal`, `real`, and `string`. A star cannot rebind them, because it creates no bare name.
 
 Every exported procedure, function, method, type, variable, enumeration constant, and the module entry uses the package spelling in C. Each `.` and each `::` becomes `__`.
@@ -309,7 +309,7 @@ tmodc.arena.Point::print    →    tmodc__arena__Point__print
 module tmodc.lib.String     →    tmodc__lib__String
 ```
 
-A selective import emits that same C spelling. `AS` does not change it. A `.h` import and an `EXTERN` keep the C spelling, so `fprintf` stays `fprintf`. `DEFINE` stays the macro text. A non-exported procedure stays `static` under its source name. The `.mh` line keeps the source name (`export procedure arena_init`). The importer builds the C spelling from the module qualident. This changes the generated `.h`. `@format` stays 1.
+A selective import emits that same C spelling. `AS` does not change it. An exported struct or union prefixes both the tag and the typedef. Field names stay as written. A `.h` import and an `EXTERN` keep the C spelling, so `fprintf` stays `fprintf`. `DEFINE` stays the macro text. A non-exported procedure stays `static` under its source name. The `.mh` line keeps the source name (`export procedure arena_init`). The importer builds the C spelling from an unquoted module qualident. This changes the generated `.h`. `@format` stays 1.
 
 `Point::print` and a procedure named `Point__print` are one C symbol. `tmodc.arena.Point::print` and `tmodc.arena.Point.print` are the same pair. That clash is the programmer's to avoid.
 
@@ -1685,6 +1685,7 @@ Do not maintain a second full EBNF elsewhere.
 | 17 November 2026 | **§4.2 / §5.4 / §6.3 brace-list inference (21a, 0.27.8.254):** a non-empty `{ … }` whose elements share one static type is `array[N] of T`. Empty, untyped, or mixed lists stay untyped. A written `:` stays the type. A `SET OF` constructor still needs that written target. |
 | 17 November 2026 | **§3.2 / §5.3 / §6.2 imported pointer fields (0.27.8.254):** a `.` peels only when this unit can see that the left side is a pointer. An imported field peels when the struct that declares it is imported. A written `^.` peels without that import. A field name on an unseen struct is still accepted and emits no peel. |
 | 18 November 2026 | **§6.3 `IS` (0.27.8.255):** the lexer no longer reserves `IS`. `is` is an identifier. `IN` stays reserved for set membership. |
+| 19 November 2026 | **§3.2 `IMPORT *` and the C spelling (0.27.9.257):** `import *` binds the package qualident and no bare name. The module entry is that qualident called. A dotted qualident is a type. `.` and `::` become `__` on an exported C name, including an enum constant and both the tag and the typedef. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. `import * as Alias` stays later. |
 
 ---
 

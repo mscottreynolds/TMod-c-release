@@ -35,7 +35,7 @@ import TToken, TOK_KEYWORD_DEFER, TOK_KEYWORD_DEBUG, TOK_KEYWORD_SWITCH,
 	TOK_COLON_EQ, TOK_EQ, TOK_KEYWORD_DOWNTO, TOK_KEYWORD_TO, TOK_KEYWORD_BY, 
 	TOK_NUMBER, TOK_KEYWORD_REPEAT, TOK_KEYWORD_UNTIL, TOK_KEYWORD_LOOP, 
 	TOK_KEYWORD_INC, TOK_KEYWORD_DEC, TOK_LPAREN, TOK_RPAREN, TOK_ADD, TOK_SUB, 
-	TOK_COLON_COLON,
+	TOK_COLON_COLON, TOK_MUL,
 	from tmodc.lexer.Lexer
 
 import TType 
@@ -321,6 +321,28 @@ begin
 	imp^.import_stmt.capacity 	:= 0
 	imp^.import_stmt.from_path	:= nil
 	imp^.import_stmt.path_len	:= 0
+	imp^.import_stmt.is_star 	:= false
+
+	// import * from Module. A quoted source is not a module qualident.
+	skip_layout_breaks(p)
+	if match(p, TOK_MUL) then
+		imp^.import_stmt.is_star :=true
+		skip_layout_breaks(p)
+		if not match(p, TOK_KEYWORD_FROM) then
+			error_at(p, "parse_import_stmt: IMPORT * requires FROM", true)
+		end
+		if p^.current.kind == TOK_STRING then
+			error_at(p, "parse_import_stmt: import * is an .mh import", true)
+		end
+		if not parse_qualident_span(p, @imp^.import_stmt.from_path,
+				@imp^.import_stmt.path_len) then
+			error_at(p, "parse_import_stmt: expected module qualident after FROM", true)
+		end
+		if not matchEOS(p) then
+			error_at(p, "parse_import_stmt: expected end-of-statement after IMPORT statement", true)
+		end
+		return imp
+	end
 
 	// Parse import-items until FROM (anchor). Newlines are layout only.
 	while not check(p, TOK_KEYWORD_FROM) and not isEOF(p) do

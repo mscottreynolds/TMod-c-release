@@ -138,6 +138,6 @@ export type pLexer complete ^TLexer
 export function TLexer__capture_line_from complete instance TLexer (ref TLexer, const ^char, int, int) : TToken
 export procedure TLexer__init complete instance TLexer (ref TLexer, const ^char)
 export function TLexer__next complete instance TLexer (ref TLexer) : TToken
-export function TokenKind__string complete instance TokenKind (const TokenKind) : const ^char
+export function TokenKind__to_string complete instance TokenKind (const TokenKind) : const ^char
 export procedure TToken__print complete instance TToken (ref const TToken)
 export procedure Lexer complete (ref TLexer, const ^char)

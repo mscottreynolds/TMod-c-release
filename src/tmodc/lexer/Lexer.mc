@@ -953,7 +953,7 @@ end TLexer::next
 (**
  * Return human-readable string for TokenKind.
  *)
-export function TokenKind::string(k: const TokenKind): const ^char
+export function TokenKind::to_string(k: const TokenKind): const ^char
 begin
 	switch k of
 		case TOK_EOF:               return "EOF"
@@ -1088,7 +1088,7 @@ begin
 		case TOK_ERROR:             return "ERROR"
 		else:                    	return "UNKNOWN"
 	end
-end TokenKind::string
+end TokenKind::to_string
 
 
 (**
@@ -1101,7 +1101,7 @@ begin
 	// 	return
 	// end
 
-	let kind_name: const ^char = t.kind.string()
+	let kind_name: const ^char = t.kind.to_string()
 	// TokenKind::string(t.kind)
 
 	printf("Token { kind: '%-12s', line: %3d, column: %3d, ", kind_name, t.line, t.column)

@@ -20,7 +20,7 @@ import snprintf, fprintf, stderr,
     from "stdio.h"
 import exit,
     from "stdlib.h"
-import strncmp, memcmp,
+import strncmp, memcmp, memcpy,
     from "string.h"
 
 import ppvoid, pchar 
@@ -30,7 +30,7 @@ import DynBuf, pDynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char,
 IMPORT TOK_AT, TokenKind, TOK_COLON_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_MUL_EQ, TOK_DIV_EQ, 
     TOK_MOD_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
     TOK_KEYWORD_DIV, TOK_POWER, TOK_KEYWORD_AND, TOK_KEYWORD_OR, TOK_KEYWORD_MOD, 
-    TOK_KEYWORD_XOR, TokenKind::string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER, TOK_REAL,
+    TOK_KEYWORD_XOR, TokenKind::to_string, TOK_CARET, TOK_KEYWORD_NOT, TOK_NUMBER, TOK_REAL,
     from tmodc.lexer.Lexer
 import mh_path_is_mh, mh_format_h_include,
     from tmodc.mh.mh_reader    
@@ -100,97 +100,75 @@ end
 export type pCodegenContext = ^CodegenContext
 
 
-(* ===============================================
- * Conext Helpers
- * =============================================== *)
-
-(**
- * Creae a child context for a nested node.
- *)
-// export function ctx_push(ctx: const ^CodegenContext, new_parent: const ^TNode): CodegenContext forward
-
-
-(* ===============================================
- * Low-level Emission Helpers
- * =============================================== *)
-
-// export procedure emit_indent(out: pDynBuf, indent: int) forward
-
-// export function codegen_unit_binds_portable(prog: const ^TNode, name: const ^char, name_len: size_t): bool forward
-
-// export procedure codegen_emit_c_prelude(out: pDynBuf, prog: const ^TNode) forward
-
-// export procedure emit_return_type(out: pDynBuf, t: const ^TType) forward
-
-// export procedure emit_array_type(out: pDynBuf, t: const ^TType, name: const ^char, name_len: size_t) forward
-
-// export procedure emit_type_specifier(out: pDynBuf, t: const ^TType, name: const ^char, length: size_t,
-        // is_param: bool, is_var: bool, is_ref: bool, is_const: bool) forward
-
-// export procedure emit_param_list(out: pDynBuf, params: ^pNode, count: size_t, is_parameter: bool, has_ellipsis: bool) forward
-
-// export function codegen_type_is_open_slice(t: const ^TType): bool forward
-
-// export procedure emit_var_decl(out: pDynBuf, name: const ^char, name_len: size_t, t: const ^TType) forward
-
-// export procedure emit_doc_comment_as_c(out: pDynBuf, n: const ^TNode) forward
-
-
-(**
- * Emit a LET binding name: name_l{line}_c{col}
- * binding_decl is the NODE_LET_ITEM (sym-decl or let item node).
- *)
-// export procedure emit_let_binding_name(out: pDynBuf, name: const ^char, name_len: size_t,
-//                         binding_decl: const ^TNode) forward
-
-(**
- * Emit an identifier expression (mangles LET uses via resolved_sym).
- *)
-// export procedure emit_let_ident(out: pDynBuf, n: const ^TNode) forward
-
-
-(* ============================================
- * Reusable Declaration Emitters
- * ============================================ *)
-
-// export procedure codegen_common_type_decl(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_proc_or_func(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_struct_decl(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_union_decl(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_enum_type(n: const ^TNode, type_name: const ^char, type_name_len: size_t,
-//         ctx: CodegenContext) forward
-
-// export procedure codegen_common_method_type(method: const ^TNode, type_decl: const ^TNode, 
-//         ctx: CodegenContext) forward
-
-// export procedure codegen_common_expr(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_emit_literal(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_array_literal(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_preprocessor(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_sizeof_expr(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_countof_expr(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_inc_dec(n: const ^TNode, ctx: CodegenContext, as_statement: bool) forward
-
-// export procedure codegen_common_module_prototype(n: const ^TNode, ctx: CodegenContext) forward
-
-// export procedure codegen_common_import(n: const ^TNode, ctx: CodegenContext) forward
-
 
 (* ============================================
  * Implementation
  * ============================================ *)
+
+
+(**
+ * Module or program entry. No package path keeps the unit name.
+ * program tmodc.modc is tmodc__modc. main stays main.
+ *)
+export procedure emit_program_c_name(out: pDynBuf, n: const ^TNode)
+begin
+    var buf: array[512] of char
+    var len: size_t = 0
+    var i: size_t = 0
+    var path: const ^char = nil
+    var path_len: size_t = 0
+
+    if out == nil or n == nil or n.kind <> NODE_PROGRAM then
+        return
+    end
+    if n.program_decl.package_path == nil or n.program_decl.package_path_len == 0 then
+        dynbuf_appendn(out, n.program_decl.name, n.program_decl.name_len)
+        return
+    end
+    path := n.program_decl.package_path
+    path_len := n.program_decl.package_path_len
+    if path_len + 1 + n.program_decl.name_len >= 512 then
+        fprintf(stderr, "FATAL ERROR: emit_program_c_name: C name exceeds 512\n")
+        exit(1)
+    end
+    while i < path_len do
+        if path[i] == '.' then
+            buf[len] := '_'
+            buf[len + 1] := '_'
+            len += 2
+        else
+            buf[len] := path[i]
+            len += 1
+        end
+        inc(i)
+    end
+    buf[len] := '_'
+    buf[len + 1] := '_'
+    len += 2
+    memcpy(@buf[len], n.program_decl.name, n.program_decl.name_len)
+    len := len + n.program_decl.name_len
+    buf[len] := 0
+    dynbuf_appendn(out, @buf[0], len)
+end emit_program_c_name
+
+
+export procedure codegen_emit_var_item(out: pDynBuf, item: const ^TNode, t: const ^TType)
+begin
+    var name: const ^char = nil
+    var name_len: size_t = 0
+
+    if item == nil then
+        return
+    end
+    name := item.var_item.name
+    name_len := item.var_item.name_len
+    if item.resolved_sym <> nil and item.resolved_sym^.c_name <> nil and
+            item.resolved_sym^.c_name_len > 0 then
+        name := item.resolved_sym^.c_name
+        name_len := item.resolved_sym^.c_name_len
+    end
+    emit_var_decl(out, name, name_len, t)
+end codegen_emit_var_item
 
 
 procedure emit_type_leaf_name(out: pDynBuf, t: const ^TType)
@@ -1262,6 +1240,18 @@ begin
 end codegen_pointee_ready
 
 
+procedure codegen_append_c_name(out: pDynBuf, n: const ^TNode,
+        fallback: const ^char, fallback_len: size_t)
+begin
+    if n <> nil and n.resolved_sym <> nil and
+            n.resolved_sym^.c_name <> nil and n.resolved_sym^.c_name_len > 0 then
+        dynbuf_appendn(out, n.resolved_sym^.c_name, n.resolved_sym^.c_name_len)
+    else
+        dynbuf_appendn(out, fallback, fallback_len)
+    end
+end codegen_append_c_name
+
+
 procedure codegen_emit_incomplete(ctx: CodegenContext, for_header: bool,
         is_union: bool, name: const ^char, name_len: size_t)
 begin
@@ -1389,15 +1379,29 @@ begin
             continue
         end
         if d.type_decl.struct_body <> nil then
+            var spell: const ^char = d.type_decl.name
+            var spell_len: size_t = d.type_decl.name_len
+
+            if d.resolved_sym <> nil and d.resolved_sym^.c_name <> nil and
+                    d.resolved_sym^.c_name_len > 0 then
+                spell := d.resolved_sym^.c_name
+                spell_len := d.resolved_sym^.c_name_len
+            end
             is_union := d.type_decl.struct_body^.struct_decl.is_union
-            codegen_emit_incomplete(ctx, for_header, is_union,
-                d.type_decl.name, d.type_decl.name_len)
+            codegen_emit_incomplete(ctx, for_header, is_union, spell, spell_len)
         elsif d.type_decl.is_forward then
             flags[i - 1] := true
             if not codegen_file_has_aggregate_body(prog, for_header,
                     d.type_decl.name, d.type_decl.name_len) then
-                codegen_emit_incomplete(ctx, for_header, false,
-                    d.type_decl.name, d.type_decl.name_len)
+                var spell: const ^char = d.type_decl.name
+                var spell_len: size_t = d.type_decl.name_len
+
+                if d.resolved_sym <> nil and d.resolved_sym^.c_name <> nil and
+                        d.resolved_sym^.c_name_len > 0 then
+                    spell := d.resolved_sym^.c_name
+                    spell_len := d.resolved_sym^.c_name_len
+                end
+                codegen_emit_incomplete(ctx, for_header, false, spell, spell_len)
             end
         end
     end
@@ -1504,9 +1508,9 @@ begin
             return
         end
         dynbuf_append(ctx.out, "typedef struct ")
-        dynbuf_appendn(ctx.out, n.type_decl.name, n.type_decl.name_len)
+        codegen_append_c_name(ctx.out, n, n.type_decl.name, n.type_decl.name_len)
         dynbuf_append_char(ctx.out, ' ')
-        dynbuf_appendn(ctx.out, n.type_decl.name, n.type_decl.name_len)
+        codegen_append_c_name(ctx.out, n, n.type_decl.name, n.type_decl.name_len)
         dynbuf_append(ctx.out, ";\n")
         return
     end
@@ -1548,53 +1552,63 @@ begin
         return
     end
 
-    dynbuf_append(ctx.out, "typedef ")
+    begin
+        var spell: const ^char = n.type_decl.name
+        var spell_len: size_t = n.type_decl.name_len
 
-    // Check if this TYPE is defining a STRUCT or UNION
-    if n.type_decl.struct_body <> nil then
-        // Emit the struct inline
-        if n.type_decl.struct_body^.struct_decl.is_union then
-            codegen_common_union_decl(n.type_decl.struct_body, ctx)
-        else
-            codegen_common_struct_decl(n.type_decl.struct_body, ctx)
+        if n.resolved_sym <> nil and n.resolved_sym^.c_name <> nil and 
+                n.resolved_sym^.c_name_len > 0 then
+            spell := n.resolved_sym^.c_name
+            spell_len := n.resolved_sym^.c_name_len
         end
 
-    // ENUM types
-    elsif n.type_decl.enum_type <> nil then
-        codegen_common_enum_type(n.type_decl.enum_type,
-            n.type_decl.name, n.type_decl.name_len, ctx)
+        dynbuf_append(ctx.out, "typedef ")
 
-    // Method types
-    elsif n.type_decl.method_type <> nil then
-        codegen_common_method_type(n.type_decl.method_type, n, ctx)
+        // Check if this TYPE is defining a STRUCT or UNION
+        if n.type_decl.struct_body <> nil then
+            // Emit the struct inline
+            if n.type_decl.struct_body^.struct_decl.is_union then
+                codegen_common_union_decl(n.type_decl.struct_body, ctx)
+            else
+                codegen_common_struct_decl(n.type_decl.struct_body, ctx)
+            end
 
-    // Regular type (alias, pointer, array, etc.)
-    elsif n.type_decl.defined_type <> nil then
-        var dt: const ^TType = n.type_decl.defined_type
+        // ENUM types
+        elsif n.type_decl.enum_type <> nil then
+            codegen_common_enum_type(n.type_decl.enum_type, spell, spell_len, ctx)
 
-        if dt.is_opaque then
-            // v1: both opaque and ^opaque => void * alias
-            dynbuf_append(ctx.out, "void *")
-            dynbuf_appendn(ctx.out, n.type_decl.name, n.type_decl.name_len)
-        elsif n.type_decl.defined_type^.is_array and n.type_decl.defined_type^.element_type <> nil then
-            emit_type_specifier(ctx.out, 
-                n.type_decl.defined_type,
-                n.type_decl.name,
-                n.type_decl.name_len,
-                false, false, false, false)
+        // Method types
+        elsif n.type_decl.method_type <> nil then
+            codegen_common_method_type(n.type_decl.method_type, n, ctx)
+
+        // Regular type (alias, pointer, array, etc.)
+        elsif n.type_decl.defined_type <> nil then
+            var dt: const ^TType = n.type_decl.defined_type
+
+            if dt.is_opaque then
+                // v1: both opaque and ^opaque => void * alias
+                dynbuf_append(ctx.out, "void *")
+                dynbuf_appendn(ctx.out, spell, spell_len)
+            elsif n.type_decl.defined_type^.is_array and n.type_decl.defined_type^.element_type <> nil then
+                emit_type_specifier(ctx.out, 
+                    n.type_decl.defined_type,
+                    spell,
+                    spell_len,
+                    false, false, false, false)
+            else
+                // Normal type or pointer
+                emit_type_specifier(ctx.out, n.type_decl.defined_type, spell, spell_len,
+                    false, false, false, false)
+            end
         else
-            // Normal type or pointer
-            emit_type_specifier(ctx.out, n.type_decl.defined_type, n.type_decl.name, n.type_decl.name_len,
+            emit_type_specifier(ctx.out, n.type_decl.defined_type, spell, spell_len,
                 false, false, false, false)
         end
-    else
-        emit_type_specifier(ctx.out, n.type_decl.defined_type, n.type_decl.name, n.type_decl.name_len,
-            false, false, false, false)
+
+        dynbuf_append(ctx.out, ";\n")
+        return
     end
 
-    dynbuf_append(ctx.out, ";\n")
-
-    return
 end codegen_common_type_decl
 
 
@@ -1630,7 +1644,10 @@ begin
     end
 
     // Function name
-    if n.proc_decl.method_owner <> nil and n.proc_decl.method_owner_len > 0 then
+    if n.resolved_sym <> nil and n.resolved_sym^.c_name <> nil and
+            n.resolved_sym^.c_name_len > 0 then
+        dynbuf_appendn(ctx.out, n.resolved_sym^.c_name, n.resolved_sym^.c_name_len)
+    elsif n.proc_decl.method_owner <> nil and n.proc_decl.method_owner_len > 0 then
         dynbuf_appendn(ctx.out, n.proc_decl.method_owner, n.proc_decl.method_owner_len)
         dynbuf_append(ctx.out, "__")
         dynbuf_appendn(ctx.out, n.proc_decl.name, n.proc_decl.name_len)
@@ -1713,14 +1730,18 @@ begin
         dynbuf_append(ctx.out, "__attribute__((packed)) ")
     end
 
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
+    codegen_append_c_name(ctx.out, n, n.struct_decl.name, n.struct_decl.name_len)
     dynbuf_append(ctx.out, " {\n")
 
     // EXTENDS support for STRUCT: embed base struct as first member (C composition)
     if n.struct_decl.extends_type <> nil then
         emit_indent(ctx.out, ctx.indent + 1)
         dynbuf_append(ctx.out, "struct ")
-        if n.struct_decl.extends_type^.name <> nil and
+        if n.struct_decl.extends_type^.c_name <> nil and
+                n.struct_decl.extends_type^.c_name_len > 0 then
+            dynbuf_appendn(ctx.out, n.struct_decl.extends_type^.c_name,
+                n.struct_decl.extends_type^.c_name_len)
+        elsif n.struct_decl.extends_type^.name <> nil and
                 n.struct_decl.extends_type^.name_len > 0 then
             dynbuf_appendn(ctx.out, n.struct_decl.extends_type^.name,
                 n.struct_decl.extends_type^.name_len)
@@ -1763,7 +1784,7 @@ begin
 
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "} ")
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
+    codegen_append_c_name(ctx.out, n, n.struct_decl.name, n.struct_decl.name_len)
 end codegen_common_struct_decl
 
 
@@ -1783,7 +1804,7 @@ begin
     // Caller wrote "typedef ". The union preamble emits
     // "typedef union Name Name;" once, before any use.
     dynbuf_append(ctx.out, "union ")
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
+    codegen_append_c_name(ctx.out, n, n.struct_decl.name, n.struct_decl.name_len)
     dynbuf_append(ctx.out, " {\n")
 
     // Emit fields
@@ -1819,7 +1840,7 @@ begin
 
     emit_indent(ctx.out, ctx.indent)
     dynbuf_append(ctx.out, "} ")
-    dynbuf_appendn(ctx.out, n.struct_decl.name, n.struct_decl.name_len)
+    codegen_append_c_name(ctx.out, n, n.struct_decl.name, n.struct_decl.name_len)
 end codegen_common_union_decl
 
 
@@ -1848,7 +1869,13 @@ begin
         end
 
         emit_indent(ctx.out, ctx.indent + 1)
-        dynbuf_appendn(ctx.out, item.enum_item.name, item.enum_item.name_len)
+        if item.resolved_sym <> nil and item.resolved_sym^.c_name <> nil and
+                item.resolved_sym^.c_name_len > 0 then
+            dynbuf_appendn(ctx.out, item.resolved_sym^.c_name,
+                item.resolved_sym^.c_name_len)
+        else
+            dynbuf_appendn(ctx.out, item.enum_item.name, item.enum_item.name_len)
+        end
         if item.enum_item.value_known then
             dynbuf_append(ctx.out, " = ")
             // small int - snprintf avoids int-string helper
@@ -1890,7 +1917,8 @@ begin
 
     // Emit " (*Name)"
     dynbuf_append(ctx.out, " (*")
-    dynbuf_appendn(ctx.out, type_decl.type_decl.name, type_decl.type_decl.name_len)
+    codegen_append_c_name(ctx.out, type_decl,
+        type_decl.type_decl.name, type_decl.type_decl.name_len)
     dynbuf_append(ctx.out, ")")
 
     // Emit parameter list using the existing helper (include names)
@@ -2063,7 +2091,7 @@ begin
                 elsif n.binary.op == TOK_KEYWORD_XOR then
                     dynbuf_append(ctx.out, "^")
                 else
-                    dynbuf_append(ctx.out, TokenKind::string(n.binary.op))
+                    dynbuf_append(ctx.out, TokenKind::to_string(n.binary.op))
                 end
                 dynbuf_append_char(ctx.out, ' ')
                 codegen_common_expr(n.binary.right, ctx)
@@ -2101,7 +2129,7 @@ begin
             elsif n.unary.op == TOK_KEYWORD_NOT then
                 dynbuf_append(ctx.out, "!")
             else
-                dynbuf_append(ctx.out, TokenKind::string(n.unary.op))
+                dynbuf_append(ctx.out, TokenKind::to_string(n.unary.op))
             end
             codegen_common_expr(n.unary.operand, ctx)
 
@@ -2138,13 +2166,13 @@ begin
                 NODE_ASSERT, NODE_DEFER, NODE_DEFINE:
             // TODO: expand as we add more expression kinds
             dynbuf_append(ctx.out, "/* TODO: codegen_common_expr: expr kind ")
-            dynbuf_append(ctx.out, TokenKind::string(n.token.kind as TokenKind))
+            dynbuf_append(ctx.out, TokenKind::to_string(n.token.kind as TokenKind))
             dynbuf_append(ctx.out, " */")
 
         else:
             // TODO: expand as we add more expression kinds
             dynbuf_append(ctx.out, "/* TODO: codegen_common_expr: expr kind ")
-            dynbuf_append(ctx.out, TokenKind::string(n.token.kind as TokenKind))
+            dynbuf_append(ctx.out, TokenKind::to_string(n.token.kind as TokenKind))
             dynbuf_append(ctx.out, " */")
     end
 
@@ -2297,6 +2325,14 @@ end codegen_common_define
 export procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
+        return
+    end
+    if n.resolved_sym <> nil then
+        if n.resolved_sym^.c_name <> nil and n.resolved_sym^.c_name_len > 0 then
+            dynbuf_appendn(ctx.out, n.resolved_sym^.c_name, n.resolved_sym^.c_name_len)
+        else
+            dynbuf_appendn(ctx.out, n.resolved_sym^.name, n.resolved_sym^.name_len)
+        end
         return
     end
     if n.field_access.auto_deref then
@@ -2456,7 +2492,7 @@ begin
     end
 
     // module name
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    emit_program_c_name(ctx.out, n)
 
     // parameter list
     emit_param_list(ctx.out, n.program_decl.params, n.program_decl.param_count, true, false)

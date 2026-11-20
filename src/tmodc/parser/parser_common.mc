@@ -13,7 +13,7 @@ import
     TLexer, TToken, TokenKind, TLexer::next, TLexer::init, TOK_COMMENT_SINGLE, TOK_COMMENT_MULTI,
     TOK_COMMENT_PASCAL, TOK_COMMENT, TOK_DOC_COMMENT, TOK_SEMICOLON, TOK_NEWLINE, TOK_COLON_EQ,
     TOK_MUL_EQ, TOK_DIV_EQ, TOK_MOD_EQ, TOK_ADD_EQ, TOK_SUB_EQ, TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, 
-    TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_EOF, TToken::print, TokenKind::string, TOK_ERROR,
+    TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_EOF, TToken::print, TokenKind::to_string, TOK_ERROR,
     from tmodc.lexer.Lexer
 import 
     pArena
@@ -381,12 +381,12 @@ begin
                 p^.current.line, p^.current.column, p^.current.error_msg)
         else
             fprintf(stderr, "FATAL ERROR: line %d col %d: %s (got %s)\n",
-                p^.current.line, p^.current.column, msg, TokenKind::string(p^.current.kind))
+                p^.current.line, p^.current.column, msg, TokenKind::to_string(p^.current.kind))
         end
         exit(1)
     else
         fprintf(stderr, "WARNING: line %d col %d: %s (got %s)\n",
-            p^.current.line, p^.current.column, msg, TokenKind::string(p^.current.kind))
+            p^.current.line, p^.current.column, msg, TokenKind::to_string(p^.current.kind))
     end
 end error_at
 
@@ -402,12 +402,12 @@ begin
                 p.current.line, p.current.column, p.current.error_msg)
         else
             fprintf(stderr, "FATAL ERROR: line %d col %d: %s (got %s)\n",
-                p.current.line, p.current.column, msg, TokenKind::string(p.current.kind))
+                p.current.line, p.current.column, msg, TokenKind::to_string(p.current.kind))
         end
         exit(1)
     else
         fprintf(stderr, "WARNING: line %d col %d: %s (got %s)\n",
-            p.current.line, p.current.column, msg, TokenKind::string(p.current.kind))
+            p.current.line, p.current.column, msg, TokenKind::to_string(p.current.kind))
     end
 end TParser::error_at
 

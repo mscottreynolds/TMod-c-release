@@ -44,7 +44,7 @@ import VERSION_BASE
 
 import dynbuf_append_char, dynbuf_appendn, dynbuf_append,
     from tmodc.dynbuf
-import TokenKind, TokenKind::string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
+import TokenKind, TokenKind::to_string, TOK_KEYWORD_PROGRAM, TOK_KEYWORD_MODULE, TOK_KEYWORD_HEADER,
     from tmodc.lexer.Lexer
 import TType
     from tmodc.ttype
@@ -54,10 +54,10 @@ import CodegenContext, codegen_common_proc_or_func, ctx_push, codegen_common_exp
     codegen_common_preprocessor, codegen_common_define, emit_type_specifier,
     emit_let_binding_name, emit_let_value_array, emit_var_decl, codegen_common_inc_dec, 
     emit_array_type, codegen_common_array_literal, emit_param_list,
-    codegen_common_module_prototype, codegen_common_import,
-    codegen_type_is_open_slice, codegen_decl_opens_type_order, codegen_type_in_file, 
-    codegen_const_is_value, codegen_emit_type_preamble, codegen_type_order_skip,
-    codegen_type_order_after_type, codegen_type_order_check,
+    emit_program_c_name, codegen_emit_var_item, codegen_common_module_prototype,
+    codegen_common_import, codegen_type_is_open_slice, codegen_decl_opens_type_order,
+    codegen_type_in_file, codegen_const_is_value, codegen_emit_type_preamble,
+    codegen_type_order_skip, codegen_type_order_after_type, codegen_type_order_check,
     from tmodc.codegen.codegen_common
 import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
     codegen_dbc_emit_invariants_to_loop, codegen_dbc_emit_requires, 
@@ -1092,10 +1092,7 @@ begin
                             item)
                     end
                 else
-                    emit_var_decl(ctx.out,
-                        item.var_item.name,
-                        item.var_item.name_len,
-                        item.var_item.item_type)
+                    codegen_emit_var_item(ctx.out, item, item.var_item.item_type)
                 end
 
                 // if not n.var_decl.is_extern then
@@ -1148,12 +1145,12 @@ begin
             NODE_CALL, NODE_PAREN:
 
             dynbuf_append(ctx.out, "/* TODO: codegen_c_stmt: stmt kind ")
-            dynbuf_append(ctx.out, TokenKind__string(n.token.kind as TokenKind))
+            dynbuf_append(ctx.out, TokenKind__to_string(n.token.kind as TokenKind))
             dynbuf_append(ctx.out, " */\n")
 
         else:
             dynbuf_append(ctx.out, "/* TODO: codegen_c_stmt: stmt kind ")
-            dynbuf_append(ctx.out, TokenKind__string(n.token.kind as TokenKind))
+            dynbuf_append(ctx.out, TokenKind__to_string(n.token.kind as TokenKind))
             dynbuf_append(ctx.out, " */\n")
     end
 end codegen_c_stmt
@@ -1220,7 +1217,7 @@ begin
     var any: bool = false
     var param: const ^TNode = nil
 
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    emit_program_c_name(ctx.out, n)
     dynbuf_append_char(ctx.out, '(')
     if n.program_decl.param_count == 0 or n.program_decl.params == nil then
         dynbuf_append(ctx.out, ");\n")
@@ -1262,7 +1259,7 @@ begin
     end
 
     // Program / module name
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    emit_program_c_name(ctx.out, n)
 
     // Parameter list
     emit_param_list(ctx.out, n.program_decl.params, n.program_decl.param_count,
@@ -1326,7 +1323,7 @@ begin
     end
 
     // module name
-    dynbuf_appendn(ctx.out, n.program_decl.name, n.program_decl.name_len)
+    emit_program_c_name(ctx.out, n)
 
     // Parameter list
     emit_param_list(ctx.out, n.program_decl.params, n.program_decl.param_count,

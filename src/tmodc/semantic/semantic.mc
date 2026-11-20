@@ -59,6 +59,21 @@ import fprintf, snprintf, stderr from "stdio.h"
 const SEMANTIC_MH_PATH_MAX: cardinal = 4096u
 
 
+export type TStarImport = struct
+	qual: 		const ^char
+	qual_len: 	size_t
+	unit_name: 	const ^char
+	unit_len: 	size_t
+	scope: 		pTSymbolTable
+end
+
+type TNameParts = struct
+	text: 		array[16] of const ^char
+	len: 		array[16] of size_t
+	count: 		size_t
+end
+
+
 (** Analysis context *)
 export type TSemanticContext = struct
 	arena:			^Arena
@@ -67,7 +82,13 @@ export type TSemanticContext = struct
 	for_var_name:	const ^char		// nil when not analyzing a FOR body
 	for_var_len:	size_t
 	// NODE_FUNC_DECL / NODE_PROC_DECL / NODE_PROGRAM while analyzing its body (return type).
-	enclosing_func: pNode		
+	enclosing_func: pNode
+	package_path: 		const ^char
+	package_path_len: 	size_t
+	unit_name: 			const ^char
+	unit_name_len: 		size_t
+	stars: 				array[32] of TStarImport
+	star_count: 		size_t
 end
 
 export type pTSemanticContext = ^TSemanticContext
@@ -181,6 +202,11 @@ begin
 						name, name_len) then
 				return sym
 			end
+			if sym <> nil and sym^.mh_name <> nil and sym^.mh_name_len > 0 and
+					semantic_names_equal(sym^.mh_name, sym^.mh_name_len,
+						name, name_len) then
+				return sym
+			end
 		end
 		table := table^.parent
 	end
@@ -244,7 +270,15 @@ begin
 	// 		// semantic_error_at(at, "semantic_resolve_type_inner: unknown type")
 	// 	elsif sym^.kind <> SYM_KIND_TYPE then
 	if ty^.name <> nil and ty^.name_len > 0 and not type_is_builtin_name(ty^.name, ty^.name_len) then
-		sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+		sym := nil
+		if semantic_text_has(ty^.name, ty^.name_len, '.') then
+			sym := semantic_star_export_named(ctx, ty^.name, ty^.name_len)
+			if sym == nil or sym^.kind <> SYM_KIND_TYPE then
+				semantic_error_at(at, "semantic_resolve_type_inner: unknown type")
+			end
+		else
+			sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+		end
 		if sym == nil then
 			sym := semantic_lookup_import_c_name(ctx, ty^.name, ty^.name_len)
 		end
@@ -337,6 +371,14 @@ begin
 	if type_is_builtin_name(ty^.name, ty^.name_len) then
 		return
 	end
+	if semantic_text_has(ty^.name, ty^.name_len, '.') then
+		sym := semantic_star_export_named(ctx, ty^.name, ty^.name_len)
+		if sym <> nil and sym^.c_name <> nil and sym^.c_name_len > 0 then
+			ty^.c_name := sym^.c_name
+			ty^.c_name_len := sym^.c_name_len
+		end
+		return
+	end
 	sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
 	if sym == nil or sym^.c_name == nil or sym^.c_name_len == 0 then
 		return
@@ -387,6 +429,16 @@ begin
 		return nil
 	end
 	sym := symtab_lookup(ctx^.scope, name, name_len)
+	if (sym == nil or sym^.kind <> SYM_KIND_TYPE) and ctx^.star_count > 0 then
+		var i: size_t = 0
+		for i := 1 to ctx^.star_count do
+			sym := symtab_lookup_current(ctx^.stars[i - 1].scope, name, name_len)
+			if sym <> nil and sym^.kind == SYM_KIND_TYPE then
+				break
+			end
+			sym := nil
+		end
+	end
 	if sym == nil or sym^.kind <> SYM_KIND_TYPE or sym^.decl == nil then
 		return nil
 	end
@@ -766,6 +818,9 @@ begin
 			// Prefer type of the selected field after resolve has run.
 			// We set field result type only via lookup below when resolving;
 			// recompute: type of record => find field.
+			if n^.resolved_sym <> nil then
+				return n^.resolved_sym^.symbol_type
+			end
 			ety := semantic_type_of_designator(ctx, n^.field_access.record_)
 			st := semantic_struct_body_of_type(ctx, ety)
 			if st == nil then
@@ -2097,6 +2152,487 @@ begin
 end semantic_define_or_complete_forward
 
 
+function semantic_text_has(s: const ^char, n: size_t, ch: char): bool
+begin
+	var i: size_t = 0
+
+	if s == nil then
+		return false
+	end
+	while i < n do
+		if s[i] == ch then
+			return true
+		end
+		inc(i)
+	end
+	return false
+end semantic_text_has
+
+
+(*
+ * Package C spelling. is_entry keeps the qualident only (tmodc__arena).
+ * Any other export appends __ and the .mh name (tmodc__arena__Point__print).
+ * 512 is he mangled-name cap.
+ *)
+function semantic_spell_c_name(ctx: pTSemanticContext, at: pNode,
+		qual: const ^char, qual_len: size_t,
+		export_name: const ^char, export_len: size_t, is_entry: bool): ^char
+begin
+	var buf: array[512] of char
+	var n: size_t = 0
+	var i: size_t = 0
+
+	if qual == nil or qual_len == 0 then
+		return nil
+	end
+	while i < qual_len do
+		if qual[i] == '.' then
+			if n + 2 >= 512 then
+				semantic_error_at(at, "semantic_spell_c_name: C name exceeds 512")
+			end
+			buf[n] := '_'
+			buf[n+1] := '_'
+			n := n + 2
+		else
+			if n + 1 >= 512 then
+				semantic_error_at(at, "semantic_spell_c_name: C name exceeds 512")
+			end
+			buf[n] := qual[i]
+			inc(n)
+		end
+		inc(i)
+	end
+	if not is_entry then
+		if export_name == nil or n + 2 + export_len >= 512 then
+			semantic_error_at(at, "semantic_spell_c_name: C name exceeds 512")
+		end
+		buf[n] := '_'
+		buf[n + 1] := '_'
+		n := n + 2
+		memcpy(@buf[n], export_name, export_len)
+		n := n + export_len
+	end
+	buf[n] := 0
+	return semantic_arena_strndup(ctx^.arena, @buf[0], n)
+end semantic_spell_c_name
+
+
+function semantic_qual_has_dot(s: const ^char, n: size_t): bool
+begin
+	return semantic_text_has(s, n, '.')
+end semantic_qual_has_dot
+
+
+procedure semantic_apply_import_c_name(ctx: pTSemanticContext, at: pNode,
+		sym: pTSymbol, qual: const ^char, qual_len: size_t,
+		exp: const ^MhExport, unit_name: const ^char, unit_len: size_t)
+begin
+	var is_entry: bool = false
+	var kind: SymbolKind = SYM_KIND_UNKNOWN
+
+	if sym == nil or exp == nil or not semantic_qual_has_dot(qual, qual_len) then
+		return
+	end
+	// "fixtures/i32alias.mh" is a file paht. tmodc.arena is a qualident.
+	if qual[0] == '"' then
+		return
+	end
+	kind := mh_export_to_symkind(exp^.kind)
+	is_entry := (kind == SYM_KIND_PROC or kind == SYM_KIND_FUNC) and
+		unit_name <> nil and
+		semantic_names_equal(exp^.name, exp^.name_len, unit_name, unit_len)
+	sym^.c_name := semantic_spell_c_name(ctx, at, qual, qual_len, 
+		exp^.name, exp^.name_len, is_entry)
+	sym^.c_name_len := strlen(sym^.c_name)
+end semantic_apply_import_c_name
+
+
+function semantic_symbol_is_extern(root: pNode, sym: pTSymbol): bool
+begin
+	var i: size_t = 0
+	var j: size_t = 0
+	var d: pNode = nil
+
+	if sym == nil or sym^.decl == nil then
+		return false
+	end
+	if sym^.decl^.kind == NODE_PROC_DECL or sym^.decl^.kind == NODE_FUNC_DECL then
+		return sym^.decl^.proc_decl.is_extern
+	end
+	if sym^.decl^.kind == NODE_TYPE_DECL then
+		return sym^.decl^.type_decl.is_extern
+	end
+	if root == nil then
+		return false
+	end
+	for i := 1 to root^.program_decl.count do
+		d := root^.program_decl.decls[i - 1]
+		if d == nil or d^.kind <> NODE_VAR_DECL or not d^.var_decl.is_extern then
+			continue
+		end
+		for j := 1 to d^.var_decl.count do
+			if d^.var_decl.items[j - 1] == sym^.decl then
+				return true
+			end
+		end
+	end
+	return false
+end semantic_symbol_is_extern
+
+
+(*
+ * Defining unit. NO package path: leave C names alone.
+ * The module entry is the qualident. Every other export is qualident__name.
+ *)
+procedure semantic_stamp_unit_exports(ctx: pTSemanticContext, root: pNode)
+begin
+	var i: size_t = 0
+	var sym: pTSymbol = nil
+	var qual: array[512] of char
+	var qual_len: size_t = 0
+	var is_entry: bool = false
+
+	if ctx == nil or ctx^.scope == nil or ctx^.package_path_len == 0 then
+		return
+	end
+	if ctx^.package_path_len + 1 + ctx^.unit_name_len >= 512 then
+		semantic_error_at(root, "semantic_stamp_unit_exports: module qualident exceeds 512")
+	end
+	memcpy(@qual[0], ctx^.package_path, ctx^.package_path_len)
+	qual_len := ctx^.package_path_len
+	qual[qual_len] := '.'
+	qual_len += 1
+	memcpy(@qual[qual_len], ctx^.unit_name, ctx^.unit_name_len)
+	qual_len += ctx^.unit_name_len
+	qual[qual_len] := 0
+
+	for i := 1 to ctx^.scope^.count do
+		sym := ctx^.scope^.symbols[i - 1]
+		if sym == nil or not sym^.is_exported then
+			continue
+		end
+		if sym^.kind <> SYM_KIND_TYPE and sym^.kind <> SYM_KIND_CONST and
+				sym^.kind <> SYM_KIND_VAR and sym^.kind <> SYM_KIND_PROC and
+				sym^.kind <> SYM_KIND_FUNC then
+			continue
+		end
+		if semantic_symbol_is_extern(root, sym) then
+			continue
+		end
+		is_entry := (sym^.kind == SYM_KIND_PROC or sym^.kind == SYM_KIND_FUNC) and
+			semantic_names_equal(sym^.name, sym^.name_len,
+				ctx^.unit_name, ctx^.unit_name_len)
+		sym^.c_name := semantic_spell_c_name(ctx, sym^.decl, @qual[0], qual_len,
+			sym^.name, sym^.name_len, is_entry)
+		sym^.c_name_len := strlen(sym^.c_name)
+		if sym^.decl <> nil then
+			sym^.decl^.resolved_sym := sym
+			if sym^.decl^.kind == NODE_TYPE_DECL and
+					sym^.decl^.type_decl.struct_body <> nil then
+				sym^.decl^.type_decl.struct_body^.resolved_sym := sym
+			end
+		end
+	end
+end semantic_stamp_unit_exports
+
+
+recursive function semantic_collect_chain(n: pNode, parts: ^TNameParts): bool
+begin
+	if n == nil or parts == nil then
+		return false
+	end
+	if n^.kind == NODE_IDENT then
+		if parts^.count >= 16 then
+			return false
+		end
+		parts^.text[parts^.count] := n^.ident.value
+		parts^.len[parts^.count] := n^.ident.length
+		parts^.count := parts^.count + 1
+		return true
+	end
+	if n^.kind == NODE_FIELD_ACCESS then
+		if not semantic_collect_chain(n^.field_access.record_, parts) then
+			return false
+		end
+		if parts^.count >= 16 then
+			return false
+		end
+		parts^.text[parts^.count] := n^.field_access.field_name
+		parts^.len[parts^.count] := n^.field_access.field_len
+		parts^.count := parts^.count + 1
+		return true
+	end
+	return false
+end semantic_collect_chain
+
+
+(*
+ * How many leading components of parts equal this module qualident.
+ * The qualident must be consumed whole.
+ *)
+function semantic_star_match_count(star: TStarImport, parts: TNameParts): size_t
+begin
+	var i: size_t = 0
+	var part_i: size_t = 0
+	var start: size_t = 0
+	var comp: size_t = 0
+
+	while i < star.qual_len and part_i < parts.count do
+		start := i
+		while i < star.qual_len and star.qual[i] <> '.' do
+			inc(i)
+		end
+		comp := i - start
+		if comp <> parts.len[part_i] or
+				memcmp(star.qual + start, parts.text[part_i], comp) <> 0 then
+			return 0
+		end
+		inc(part_i)
+		if i < star.qual_len and star.qual[i] == '.' then
+			inc(i)
+		end
+	end
+	if i <> star.qual_len then
+		return 0
+	end
+	return part_i
+end semantic_star_match_count
+
+
+function semantic_best_star(ctx: pTSemanticContext, parts: TNameParts): int
+begin
+	var i: size_t = 0
+	var best: int = -1
+	var best_n: size_t = 0
+	var n: size_t = 0
+
+	if ctx == nil then
+		return -1
+	end
+	for i := 1 to ctx^.star_count do
+		n := semantic_star_match_count(ctx^.stars[i - 1], parts)
+		if n > best_n then
+			best_n := n
+			best := (i - 1) as int
+		end
+	end
+	return best
+end semantic_best_star
+
+
+function semantic_star_find(ctx: pTSemanticContext, index: int,
+		name: const ^char, name_len: size_t): pTSymbol
+begin
+	if ctx == nil or index < 0 or name == nil or name_len == 0 then
+		return nil
+	end
+	return symtab_lookup_current(ctx^.stars[index as size_t].scope, name, name_len)
+end semantic_star_find
+
+
+function semantic_star_export_named(ctx: pTSemanticContext,
+		dotted: const ^char, dotted_len: size_t): pTSymbol
+begin
+	var parts: TNameParts
+	var i: size_t = 0
+	var start: size_t = 0
+	var best: int = -1
+	var matched: size_t = 0
+
+	parts.count := 0
+	while i < dotted_len do
+		if parts.count >= 16 then
+			return nil
+		end
+		start := i
+		while i < dotted_len and dotted[i] <> '.' do
+			inc(i)
+		end
+		parts.text[parts.count] := dotted + start
+		parts.len[parts.count] := i - start
+		parts.count := parts.count + 1
+		if i < dotted_len and dotted[i] == '.' then
+			inc(i)
+		end
+	end
+	best := semantic_best_star(ctx, parts)
+	if best < 0 then
+		return nil
+	end
+	matched := semantic_star_match_count(ctx^.stars[best as size_t], parts)
+	if matched + 1 <> parts.count then
+		return nil
+	end
+	return semantic_star_find(ctx, best,
+		parts.text[parts.count - 1], parts.len[parts.count - 1])
+end semantic_star_exported_named
+
+
+procedure semantic_bind_star_symbol(n: pNode, sym: pTSymbol)
+begin
+	if n == nil or sym == nil then
+		return
+	end
+	n^.resolved_sym := sym
+end semantic_bind_star_symbol
+
+
+(*
+ * True when this field chain is a star module for one export of it.
+ * A longer chain (module.var.field) returns false so the export node binds
+ * and the leftover selectors stay fields.
+ *)
+function semantic_bind_star_designator(ctx: pTSemanticContext, n: pNode): bool
+begin
+	var parts: TNameParts
+	var best: int = -1
+	var matched: size_t = 0
+	var sym: pTSymbol = nil
+
+	parts.count := 0
+	if not semantic_collect_chain(n, @parts) or parts.count == 0 then
+		return false
+	end
+	best := semantic_best_star(ctx, parts)
+	if best < 0 then
+		return false
+	end
+	matched := semantic_star_match_count(ctx^.stars[best as size_t], parts)
+	if matched == 0 then
+		return false
+	end
+	if matched == parts.count then
+		sym := semantic_star_find(ctx, best,
+			ctx^.stars[best as size_t].unit_name,
+			ctx^.stars[best as size_t].unit_len)
+		if sym == nil then
+			semantic_error_at(n, "semantic_bind_star_designator: module has no entry")
+		end
+		semantic_bind_star_symbol(n, sym)
+		return true
+	end
+	if matched + 1 == parts.count then
+		sym := semantic_star_find(ctx, best,
+			parts.text[parts.count - 1], parts.len[parts.count - 1])
+		if sym == nil then
+			semantic_error_at(n, "semantic_bind_star_designator:name not exported")
+		end
+		semantic_bind_star_symbol(n, sym)
+		return true
+	end
+	return false
+end semantic_bind_star_designator
+
+
+function semantic_try_star_call(ctx: pTSemanticContext, n: pNode): bool
+begin
+	var parts: TNameParts
+	var best: int = -1
+	var matched: size_t = 0
+	var sym: pTSymbol = nil
+
+	parts.count := 0
+	if n == nil or n^.call.receiver_expr == nil then
+		return false
+	end
+	if not semantic_collect_chain(n^.call.receiver_expr, @parts) then
+		return false
+	end
+	if parts.count >= 16 then
+		return false
+	end
+	parts.text[parts.count] := n^.call.name
+	parts.len[parts.count] := n^.call.name_len
+	parts.count := parts.count + 1
+	best := semantic_best_star(ctx, parts)
+	if best < 0 then
+		return false
+	end
+	matched := semantic_star_match_count(ctx^.stars[best as size_t], parts)
+	if matched == parts.count then
+		sym := semantic_star_find(ctx, best,
+			ctx^.stars[best as size_t].unit_name,
+			ctx^.stars[best as size_t].unit_len)
+		if sym == nil then
+			semantic_error_at(n, "semantic_try_star_call: module has no entry")
+		end
+	elsif matched + 1 == parts.count then
+		sym := semantic_star_find(ctx, best, n^.call.name, n^.call.name_len)
+		if sym == nil then
+			semantic_error_at(n, "semanitc_try_star_call: name not exported")
+		end
+	else
+		return false
+	end
+	n^.resolved_sym := sym
+	n^.call.receiver_expr := nil
+	n^.call.callee_expr := nil
+	n^.call.method_owner := nil
+	n^.call.method_owner_len := 0
+	return true
+end semantic_try_star_call
+
+
+function semantic_try_star_method(ctx: pTSemanticContext, n: pNode): bool
+begin
+	var parts: TNameParts
+	var best: int = -1
+	var matched: size_t = 0
+	var owner: const ^char = nil
+	var owner_len: size_t = 0
+	var mangled: ^char = nil
+	var sym: pTSymbol = nil
+	var i: size_t = 0
+	var start: size_t = 0
+
+	if n == nil or n^.call.method_owner == nil or
+			not semantic_text_has(n^.call.method_owner, n^.call.method_owner_len, '.') then
+		return false
+	end
+	parts.count := 0
+	owner := n^.call.method_owner
+	owner_len := n^.call.method_owner_len
+	i := 0
+	while i < owner_len do
+		if parts.count >= 16 then
+			semantic_error_at(n, "semantic_try_star_method: qualident is too long")
+		end
+		start := i
+		while i < owner_len and owner[i] <> '.' do
+			inc(i)
+		end
+		parts.text[parts.count] := owner + start
+		parts.len[parts.count] := i - start
+		parts.count := parts.count + 1
+		if i < owner_len and owner[i] == '.' then
+			inc(i)
+		end
+	end
+	best := semantic_best_star(ctx, parts)
+	if best < 0 then
+		semantic_error_at(n, "semantic_try_star_method: unknown module")
+	end
+	matched := semantic_star_match_count(ctx^.stars[best as size_t], parts)
+	if matched + 1 <> parts.count then
+		semantic_error_at(n, "semantic_try_star_method: expected Type after the module")
+	end
+	mangled := semantic_mangle_method(ctx^.arena,
+		parts.text[parts.count - 1], parts.len[parts.count - 1],
+		n^.call.name, n^.call.name_len)
+	sym := semantic_star_find(ctx, best, mangled,
+		parts.len[parts.count - 1] + 2 + n^.call.name_len)
+	if sym == nil then
+		semantic_error_at(n, "semantic_try_star_method: method not exported")
+	end
+	n^.resolved_sym := sym
+
+	// Peel compares the type's source name, not the package qualident.
+	n^.call.method_owner := parts.text[parts.count - 1]
+	n^.call.method_owner_len := parts.len[parts.count - 1]
+	return true
+end semantic_try_star_method
+
+
 (**
  * Register one IMPORT item in the current scope (foreign / minimal symbol).
  *)
@@ -2565,7 +3101,11 @@ begin
 	// exp^.name is freed with the .mh module. Copy it first.
 	if exp^.name <> nil and exp^.name_len > 0 and
 			not semantic_names_equal(bind_name, bind_len, exp^.name, exp^.name_len) then
-		sym^.c_name := semantic_arena_strndup(ctx^.arena, exp^.name, exp^.name_len)
+		// sym^.c_name := semantic_arena_strndup(ctx^.arena, exp^.name, exp^.name_len)
+		// sym^.c_name_len := exp^.name_len
+		sym^.mh_name := semantic_arena_strndup(ctx^.arena, exp^.name, exp^.name_len)
+		sym^.mh_name_len := exp^.name_len
+		sym^.c_name := sym^.mh_name
 		sym^.c_name_len := exp^.name_len
 	end
 
@@ -2619,6 +3159,7 @@ begin
 	var m: MhModule
 	var mname_len: size_t = 0
 	var unit_exp: const ^MhExport = nil
+	var bind_sym: pTSymbol = nil
 
 	if decl == nil or decl^.kind <> NODE_IMPORT then
 		return
@@ -2643,116 +3184,162 @@ begin
 			semantic_error_at(decl, "semantic_register_import: failed to read .mh file")
 		end
 
-		for i := 1 to decl^.import_stmt.count do
-			var item: pNode = decl^.import_stmt.items[i - 1]
-			var lookup_name: const ^char = nil
-			var lookup_len: size_t = 0
-			var bind_name: const ^char = nil
-			var bind_len: size_t = 0
-			var mangled: ^char = nil
+		if decl^.import_stmt.is_star then
+			var saved: pTSymbolTable = ctx^.scope
+			var s: size_t = 0
 			var exp: const ^MhExport = nil
-			// var kind: SymbolKind = SYM_KIND_IMPORT
-			// var sym: pTSymbol = nil
 
-			// if item^.import_item.import_alias <> nil and item^.import_item.import_alias_len > 0 then
-			// 	name 		:= item^.import_item.import_alias
-			// 	name_len 	:= item^.import_item.import_alias_len
-			// else
-			// 	name		:= item^.import_item.qualident
-			// 	name_len	:= item^.import_item.qualident_len
-			if item == nil or item^.kind <> NODE_IMPORT_ITEM then
-				semantic_error_at(decl, "semantic_register_import: expected import item")
+			if ctx^.star_count >= 32 then
+				semantic_error_at(decl, "semantic_register_import: too many import *")
+			end
+			for s := 1 to ctx^.star_count do
+				if semantic_names_equal(ctx^.stars[s - 1].qual, ctx^.stars[s - 1].qual_len,
+						decl^.import_stmt.from_path, decl^.import_stmt.path_len) then
+					semantic_error_at(decl, "semantic_register_import: duplicate import *")
+				end
 			end
 
-			// Lookup key in .mh: Type::name => Type__name; else written name (may already be mangled).
-			if item^.import_item.method_owner <> nil and
-					item^.import_item.method_owner_len > 0 then
-				mangled := semantic_mangle_method(ctx^.arena,
-					item^.import_item.method_owner,
-					item^.import_item.method_owner_len,
-					item^.import_item.qualident,
-					item^.import_item.qualident_len)
-				lookup_name := mangled
-				lookup_len := item^.import_item.method_owner_len + 2 +
-					item^.import_item.qualident_len
-			else
-				lookup_name := item^.import_item.qualident
-				lookup_len := item^.import_item.qualident_len
+			// Parent is the unit scope so field types still see integer
+			// lookup_current keeps the exports out of the bare scope.
+			ctx^.scope := symtab_create(ctx^.arena, saved)
+			for s := 1 to m.count do
+				exp := @m.exports[s - 1]
+				if exp^.name == nil or exp^.name_len == 0 then
+					continue
+				end
+				semantic_bind_mh_export(ctx, decl, exp, exp^.name, exp^.name_len)
+				bind_sym := symtab_lookup_current(ctx^.scope, exp^.name, exp^.name_len)
+				semantic_apply_import_c_name(ctx, decl, bind_sym,
+					decl^.import_stmt.from_path, decl^.import_stmt.path_len,
+					exp, m.module_name, m.module_name_len)
+				if bind_sym <> nil and bind_sym^.decl <> nil and
+						bind_sym^.decl^.kind == NODE_TYPE_DECL and
+						bind_sym^.decl^.type_decl.struct_body <> nil then
+					semantic_resolve_struct_type(ctx,
+						bind_sym^.decl^.type_decl.struct_body, decl)
+				end
 			end
 
-			if lookup_name == nil or lookup_len == 0 then
-				semantic_error_at(item, "semantic_register_import: import item has no name")
+			// Formals such as Point are names of this module. Resolve them
+			// while this scope is current. The program scope does not bind them.
+			for s := 1 to ctx^.scope^.count do
+				var prm: pNode = nil
+				var pi: size_t = 0
+				var plist: pNode = nil
+
+				bind_sym := ctx^.scope^.symbols[s - 1]
+				if bind_sym == nil or bind_sym^.decl == nil then
+					continue
+				end
+				if bind_sym^.decl^.kind <> NODE_PROC_DECL and
+						bind_sym^.decl^.kind <> NODE_FUNC_DECL then
+					continue
+				end
+				if bind_sym^.decl^.proc_decl.return_type <> nil then
+					semantic_resolve_type(ctx,
+						bind_sym^.decl^.proc_decl.return_type, decl)
+				end
+				plist := bind_sym^.decl^.proc_decl.params
+				if plist == nil or plist^.kind <> NODE_PARAM_LIST then
+					continue
+				end
+				for pi := 1 to plist^.param_list.count do
+					prm := plist^.param_list.params[pi - 1]
+					if prm <> nil and prm^.param.param_type <> nil then
+						semantic_resolve_type(ctx, prm^.param.param_type, prm)
+					end
+				end
+			end
+			ctx^.stars[ctx^.star_count].qual := semantic_arena_strndup(ctx^.arena,
+				decl^.import_stmt.from_path, decl^.import_stmt.path_len)
+			ctx^.stars[ctx^.star_count].qual_len := decl^.import_stmt.path_len
+			ctx^.stars[ctx^.star_count].unit_name := semantic_arena_strndup(ctx^.arena,
+				m.module_name, m.module_name_len)
+			ctx^.stars[ctx^.star_count].unit_len := m.module_name_len
+			ctx^.stars[ctx^.star_count].scope := ctx^.scope
+			ctx^.star_count := ctx^.star_count + 1
+			ctx^.scope := saved
+		else
+			for i := 1 to decl^.import_stmt.count do
+				var item: pNode = decl^.import_stmt.items[i - 1]
+				var lookup_name: const ^char = nil
+				var lookup_len: size_t = 0
+				var bind_name: const ^char = nil
+				var bind_len: size_t = 0
+				var mangled: ^char = nil
+				var exp: const ^MhExport = nil
+
+				if item == nil or item^.kind <> NODE_IMPORT_ITEM then
+					semantic_error_at(decl, "semantic_register_import: expected import item")
+				end
+
+				// Lookup key in .mh: Type::name => Type__name; else written name (may already be mangled).
+				if item^.import_item.method_owner <> nil and
+						item^.import_item.method_owner_len > 0 then
+					mangled := semantic_mangle_method(ctx^.arena,
+						item^.import_item.method_owner,
+						item^.import_item.method_owner_len,
+						item^.import_item.qualident,
+						item^.import_item.qualident_len)
+					lookup_name := mangled
+					lookup_len := item^.import_item.method_owner_len + 2 +
+						item^.import_item.qualident_len
+				else
+					lookup_name := item^.import_item.qualident
+					lookup_len := item^.import_item.qualident_len
+				end
+
+				if lookup_name == nil or lookup_len == 0 then
+					semantic_error_at(item, "semantic_register_import: import item has no name")
+				end
+
+				exp := mh_module_find(@m, lookup_name, lookup_len)
+				if exp == nil then
+					var buf: array[256] of char
+					snprintf(@buf[0], 256,
+						"semantic_register_import: name not exported in .mh: %.*s",
+						lookup_len as int, lookup_name)
+					semantic_error_at(item, @buf[0])
+				end
+
+				// Symtab name: AS alias if present, else mangled / lookup name.
+				if item^.import_item.import_alias <> nil and
+						item^.import_item.import_alias_len > 0 then
+					bind_name := item^.import_item.import_alias
+					bind_len := item^.import_item.import_alias_len
+				else
+					bind_name := lookup_name
+					bind_len := lookup_len
+				end
+
+				semantic_bind_mh_export(ctx, item, exp, bind_name, bind_len)
+				bind_sym := symtab_lookup_current(ctx^.scope, bind_name, bind_len)
+				semantic_apply_import_c_name(ctx, item, bind_sym,
+					decl^.import_stmt.from_path, decl^.import_stmt.path_len,
+					exp, m.module_name, m.module_name_len)
 			end
 
-			exp := mh_module_find(@m, lookup_name, lookup_len)
-			if exp == nil then
-				var buf: array[256] of char
-				snprintf(@buf[0], 256,
-					"semantic_register_import: name not exported in .mh: %.*s",
-					lookup_len as int, lookup_name)
-				semantic_error_at(item, @buf[0])
-			end
-
-			// kind := mh_export_to_symkind(exp^.kind)
-			// if kind == SYM_KIND_UNKNOWN then
-			// 	semantic_error_at(item, "semantic_register_import: unknown export kind in .mh")
-			// end
-
-			// Symtab name: AS alias if present, else mangled / lookup name.
-			if item^.import_item.import_alias <> nil and
-					item^.import_item.import_alias_len > 0 then
-				bind_name := item^.import_item.import_alias
-				bind_len := item^.import_item.import_alias_len
-			else
-				bind_name := lookup_name
-				bind_len := lookup_len
-			end
-
-			// semantic_define(ctx, kind, bind_name, bind_len, nil, item, false)
-
-			// // A2 metadata => symbol flag for A4 instance sugar
-			// if exp^.is_method and exp^.is_instance then
-			// 	sym := symtab_lookup_current(ctx^.scope, bind_name, bind_len)
-			// 	if sym <> nil then
-			// 		sym^.is_method_instance := true
-			// 	end
-			// end
-			// sym := symtab_lookup_current(ctx^.scope, bind_name, bind_len)
-			// if sym == nil then
-			// 	semantic_error_at(item, "semantic_register_import: internal: symbol not defined")
-			// end
-
-			// S4: synthetic proc/func with formals for auto-& / upcast
-			// if exp^.has_signature and
-			// 		(kind == SYM_KIND_PROC or kind == SYM_KIND_FUNC) then
-			// 	var synth: pNode = nil
-			// 	synth := semantic_mh_make_proc_decl(ctx, exp, item, 
-			// 		bind_name, bind_len, kind)
-			// 	if synth <> nil then
-			// 		sym^.decl := synth
-			// 	end
-			// end
-
-			// Phase A: instance method import
-			// if exp^.is_method and exp^.is_instance then
-			// 	sym^.is_method_instance := true
-			// end
-			semantic_bind_mh_export(ctx, item, exp, bind_name, bind_len)
-		end
-
-		// 7a: any named import from this .mh also binds the unit-entry export.
-		if decl^.import_stmt.count > 0 and m.module_name <> nil then
-			mname_len := m.module_name_len
-			unit_exp := mh_module_find(@m, m.module_name, mname_len)
-			if unit_exp <> nil then
-				if symtab_lookup_current(ctx^.scope, m.module_name, mname_len) == nil then
-					semantic_bind_mh_export(ctx, decl, unit_exp, m.module_name, mname_len)
+			// 7a: any named import from this .mh also binds the unit-entry export.
+			if decl^.import_stmt.count > 0 and m.module_name <> nil then
+				mname_len := m.module_name_len
+				unit_exp := mh_module_find(@m, m.module_name, mname_len)
+				if unit_exp <> nil then
+					if symtab_lookup_current(ctx^.scope, m.module_name, mname_len) == nil then
+						semantic_bind_mh_export(ctx, decl, unit_exp, m.module_name, mname_len)
+						bind_sym := symtab_lookup_current(ctx^.scope, m.module_name, mname_len)
+						semantic_apply_import_c_name(ctx, decl, bind_sym,
+							decl^.import_stmt.from_path, decl^.import_stmt.path_len,
+							unit_exp, m.module_name, m.module_name_len)
+					end
 				end
 			end
 		end
 
 		mh_module_free(@m)
 	else
+		if decl^.import_stmt.is_star then
+			semantic_error_at(decl, "semanitc_register_import: import * is an .mh import")
+		end
 		for i := 1 to decl^.import_stmt.count do
 			semantic_register_import_item(ctx, decl^.import_stmt.items[i - 1])
 		end
@@ -3217,9 +3804,10 @@ begin
 		// result.owner stays the TMod-c name so auto-deref still matches.
 		lookup_owner := owner
 		lookup_len := owner_len
-		if ty^.c_name <> nil and ty^.c_name_len > 0 then
-			lookup_owner := ty^.c_name
-			lookup_len := ty^.c_name_len
+		sym := symtab_lookup(ctx^.scope, owner, owner_len)
+		if sym <> nil and sym^.mh_name <> nil and sym^.mh_name_len > 0 then
+			lookup_owner := sym^.mh_name
+			lookup_len := sym^.mh_name_len
 		end
 		mangled := semantic_mangle_method(ctx^.arena, lookup_owner, lookup_len,
 			method, method_len)
@@ -3392,9 +3980,12 @@ begin
 		return
 	end
 	n^.call.base_depth := 0
-
-	// -- Dot-call: obj.name(...) may be instance method or field call-through ---
-	if n^.call.receiver_expr <> nil then
+	if n^.call.receiver_expr <> nil and semantic_try_star_call(ctx, n) then
+		sym := n^.resolved_sym
+	elsif n^.call.method_owner <> nil and semantic_try_star_method(ctx, n) then
+		sym := n^.resolved_sym
+	elsif n^.call.receiver_expr <> nil then
+		// -- Dot-call: obj.name(...) may be instance method or field call-through ---
 		has_receiver := true
 		semantic_resolve_expr(ctx, n^.call.receiver_expr)
 
@@ -3468,10 +4059,10 @@ begin
 			c_owner := n^.call.method_owner
 			c_owner_len := n^.call.method_owner_len
 			owner_sym := symtab_lookup(ctx^.scope, c_owner, c_owner_len)
-			if owner_sym <> nil and owner_sym^.c_name <> nil and
-					owner_sym^.c_name_len > 0 then
-				c_owner := owner_sym^.c_name
-				c_owner_len := owner_sym^.c_name_len
+			if owner_sym <> nil and owner_sym^.mh_name <> nil and
+					owner_sym^.mh_name_len > 0 then
+				c_owner := owner_sym^.mh_name
+				c_owner_len := owner_sym^.mh_name_len
 			end
 			mangled := semantic_mangle_method(ctx^.arena,
 				c_owner, c_owner_len,
@@ -3695,14 +4286,6 @@ begin
 			end
 		end
 
-		// name := ty^.name
-		// name_len := ty^.name_len
-		// if not type_is_builtin_name(name, name_len) then
-		// 	sym := symtab_lookup(ctx^.scope, name, name_len)
-		// 	if sym == nil or sym^.kind <> SYM_KIND_TYPE then
-		// 		semantic_error_at(n, "semantic_resolve_sizeof: unknown type in SIZEOF")
-		// 	end
-		// end
 		semantic_resolve_type(ctx, ty, n)
 	else
 		d := n^.sizeof_expr.target.designator
@@ -3729,6 +4312,19 @@ begin
 			end
 		end
 		semantic_resolve_expr(ctx, d)
+		if d^.resolved_sym <> nil and d^.resolved_sym^.kind == SYM_KIND_TYPE then
+			ty := type_create_named(ctx^.arena,
+				d^.resolved_sym^.name, d^.resolved_sym^.name_len)
+			ty^.c_name := d^.resolved_sym^.c_name
+			ty^.c_name_len := d^.resolved_sym^.c_name_len
+			ty^.resolved_type := type_create_named(ctx^.arena,
+				d^.resolved_sym^.name, d^.resolved_sym^.name_len)
+			ty^.resolved_type^.c_name := ty^.c_name
+			ty^.resolved_type^.c_name_len := ty^.c_name_len
+			n^.sizeof_expr.is_type := true
+			n^.sizeof_expr.target.sizeof_type := ty
+			return
+		end
 	end
 end semantic_resolve_sizeof
 
@@ -3841,6 +4437,9 @@ begin
 			end
 
 		case NODE_FIELD_ACCESS:
+			if semantic_bind_star_designator(ctx, n) then
+				break
+			end
 			semantic_resolve_expr(ctx, n^.field_access.record_)
 			begin
 				var rec_ty: pTType = nil
@@ -4538,6 +5137,97 @@ begin
 end semantic_make_unit_entry_decl
 
 
+(*
+ * Return types and top-level VAR/CONST/LET types are resolved in pass 1,
+ * before exported symbols receive c_nmae. Copy that spelling onto them.
+ *)
+procedure semantic_restamp_resolved_types(ctx: pTSemanticContext, root: pNode)
+begin
+	var i: size_t = 0
+	var j: size_t = 0
+	var decl: pNode = nil
+	var item: pNode = nil
+	var count: size_t = 0
+	var items: ^pNode = nil
+
+	if ctx == nil or root == nil or root^.kind <> NODE_PROGRAM then
+		return
+	end
+	for i := 1 to root^.program_decl.count do
+		decl := root^.program_decl.decls[i - 1]
+		if decl == nil then
+			continue
+		end
+		if decl^.kind == NODE_PROC_DECL or decl^.kind == NODE_FUNC_DECL then
+			if decl^.proc_decl.return_type <> nil then
+				semantic_stamp_c_name(ctx, decl^.proc_decl.return_type)
+			end
+		elsif decl^.kind == NODE_VAR_DECL or decl^.kind == NODE_CONST_DECL or
+				decl^.kind == NODE_LET_DECL then
+			if decl^.kind == NODE_VAR_DECL then
+				count := decl^.var_decl.count
+				items := decl^.var_decl.items
+			elsif decl^.kind == NODE_CONST_DECL then
+				count := decl^.const_decl.count
+				items := decl^.const_decl.items
+			else
+				count := decl^.let_decl.count
+				items := decl^.let_decl.items
+			end
+			for j := 1 to count do
+				item := items[j - 1]
+				if item <> nil and item^.var_item.item_type <> nil then
+					semantic_stamp_c_name(ctx, item^.var_item.item_type)
+				end
+			end
+		end
+	end
+end semantic_restamp_resolved_types
+
+
+(* 
+ * File-scope brace lists are resolved before enum members exist.
+ * Bind them again so an exported enumerator uses its C name.
+ *)
+procedure semantic_rebind_decl_initializers(ctx: pTSemanticContext, root: pNode)
+begin
+	var i: size_t = 0
+	var j: size_t = 0
+	var decl: pNode = nil
+	var item: pNode = nil
+	var count: size_t = 0
+	var items: ^pNode = nil
+
+	if ctx == nil or root == nil or root^.kind <> NODE_PROGRAM then
+		return
+	end
+	for i := 1 to root^.program_decl.count do
+		decl := root^.program_decl.decls[i - 1]
+		if decl == nil then
+			continue
+		end
+		if decl^.kind == NODE_VAR_DECL then
+			count := decl^.var_decl.count
+			items := decl^.var_decl.items
+		elsif decl^.kind == NODE_CONST_DECL then
+			count := decl^.const_decl.count
+			items := decl^.const_decl.items
+		elsif decl^.kind == NODE_LET_DECL then
+			count := decl^.let_decl.count
+			items := decl^.let_decl.items
+		else
+			continue
+		end
+		for j := 1 to count do
+			item := items[j - 1]
+			if item <> nil and item^.var_item.initializer <> nil then
+				semantic_resolve_expr(ctx, item^.var_item.initializer)
+			end
+		end
+	end
+end semantic_rebind_decl_initializers
+
+
 (**
  * Analyze PROGRAM / MODULE unit
  *)
@@ -4556,6 +5246,10 @@ begin
 
 	global := symtab_create(ctx^.arena, nil)
 	ctx^.scope := global
+	ctx^.package_path := root^.program_decl.package_path
+	ctx^.package_path_len := root^.program_decl.package_path_len
+	ctx^.unit_name := root^.program_decl.name
+	ctx^.unit_name_len := root^.program_decl.name_len
 
 	semantic_register_prelude(ctx)
 
@@ -4587,9 +5281,13 @@ begin
 				root^.program_decl.return_type, unit_entry, true)
 		end
 	end
+	semantic_stamp_unit_exports(ctx, root)
 
 	// Pass 1 1/2: resolve TYPE alias bodies (all TYPE names now in symtab)
 	semantic_resolve_type_decls(ctx, root)
+	semantic_stamp_unit_exports(ctx, root)
+	semantic_rebind_decl_initializers(ctx, root)
+	semantic_restamp_resolved_types(ctx, root)
 
 	// HEADER declarations are prototypes. A procedure or function body is a BEGIN.
 	if root^.program_decl.unit_kind == TOK_KEYWORD_HEADER then
@@ -4767,6 +5465,11 @@ begin
 	ctx.source_path 	:= source_path
 	ctx.scope 			:= nil
 	ctx.enclosing_func 	:= nil
+	ctx.package_path 	:= nil
+	ctx.package_path_len 	:= 0
+	ctx.unit_name 		:= nil
+	ctx.unit_name_len 	:= 0
+	ctx.star_count 	:= 0
 
 	semantic_analyze_program(@ctx, root)
 end

@@ -36,6 +36,7 @@ import CodegenContext, emit_indent,	emit_var_decl, emit_doc_comment_as_c,
 	codegen_decl_opens_type_order, codegen_type_in_file,
 	codegen_emit_type_preamble, codegen_type_order_skip,
 	codegen_type_order_after_type, codegen_type_order_check,
+	codegen_emit_var_item,
 	from tmodc.codegen.codegen_common
 
 
@@ -99,10 +100,7 @@ begin
 					dynbuf_append(ctx.out, "const ")
 				end
 
-				emit_var_decl(ctx.out,
-					item^.var_item.name,
-					item^.var_item.name_len,
-					item^.var_item.item_type)
+				codegen_emit_var_item(ctx.out, item, item^.var_item.item_type)
 
 				if not n^.var_decl.is_extern then
 					if item^.var_item.initializer <> nil then

@@ -67,7 +67,7 @@ export type TProgramDecl complete struct (unit_kind: TokenKind, name: const ^cha
 export type TDocComment complete struct (text: const ^char, text_len: size_t)
 export type TPreprocessor complete struct (text: const ^char, length: size_t)
 export type TDefineStmt complete struct (name: const ^char, name_len: size_t, text: const ^char, length: size_t, is_exported: bool)
-export type TImportStmt complete struct (items: ^pNode, count: size_t, capacity: size_t, from_path: const ^char, path_len: size_t)
+export type TImportStmt complete struct (items: ^pNode, count: size_t, capacity: size_t, from_path: const ^char, path_len: size_t, is_star: bool)
 export type TImportItem complete struct (qualident: const ^char, qualident_len: size_t, method_owner: const ^char, method_owner_len: size_t, import_alias: const ^char, import_alias_len: size_t)
 export type TStructDecl complete struct (name: const ^char, name_len: size_t, extends_type: ^TType, fields: ^pNode, field_count: size_t, field_capacity: size_t, is_exported: bool, is_packed: bool, is_union: bool)
 export type TFieldDecl complete struct (name: const ^char, name_len: size_t, field_type: ^TType, initializer: ^TNode, nested: ^TNode)
@@ -125,7 +125,7 @@ export const SYM_KIND_FUNC complete
 export const SYM_KIND_STRUCT complete
 export const SYM_KIND_FIELD complete
 export const SYM_KIND_IMPORT complete
-export type TSymbol complete struct (kind: SymbolKind, name: const ^char, name_len: size_t, symbol_type: ^TType, decl: pNode, is_exported: bool, has_const_value: bool, const_value: integer, is_method_instance: bool, c_name: const ^char, c_name_len: size_t)
+export type TSymbol complete struct (kind: SymbolKind, name: const ^char, name_len: size_t, symbol_type: ^TType, decl: pNode, is_exported: bool, has_const_value: bool, const_value: integer, is_method_instance: bool, c_name: const ^char, c_name_len: size_t, mh_name: const ^char, mh_name_len: size_t)
 export type pTSymbol complete ^TSymbol
 export type ppTSymbol complete ^pTSymbol
 export function symbol_create complete (^Arena, SymbolKind, const ^char, size_t, pNode) : ^TSymbol

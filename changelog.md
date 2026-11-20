@@ -2,6 +2,14 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.9.257
+- **`IMPORT *` and the package C spelling (7 remainder).** `import * from tmodc.arena` binds that qualident and no bare name. A use is `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, or `tmodc.arena.Point::print`. The longest imported qualident matches. The next identifier is the export. The module entry is the qualident call, `tmodc.arena()`. A dotted qualident is a type name. A selective import stays the bare name and may stand beside the star. `import * from "stdio.h"` is an error. A second star of the same module is a duplicate. `import * as Alias` is not in this promote.
+- Every exported procedure, function, method, type, variable, enumeration constant, and the module entry uses that spelling in C. Each `.` and each `::` becomes `__` (`tmodc__arena__Point__print`, `tmodc__lib__String`). An exported struct or union prefixes both the tag and the typedef. Inside the defining unit the source stays bare. A unit with no package path keeps today's C names. Hosted `main` stays `main`. A non-exported procedure stays `static` under its source name. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. The `.mh` line keeps the source name. `@format` stays 1.
+- A return type and a file-scope brace list are stamped after the enumerators exist, so `pvoid` and `TOK_KEYWORD_AND` use the same C spelling as their declarations.
+- **Tests:** `tests/test_import_star.mc`, `tests/test_pack_entry.mc`, `tests/test3_import_star_h.mc`, `tests/test3_import_star_bare.mc`, `tests/fixtures/starpack.mh`, `tests/fixtures/starpack.h`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.9.257**. Stem **0.27.9**. `Makefile` `VERSION` is **0.27.9**. Branch **`TMod-c_0.27`**. Build **257**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, and `docs/syntax-ebnf.md`.
+
 ## Version 0.27.8.255
 - **Drop `IS` (item 26).** `TOK_KEYWORD_IS` is commented out of the lexer enum, the keyword table, and the token-string case. `is` is an identifier. `IN` stays reserved for set membership. The parser never used `IS`. The EBNF already omitted it.
 - The user reported that the complete test suite passes on gcc, clang, and tcc, and promoted **0.27.8.255**. Stem **0.27.8**. `Makefile` `VERSION` is **0.27.8**. Branch **`TMod-c_0.27`**. Build **255**.

@@ -14,7 +14,7 @@ import
     TOK_COMMENT_PASCAL, TOK_COMMENT, TOK_DOC_COMMENT, TOK_SEMICOLON, TOK_NEWLINE,
     TOK_COLON_EQ, TOK_MUL_EQ, TOK_DIV_EQ, TOK_MOD_EQ, TOK_ADD_EQ, TOK_SUB_EQ,
     TOK_LSHIFT_EQ, TOK_RSHIFT_EQ, TOK_AND_EQ, TOK_OR_EQ, TOK_BITWISE_NOT_EQ, TOK_EOF,
-    TToken::print, TokenKind::string, TOK_LPAREN, TOK_RPAREN, TOK_KEYWORD_CONST, TOK_CARET,
+    TToken::print, TokenKind::to_string, TOK_LPAREN, TOK_RPAREN, TOK_KEYWORD_CONST, TOK_CARET,
     TOK_KEYWORD_POINTER, TOK_KEYWORD_TO, TOK_KEYWORD_ARRAY, TOK_LBRACKET, TOK_NUMBER,
     TOK_RBRACKET, TOK_KEYWORD_OF, TOK_IDENT, TOK_KEYWORD_PACKED, TOK_KEYWORD_STRUCT,
     TOK_KEYWORD_END, TOK_KEYWORD_PROCEDURE, TOK_KEYWORD_FUNCTION, TOK_COLON, TOK_KEYWORD_BEGIN,
@@ -671,10 +671,20 @@ begin
             element := type_create_named(p.arena, start, length)
             element^.width := w
         else
-            // Compund C types: long long, unsigned int, long double, etc.
-            while p.current.kind == TOK_IDENT do
-                length := (p.current.start + p.current.length - start) as size_t
-                p.advance()
+            // fixtures.starpack.Point is one type name. Spaces stay a C spelling.
+            if p.check(TOK_DOT) then
+                while p.match(TOK_DOT) do
+                    if p.current.kind <> TOK_IDENT then
+                        p.error_at("TParser::parse_return_type_ex: expected identifier after '.'", true)
+                    end
+                    length := (p.current.start + p.current.length - start) as size_t
+                    p.advance()
+                end
+            else
+                while p.current.kind == TOK_IDENT do
+                    length := (p.current.start + p.current.length - start) as size_t
+                    p.advance()
+                end
             end
             element := type_create_named(p.arena, start, length)
         end

@@ -1,0 +1,8 @@
+# modc-mh/1
+# hand fixture for import *
+@module starpack
+@format 1
+export type Point complete struct (x: integer, y: integer)
+export function answer complete () : integer
+export function Point__getX complete static Point (Point) : integer
+export function starpack complete () : integer

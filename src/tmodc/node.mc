@@ -33,7 +33,7 @@ import printf,
 
 import Arena, arena_alloc, 
     from tmodc.arena
-import TToken, TokenKind, TokenKind::string, 
+import TToken, TokenKind, TokenKind::to_string, 
 	from tmodc.lexer.Lexer
 import type_print, TType,
 	from tmodc.ttype
@@ -186,6 +186,7 @@ export type TImportStmt = struct
 	capacity: 		size_t
 	from_path: 		const ^char 	// string-literal or qualident after FROM (pointer to source)
 	path_len: 		size_t
+	is_star:		bool 			// IMPORT * FROM module. No bare names.
 end
 
 (** Single import item: name | Type::name [ AS ident ] *)
@@ -633,6 +634,8 @@ export type TSymbol = struct
 	is_method_instance: bool
 	c_name: 			const ^char 	// IMPORT AS: C spelling. nil => name
 	c_name_len:			size_t
+	mh_name:			const ^char 	// .mh spelling whne AS renmaed it. nil => name
+	mh_name_len:		size_t
 end
 
 export type pTSymbol		= ^TSymbol
@@ -662,6 +665,8 @@ begin
 	s^.is_method_instance 	:= false
 	s^.c_name 				:= nil
 	s^.c_name_len 			:= 0
+	s^.mh_name 				:= nil
+	s^.mh_name_len 			:= 0
 
 	return s
 end
@@ -784,7 +789,7 @@ begin
 
 	switch n.kind of
 		case NODE_PROGRAM:
-			kind_name := TokenKind::string(n.program_decl.unit_kind)
+			kind_name := TokenKind::to_string(n.program_decl.unit_kind)
 			print_kind_line_column(n, kind_name)
 			if n.program_decl.package_path and n.program_decl.package_path_len > 0 then
 				printf("'%.*s'.", n.program_decl.package_path_len as int,
@@ -1329,7 +1334,7 @@ begin
 		case NODE_ASSIGN:
 			kind_name := "ASSIGN"
 			print_kind_line_column(n, kind_name)
-			printf(" %s \n", TokenKind::string(n.binary.op))
+			printf(" %s \n", TokenKind::to_string(n.binary.op))
 			node_print(n.binary.left, indent + 1)
 			node_print(n.binary.right, indent + 1)
 
@@ -1337,7 +1342,7 @@ begin
 			kind_name := "BINARY"
 			print_kind_line_column(n, kind_name)
 
-			printf("%s\n", TokenKind::string(n.binary.op))
+			printf("%s\n", TokenKind::to_string(n.binary.op))
 			node_print(n.binary.left, indent + 1)
 			node_print(n.binary.right, indent + 1)
 
@@ -1422,6 +1427,9 @@ begin
 		case NODE_IMPORT:
 			kind_name := "IMPORT"
 			print_kind_line_column(n, kind_name)
+			if n.import_stmt.is_star then
+				printf(" *")
+			end
 			if n.import_stmt.from_path and n.import_stmt.path_len > 0 then
 				printf(" FROM '%.*s'", n.import_stmt.path_len as int, n.import_stmt.from_path)
 			end
@@ -1481,7 +1489,7 @@ begin
 		case NODE_UNARY:
 			kind_name := "UNARY"
 			print_kind_line_column(n, kind_name)
-			printf("%s\n", TokenKind::string(n.unary.op))
+			printf("%s\n", TokenKind::to_string(n.unary.op))
 			node_print(n.unary.operand, indent + 1)
 
 		case NODE_TERNARY:
@@ -1588,7 +1596,7 @@ begin
 			// Get token name instead.
 			kind_name := "UNKNOWN_NODE"
 			print_kind_line_column(n, kind_name)
-			printf("(%s)", TokenKind::string(n.token.kind))
+			printf("(%s)", TokenKind::to_string(n.token.kind))
 			if n.token.length > 0 and n.token.start <> nil then
 				let len: size_t = n.token.length > 32 ? 32 as size_t: n.token.length
 

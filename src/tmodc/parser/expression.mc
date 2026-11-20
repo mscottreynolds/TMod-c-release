@@ -7,6 +7,8 @@ module tmodc.parser.expression()
  * expression.mc - Expression parsing routines.
  *)
 
+import size_t from "stddef.h"
+
 import NODE_TERNARY, NODE_BINARY, NODE_SIZEOF, NODE_INC, NODE_DEC, NODE_UNARY,
 	NODE_CAST, NODE_FIELD_ACCESS, NODE_CALL, NODE_IDENT, NODE_LITERAL, NODE_PAREN,
 	NODE_ARRAY_LITERAL, NODE_ARRAY_INDEX, node_create, pNode, NODE_COUNTOF,
@@ -759,6 +761,43 @@ begin
 			unary^.unary.op 		:= TOK_CARET
 			unary^.unary.operand 	:= expr
 			expr := unary
+		elsif check(p, TOK_COLON_COLON) then
+			var root: pNode = expr
+			var method_tok: TToken
+			var call: pNode = nil
+			var owner_start: const ^char = nil
+			var owner_len: size_t = 0
+
+			while root^.kind == NODE_FIELD_ACCESS do
+				root := root^.field_access.record_
+			end
+			if root^.kind <> NODE_IDENT then
+				error_at(p, "parse_postfix: expected a name before '::'", true)
+			end
+			owner_start := root^.token.start
+			owner_len := (expr^.token.start + expr^.token.length - root^.token.start) as size_t
+			advance(p)
+			if p^.current.kind <> TOK_IDENT then
+				error_at(p, "parse_postfix: expected method name after '::'", true)
+			end
+			method_tok := p^.current
+			advance(p)
+			if not check(p, TOK_LPAREN) then
+				error_at(p, "parse_postfix: expected '(' after qualified method name", true)
+			end
+			call := node_create(p^.arena, NODE_CALL, method_tok)
+			call^.call.name := method_tok.start
+			call^.call.name_len := method_tok.length
+			call^.call.method_owner := owner_start
+			call^.call.method_owner_len := owner_len
+			call^.call.receiver_expr := nil
+			call^.call.callee_expr := nil
+			call^.call.args := nil
+			call^.call.argc := 0
+			call^.call.arg_capacity := 0
+			consume(p, TOK_LPAREN, "parse_postfix: expected '(' after qualified method name")
+			parse_call_arguments(p, call)
+			expr := call
 		else
 			break
 		end

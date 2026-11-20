@@ -11,6 +11,8 @@ export const TARGET_WASM complete
 export const TARGET_JSON complete
 export type CodegenContext complete struct (out: pDynBuf, ast: const ^TNode, indent: integer, debug_enabled: bool, assert_off: bool, dbc_off: bool, target: CodegenTarget, parent_ctx: const ^CodegenContext, parent_node: const ^TNode, enclosing_func: const ^TNode, enclosing_loop: const ^TNode, stmt_index: size_t, header_base: const ^char, header_base_len: size_t, source_path: const ^char)
 export type pCodegenContext complete ^CodegenContext
+export procedure emit_program_c_name complete (pDynBuf, const ^TNode)
+export procedure codegen_emit_var_item complete (pDynBuf, const ^TNode, const ^TType)
 export function ctx_push complete (const ^CodegenContext, const ^TNode) : CodegenContext
 export procedure emit_indent complete (pDynBuf, int)
 export procedure emit_doc_comment_as_c complete (pDynBuf, const ^TNode)

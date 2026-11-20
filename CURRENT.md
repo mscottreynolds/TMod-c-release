@@ -2,22 +2,21 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.8 (build 255)  
-**Last updated:** 2026-11-18  
+**Version:** 0.27.9 (build 257)  
+**Last updated:** 2026-11-19  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.8.255** is in `changelog.md`. Session archives and `docs/project_bible.md` run through **0.27.8.254**. This file is the live focus.
+History through **0.27.9.257** is in `changelog.md`. Session archives and `docs/project_bible.md` run through **0.27.8.254**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.8**, build **255**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote drops the unused keyword `IS` (**0.27.8.255**). `is` is an identifier. `IN` stays reserved. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **257**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **`IMPORT *` and the package C spelling (0.27.9.257)**. `import * as Alias` is still later. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
-**Next:** **7 remainder.** `IMPORT *` and the package C spelling. The rule is locked in Language Report §3.2 and `docs/syntax-ebnf.md`. The compiler does not do it yet.
+**Next:** **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 
 **Still open**
 
-- **7 remainder.** `IMPORT *` and the package C spelling. The rule is locked in Language Report §3.2 and `docs/syntax-ebnf.md`. The compiler does not do it yet.
 - **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 - **10c hole.** A call through a function pointer or a callable field does not insert the hidden slice length.
 - **15a.** Cyclic `IMPORT`. Package directories landed in **0.26.12.213**. The language rule has not. Candidates: extract-common (what `parser_common` does today), an interface/implementation split, a cycle ban, or an interface-only first pass. `parser_main` still meets `declaration`, `expression`, and `statement` through generated C headers and a previously emitted `.mh`.
@@ -38,6 +37,7 @@ History through **0.27.8.255** is in `changelog.md`. Session archives and `docs/
 - **7b.** No generated calls of imported module bodies. Call the module entry explicitly.
 - **24.** Discard `_` is dropped (12 October 2026). `(f())` is the discard.
 - **26.** Drop unused keyword `IS`. Done (**0.27.8.255**). The lexer no longer reserves it. `IN` stays reserved. See [Drop `IS`](#drop-is-no-type-guards).
+- **7 remainder.** `IMPORT *` and the package C spelling. Done (**0.27.9.257**). `import * as Alias` is still later. Language Report §3.2.
 - **DbC.** `REQUIRE` / `ENSURE` already resolve like `ASSERT`. A nil-check of a `REF T` is a separate check of `^T`. Side-effect-free contract lint and a `--pot` assertion quota are not planned.
 
 **Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked. Scratch questions are in `TODO-items-for-0.27.md`.
@@ -172,7 +172,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.8.255**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.8.254**.
+Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.257**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.8.254**.
 
 ## Useful Commands
 
@@ -193,12 +193,12 @@ make selfhost
 make bootstrap
 make promote
 
-./bin/modc.0.27.8 --help
-./bin/modc.0.27.8 -C input.mc
-./bin/modc.0.27.8 -C -d dir *.mc
-./bin/modc.0.27.8 -H input.mc
-./bin/modc.0.27.8 -M [file.mh]
-./bin/modc.0.27.8 -a input.mc
+./bin/modc.0.27.9 --help
+./bin/modc.0.27.9 -C input.mc
+./bin/modc.0.27.9 -C -d dir *.mc
+./bin/modc.0.27.9 -H input.mc
+./bin/modc.0.27.9 -M [file.mh]
+./bin/modc.0.27.9 -a input.mc
 ```
 
 ## Archive
