@@ -333,6 +333,8 @@ typedef struct tmodc__node__TImportStmt {
     const char* from_path;
     size_t path_len;
     bool is_star;
+    const char* star_alias;
+    size_t star_alias_len;
 } tmodc__node__TImportStmt;
 
 /** Single import item: name | Type::name [ AS ident ] */

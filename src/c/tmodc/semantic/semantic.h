@@ -71,6 +71,8 @@ typedef tmodc__semantic__semantic__TSemanticContext* tmodc__semantic__semantic__
 typedef struct tmodc__semantic__semantic__TStarImport {
     const char* qual;
     size_t qual_len;
+    const char* alias;
+    size_t alias_len;
     const char* unit_name;
     size_t unit_len;
     tmodc__semantic__symtab__pTSymbolTable scope;

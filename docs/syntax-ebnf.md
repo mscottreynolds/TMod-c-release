@@ -1,7 +1,7 @@
 # TMod-c — Complete Syntax (EBNF)
 
 **Status:** Living formal grammar (single source of truth for syntax productions).  
-**Last updated:** 19 November 2026.  
+**Last updated:** 20 November 2026.  
 **Companion:** Language definition prose is in [`language-report.md`](language-report.md).  
 **Not here:** Implementation status, changelogs, design essays — see `CURRENT.md` and `language-report.md`.
 
@@ -43,12 +43,14 @@ module-name = qualident ;
 
 (**** Imports ******************************************************)
 
-import-stmt   = "IMPORT" ( "*" | [ import-item { "," import-item } ] ) "FROM" import-source EOS ;
+import-stmt   = "IMPORT" ( "*" [ "AS" identifier ] | [ import-item { "," import-item } ] ) "FROM" import-source EOS ;
 import-source = string-literal | qualident ;
 
 (* "*" (0.27.9.257). An .mh source. Binds the package qualident.
    No bare names. A quoted C header is an error.
-   import * as Alias is later. Language Report §3.2. *)
+   "*" "AS" identifier (0.27.9.258) binds that one name instead.
+   st() is the module entry. C stays the module spelling.
+   Language Report §3.2. *)
 
 (* AS (0.27.8.253). The alias is one identifier.
    The unit's name is the alias. C keeps the original spelling.

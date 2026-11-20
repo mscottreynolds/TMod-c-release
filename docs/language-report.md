@@ -2,7 +2,7 @@
 
 **Status:** Living draft — Wirth-style language report.  
 **Version alignment:** Compiler **0.27.9** (see `CURRENT.md` for implementation status).  
-**Last updated:** 19 November 2026  
+**Last updated:** 20 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -293,9 +293,10 @@ export function mini_answer complete () : integer
 export procedure Point__print complete instance Point (Point)
 ```
 
-**`IMPORT *` and the C spelling (0.27.9.257).** `AS` above stays the selective-import rule. `import * as Alias` is still later.
+**`IMPORT *` and the C spelling (0.27.9.257).** `import * as Alias` is **0.27.9.258**. `AS` on a selective import stays the rule above.
 
 - `import * from Module` brings that module in under its package qualident. The longest imported qualident matches. The next identifier is the export: `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, `tmodc.arena.Point::print`. The module entry is the qualident call, `tmodc.arena()`. A shorter prefix is not a name. A dotted qualident is a type name (`var p: tmodc.arena.TChunk`). The star adds no bare name. A qualified `tmodc.pack.integer` is a different name from the prelude `integer`.
+- `import * as st from tmodc.lib.strings` binds `st` and does not also bind the qualident. `st()` is the module entry. `st.isString` is an export. `st.Point::print` is a method. `var p: st.Point` is a type. Generated C stays `tmodc__lib__strings__isString`. `import * as integer` is a duplicate of the prelude name.
 - A selective import is the bare name only. `import arena_init from tmodc.arena` is `import tmodc.arena.arena_init as arena_init`. A star and a selective import from the same module may stand together. A quoted path such as `"fixtures/i32alias.mh"` is a file path, not a package qualident.
 - `import *` is an `.mh` import. `import * from "stdio.h"` is an error. A second star of the same module is a duplicate. Include-only `import from` still binds nothing.
 - `obj.print()` still needs a selective `import Point::print`. The star supplies `tmodc.arena.Point::print(p)`.
@@ -1686,6 +1687,7 @@ Do not maintain a second full EBNF elsewhere.
 | 17 November 2026 | **§3.2 / §5.3 / §6.2 imported pointer fields (0.27.8.254):** a `.` peels only when this unit can see that the left side is a pointer. An imported field peels when the struct that declares it is imported. A written `^.` peels without that import. A field name on an unseen struct is still accepted and emits no peel. |
 | 18 November 2026 | **§6.3 `IS` (0.27.8.255):** the lexer no longer reserves `IS`. `is` is an identifier. `IN` stays reserved for set membership. |
 | 19 November 2026 | **§3.2 `IMPORT *` and the C spelling (0.27.9.257):** `import *` binds the package qualident and no bare name. The module entry is that qualident called. A dotted qualident is a type. `.` and `::` become `__` on an exported C name, including an enum constant and both the tag and the typedef. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. `import * as Alias` stays later. |
+| 20 November 2026 | **§3.2 `import * as Alias` (0.27.9.258):** `import * as st from Module` binds `st` and not the qualident. `st()` is the module entry. An export is `st.name`. Generated C stays the module spelling. `import * as integer` is a duplicate of the prelude name. |
 
 ---
 

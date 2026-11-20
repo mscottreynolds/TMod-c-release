@@ -62,6 +62,8 @@ const SEMANTIC_MH_PATH_MAX: cardinal = 4096u
 export type TStarImport = struct
 	qual: 		const ^char
 	qual_len: 	size_t
+	alias:		const ^char
+	alias_len:	size_t
 	unit_name: 	const ^char
 	unit_len: 	size_t
 	scope: 		pTSymbolTable
@@ -2377,6 +2379,14 @@ begin
 	var start: size_t = 0
 	var comp: size_t = 0
 
+	if star.alias_len > 0 then
+		if parts.count == 0 or parts.len[0] <> star.alias_len or
+				memcmp(parts.text[0], star.alias, star.alias_len) <> 0 then
+			return 0
+		end
+		return 1
+	end
+
 	while i < star.qual_len and part_i < parts.count do
 		start := i
 		while i < star.qual_len and star.qual[i] <> '.' do
@@ -2465,7 +2475,7 @@ begin
 	end
 	return semantic_star_find(ctx, best,
 		parts.text[parts.count - 1], parts.len[parts.count - 1])
-end semantic_star_exported_named
+end semantic_star_export_named
 
 
 procedure semantic_bind_star_symbol(n: pNode, sym: pTSymbol)
@@ -3192,6 +3202,11 @@ begin
 			if ctx^.star_count >= 32 then
 				semantic_error_at(decl, "semantic_register_import: too many import *")
 			end
+			if decl^.import_stmt.star_alias_len > 0 and
+					symtab_lookup(ctx^.scope, decl^.import_stmt.star_alias,
+						decl^.import_stmt.star_alias_len) <> nil then
+				semantic_error_at(decl, "semantic_register_import: duplicate name")
+			end
 			for s := 1 to ctx^.star_count do
 				if semantic_names_equal(ctx^.stars[s - 1].qual, ctx^.stars[s - 1].qual_len,
 						decl^.import_stmt.from_path, decl^.import_stmt.path_len) then
@@ -3253,12 +3268,37 @@ begin
 			ctx^.stars[ctx^.star_count].qual := semantic_arena_strndup(ctx^.arena,
 				decl^.import_stmt.from_path, decl^.import_stmt.path_len)
 			ctx^.stars[ctx^.star_count].qual_len := decl^.import_stmt.path_len
+			ctx^.stars[ctx^.star_count].alias := decl^.import_stmt.star_alias
+			ctx^.stars[ctx^.star_count].alias_len := decl^.import_stmt.star_alias_len
 			ctx^.stars[ctx^.star_count].unit_name := semantic_arena_strndup(ctx^.arena,
 				m.module_name, m.module_name_len)
 			ctx^.stars[ctx^.star_count].unit_len := m.module_name_len
 			ctx^.stars[ctx^.star_count].scope := ctx^.scope
 			ctx^.star_count := ctx^.star_count + 1
 			ctx^.scope := saved
+			if decl^.import_stmt.star_alias_len > 0 then
+				var entry: pTSymbol = nil
+				var asym: pTSymbol = nil
+
+				entry := symtab_lookup_current(
+					ctx^.stars[ctx^.star_count - 1].scope,
+					ctx^.stars[ctx^.star_count - 1].unit_name,
+					ctx^.stars[ctx^.star_count - 1].unit_len)
+				if entry == nil then
+					semantic_error_at(decl, "semantic_register_import: module has not entry")
+				end
+				asym := symbol_create(ctx^.arena, entry^.kind,
+					decl^.import_stmt.star_alias, decl^.import_stmt.star_alias_len,
+					entry^.decl)
+				if entry^.c_name <> nil and entry^.c_name_len > 0 then
+					asym^.c_name := entry^.c_name
+					asym^.c_name_len := entry^.c_name_len
+				else
+					asym^.c_name := entry^.name
+					asym^.c_name_len := entry^.name_len
+				end
+				symtab_define(ctx^.arena, ctx^.scope, asym)
+			end
 		else
 			for i := 1 to decl^.import_stmt.count do
 				var item: pNode = decl^.import_stmt.items[i - 1]

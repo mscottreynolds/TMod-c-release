@@ -2,6 +2,12 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.9.258
+- **`import * as Alias`.** `import * as st from tmodc.lib.strings` binds `st` and does not also bind the qualident. `st()` is the module entry. `st.isString` is an export. `st.Point::print` is a method. `var p: st.Point` is a type. Generated C stays the module spelling (`tmodc__lib__strings__isString`, entry `tmodc__lib__strings`). `import * as integer` is a duplicate of the prelude name. A second star of the same module is still a duplicate.
+- **Tests:** `tests/test_import_star_as.mc`, `tests/test3_import_star_as_int.mc`, `tests/test3_import_star_as_qual.mc`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.9.258**. Stem **0.27.9**. `Makefile` `VERSION` is **0.27.9**. Branch **`TMod-c_0.27`**. Build **258**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261120-0212.md`, and an append in `docs/project_bible.md`.
+
 ## Version 0.27.9.257
 - **`IMPORT *` and the package C spelling (7 remainder).** `import * from tmodc.arena` binds that qualident and no bare name. A use is `tmodc.arena.arena_init`, `tmodc.arena.TChunk`, or `tmodc.arena.Point::print`. The longest imported qualident matches. The next identifier is the export. The module entry is the qualident call, `tmodc.arena()`. A dotted qualident is a type name. A selective import stays the bare name and may stand beside the star. `import * from "stdio.h"` is an error. A second star of the same module is a duplicate. `import * as Alias` is not in this promote.
 - Every exported procedure, function, method, type, variable, enumeration constant, and the module entry uses that spelling in C. Each `.` and each `::` becomes `__` (`tmodc__arena__Point__print`, `tmodc__lib__String`). An exported struct or union prefixes both the tag and the typedef. Inside the defining unit the source stays bare. A unit with no package path keeps today's C names. Hosted `main` stays `main`. A non-exported procedure stays `static` under its source name. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. The `.mh` line keeps the source name. `@format` stays 1.

@@ -2,16 +2,16 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.9 (build 257)  
-**Last updated:** 2026-11-19  
+**Version:** 0.27.9 (build 258)  
+**Last updated:** 2026-11-20  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.9.257** is in `changelog.md`. Session archives and `docs/project_bible.md` run through **0.27.8.254**. This file is the live focus.
+History through **0.27.9.258** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. `docs/project_bible.md` runs through **0.27.9.258**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **257**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **`IMPORT *` and the package C spelling (0.27.9.257)**. `import * as Alias` is still later. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **258**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **`import * as Alias` (0.27.9.258)**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
 **Next:** **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 
@@ -37,7 +37,7 @@ History through **0.27.9.257** is in `changelog.md`. Session archives and `docs/
 - **7b.** No generated calls of imported module bodies. Call the module entry explicitly.
 - **24.** Discard `_` is dropped (12 October 2026). `(f())` is the discard.
 - **26.** Drop unused keyword `IS`. Done (**0.27.8.255**). The lexer no longer reserves it. `IN` stays reserved. See [Drop `IS`](#drop-is-no-type-guards).
-- **7 remainder.** `IMPORT *` and the package C spelling. Done (**0.27.9.257**). `import * as Alias` is still later. Language Report §3.2.
+- **7 remainder.** `IMPORT *` and the package C spelling. Done (**0.27.9.257**). `import * as Alias` is done (**0.27.9.258**). Language Report §3.2.
 - **DbC.** `REQUIRE` / `ENSURE` already resolve like `ASSERT`. A nil-check of a `REF T` is a separate check of `^T`. Side-effect-free contract lint and a `--pot` assertion quota are not planned.
 
 **Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked. Scratch questions are in `TODO-items-for-0.27.md`.
@@ -172,7 +172,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.257**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.8.254**.
+Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.258**, are in `changelog.md` and `docs/project_bible.md`.
 
 ## Useful Commands
 

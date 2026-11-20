@@ -22,7 +22,7 @@ variables:
   ident: '[A-Za-z_][A-Za-z0-9_]*'
   # Lexer keyword_table (src/Lexer.mc) plus EBNF-reserved and locked DEFINE.
   kw_control: 'begin|end|if|then|else|elsif|while|for|do|downto|to|by|case|switch|default|break|continue|return|defer|loop|repeat|until'
-  kw_decl: 'type|var|let|const|enum|struct|union|array|pointer|packed|opaque|ref|extern|export|static|inline|recursive|forward|extends|alias|module|program|procedure|function|import|from|define|header|record|set|bound|template'
+  kw_decl: 'type|var|let|const|enum|struct|union|array|pointer|packed|opaque|ref|extern|export|static|inline|recursive|forward|extends|module|program|procedure|function|import|from|define|header|record|set|bound|template'
   kw_op: 'and|or|not|xor|div|mod|in|is|as|of'
   kw_support: 'sizeof|countof|inc|dec|assert|cast|debug|invariant|require|ensure'
   kw_const: 'true|false|nil'

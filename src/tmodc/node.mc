@@ -187,6 +187,8 @@ export type TImportStmt = struct
 	from_path: 		const ^char 	// string-literal or qualident after FROM (pointer to source)
 	path_len: 		size_t
 	is_star:		bool 			// IMPORT * FROM module. No bare names.
+	star_alias:		const ^char 	// IMPORT * AS name. Nil when the qualident is the spelling.
+	star_alias_len: size_t
 end
 
 (** Single import item: name | Type::name [ AS ident ] *)
@@ -1429,6 +1431,10 @@ begin
 			print_kind_line_column(n, kind_name)
 			if n.import_stmt.is_star then
 				printf(" *")
+			end
+			if n.import_stmt.star_alias <> nil and n.import_stmt.star_alias_len > 0 then
+				printf(" AS '%.*s'", n.import_stmt.star_alias_len as int,
+					n.import_stmt.star_alias)
 			end
 			if n.import_stmt.from_path and n.import_stmt.path_len > 0 then
 				printf(" FROM '%.*s'", n.import_stmt.path_len as int, n.import_stmt.from_path)

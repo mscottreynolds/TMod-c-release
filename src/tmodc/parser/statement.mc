@@ -322,12 +322,23 @@ begin
 	imp^.import_stmt.from_path	:= nil
 	imp^.import_stmt.path_len	:= 0
 	imp^.import_stmt.is_star 	:= false
+	imp^.import_stmt.star_alias := nil
+	imp^.import_stmt.star_alias_len := 0
 
 	// import * from Module. A quoted source is not a module qualident.
 	skip_layout_breaks(p)
 	if match(p, TOK_MUL) then
 		imp^.import_stmt.is_star :=true
 		skip_layout_breaks(p)
+		if match(p, TOK_KEYWORD_AS) then
+			if p^.current.kind <> TOK_IDENT then
+				error_at(p, "parse_import_stmt: expected identifier after AS", true)
+			end
+			imp^.import_stmt.star_alias := p^.current.start
+			imp^.import_stmt.star_alias_len := p^.current.length
+			advance(p)
+			skip_layout_breaks(p)
+		end
 		if not match(p, TOK_KEYWORD_FROM) then
 			error_at(p, "parse_import_stmt: IMPORT * requires FROM", true)
 		end
