@@ -96,6 +96,7 @@ Features (Early Design Goals)
 - Drop `IS` (0.27.8.255): the lexer no longer reserves `IS`. `is` is an identifier. `IN` stays reserved
 - `IMPORT *` (0.27.9.257): `import * from tmodc.arena` binds that qualident and no bare name. An export is `tmodc.arena.arena_init`. The module entry is `tmodc.arena()`. Exported C names use the package spelling (`tmodc__arena__Point__print`)
 - `import * as Alias` (0.27.9.258): `import * as st from tmodc.lib.strings` binds `st`. `st()` is the module entry. `st.isString` is an export. Generated C stays the module spelling
+- Instance call on a qualified type (0.27.9.259): `q.getX()` finds `Point__getX` when `q` is `fixtures.starpack.Point`. The call still needs `import Point::getX`
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -105,6 +106,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.9.259** (20 November 2026): `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. No separate grok report.
 - **0.27.9.258** (20 November 2026): `import * as Alias`. `import * as st from Module` binds `st` and not the qualident. `st()` is the module entry. An export is `st.name`. Generated C stays the module spelling. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-0212.md`.
 - **0.27.9.257** (19 November 2026): `IMPORT *` and the package C spelling. `import * from Module` binds the qualident and no bare name. Exported C names replace `.` and `::` with `__`. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-0212.md`.
 - **0.27.8.255** (18 November 2026): drop unused keyword `IS`. The lexer no longer reserves it. `is` is an identifier. `IN` stays reserved. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported that the complete test suite passes on gcc, clang, and tcc.

@@ -2,6 +2,12 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.9.259
+- **Instance call on a package-qualified type.** `q.getX()` looks up `Point__getX` when `q` is declared `fixtures.starpack.Point`. The written qualident is reduced to the export's source name before the search. `p.getX()` is unchanged. The call still needs a selective `import Point::getX`. `fixtures.starpack.Point::getX(q)` is the same method.
+- **Test:** `tests/test_import_star2.mc`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.9.259**. Stem **0.27.9**. `Makefile` `VERSION` is **0.27.9**. Branch **`TMod-c_0.27`**. Build **259**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, and `docs/language-report.md`. No new grok report.
+
 ## Version 0.27.9.258
 - **`import * as Alias`.** `import * as st from tmodc.lib.strings` binds `st` and does not also bind the qualident. `st()` is the module entry. `st.isString` is an export. `st.Point::print` is a method. `var p: st.Point` is a type. Generated C stays the module spelling (`tmodc__lib__strings__isString`, entry `tmodc__lib__strings`). `import * as integer` is a duplicate of the prelude name. A second star of the same module is still a duplicate.
 - **Tests:** `tests/test_import_star_as.mc`, `tests/test3_import_star_as_int.mc`, `tests/test3_import_star_as_qual.mc`.

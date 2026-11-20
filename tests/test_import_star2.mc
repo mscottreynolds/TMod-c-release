@@ -5,14 +5,19 @@ import Point, answer, Point::getX from fixtures.starpack
 
 begin
 	var p: Point
+	var q: fixtures.starpack.Point
 
 	p.x := 3
 	p.y := 4
+	q := p
+	q.x := 5
 	assert fixtures.starpack.answer() == 42
 	assert answer() == 42
 	assert fixtures.starpack.Point::getX(p) == 3
 	assert Point::getX(p) == 3
 	assert p.getX() == 3
+	assert Point::getX(q) == 5
+	assert q.getX() == 5
 	assert fixtures.starpack() == 7
 	assert starpack() == 7
 	assert sizeof(fixtures.starpack.Point) == sizeof(p)

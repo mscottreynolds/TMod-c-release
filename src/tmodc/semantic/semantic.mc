@@ -3844,7 +3844,15 @@ begin
 		// result.owner stays the TMod-c name so auto-deref still matches.
 		lookup_owner := owner
 		lookup_len := owner_len
-		sym := symtab_lookup(ctx^.scope, owner, owner_len)
+		if semantic_text_has(owner, owner_len, '.') then
+			sym := semantic_star_export_named(ctx, owner, owner_len)
+			if sym <> nil and sym^.kind == SYM_KIND_TYPE and
+					sym^.name <> nil and sym^.name_len > 0 then
+				lookup_owner := sym^.name
+				lookup_len := sym^.name_len
+			end
+		end
+		sym := symtab_lookup(ctx^.scope, lookup_owner, lookup_len)
 		if sym <> nil and sym^.mh_name <> nil and sym^.mh_name_len > 0 then
 			lookup_owner := sym^.mh_name
 			lookup_len := sym^.mh_name_len

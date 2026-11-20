@@ -4636,7 +4636,16 @@ static TMethodChainHit semantic_find_instance_on_chain(tmodc__semantic__semantic
             }
             lookup_owner = owner;
             lookup_len = owner_len;
-            sym = tmodc__semantic__symtab__symtab_lookup(((*ctx)).scope, owner, owner_len);
+            if (semantic_text_has(owner, owner_len, '.'))
+            {
+                sym = semantic_star_export_named(ctx, owner, owner_len);
+                if (sym != nil && ((*sym)).kind == tmodc__node__SYM_KIND_TYPE && ((*sym)).name != nil && ((*sym)).name_len > 0)
+                {
+                    lookup_owner = ((*sym)).name;
+                    lookup_len = ((*sym)).name_len;
+                }
+            }
+            sym = tmodc__semantic__symtab__symtab_lookup(((*ctx)).scope, lookup_owner, lookup_len);
             if (sym != nil && ((*sym)).mh_name != nil && ((*sym)).mh_name_len > 0)
             {
                 lookup_owner = ((*sym)).mh_name;
@@ -4653,28 +4662,28 @@ static TMethodChainHit semantic_find_instance_on_chain(tmodc__semantic__semantic
                 if (((*sym)).is_method_instance || (((*sym)).decl != nil && semantic_method_is_instance(ctx, ((*sym)).decl)))
                 {
                     /* return value captured before defers */
-                    TMethodChainHit __ret_l3862 = result;
-                    return __ret_l3862;
+                    TMethodChainHit __ret_l3870 = result;
+                    return __ret_l3870;
                 }
                 (result).is_static = true;
                 /* return value captured before defers */
-                TMethodChainHit __ret_l3865 = result;
-                return __ret_l3865;
+                TMethodChainHit __ret_l3873 = result;
+                return __ret_l3873;
             }
             st = semantic_struct_body_of_type(ctx, ty);
             if (st == nil || (((*st)).struct_decl).extends_type == nil)
             {
                 /* return value captured before defers */
-                TMethodChainHit __ret_l3869 = result;
-                return __ret_l3869;
+                TMethodChainHit __ret_l3877 = result;
+                return __ret_l3877;
             }
             ty = (((*st)).struct_decl).extends_type;
             depth = depth + 1;
         }
     }
     /* return value captured before defers */
-    TMethodChainHit __ret_l3874 = result;
-    return __ret_l3874;
+    TMethodChainHit __ret_l3882 = result;
+    return __ret_l3882;
 }
 
 /**
@@ -4687,12 +4696,12 @@ static bool semantic_sym_is_named_type(tmodc__node__pTSymbol sym)
     if (sym == nil || ((*sym)).kind != tmodc__node__SYM_KIND_TYPE || ((*sym)).decl == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3886 = false;
-        return __ret_l3886;
+        bool __ret_l3894 = false;
+        return __ret_l3894;
     }
     /* return value captured before defers */
-    bool __ret_l3888 = true;
-    return __ret_l3888;
+    bool __ret_l3896 = true;
+    return __ret_l3896;
 }
 
 /**
@@ -4707,37 +4716,37 @@ static bool semantic_formal_needs_address(tmodc__node__pNode formal)
     if (formal == nil || ((*formal)).kind != tmodc__node__NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l3903 = false;
-        return __ret_l3903;
+        bool __ret_l3911 = false;
+        return __ret_l3911;
     }
     if (!(((*formal)).param).is_var && !(((*formal)).param).is_ref)
     {
         /* return value captured before defers */
-        bool __ret_l3906 = false;
-        return __ret_l3906;
+        bool __ret_l3914 = false;
+        return __ret_l3914;
     }
     ty = (((*formal)).param).param_type;
     if (ty == nil)
     {
         /* return value captured before defers */
-        bool __ret_l3910 = false;
-        return __ret_l3910;
+        bool __ret_l3918 = false;
+        return __ret_l3918;
     }
     if (semantic_array_param_view(ty) != nil)
     {
         /* return value captured before defers */
-        bool __ret_l3913 = false;
-        return __ret_l3913;
+        bool __ret_l3921 = false;
+        return __ret_l3921;
     }
     if (((*ty)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l3916 = (((*formal)).param).is_var;
-        return __ret_l3916;
+        bool __ret_l3924 = (((*formal)).param).is_var;
+        return __ret_l3924;
     }
     /* return value captured before defers */
-    bool __ret_l3918 = true;
-    return __ret_l3918;
+    bool __ret_l3926 = true;
+    return __ret_l3926;
 }
 
 /**
@@ -4769,20 +4778,20 @@ static bool semantic_actual_is_designator(tmodc__node__pNode n)
             else if (((*d)).kind == tmodc__node__NODE_IDENT)
             {
                 /* return value captured before defers */
-                bool __ret_l3940 = true;
-                return __ret_l3940;
+                bool __ret_l3948 = true;
+                return __ret_l3948;
             }
             else
             {
                 /* return value captured before defers */
-                bool __ret_l3942 = false;
-                return __ret_l3942;
+                bool __ret_l3950 = false;
+                return __ret_l3950;
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l3945 = false;
-    return __ret_l3945;
+    bool __ret_l3953 = false;
+    return __ret_l3953;
 }
 
 /** 
@@ -4991,8 +5000,8 @@ static void semantic_resolve_call(tmodc__semantic__semantic__pTSemanticContext c
         ((*n)).resolved_sym = sym;
     }
     {
-        const size_t __for_end_l4170_c5 = ((((*n)).call).argc);
-        for (i = 1; i <= __for_end_l4170_c5; i++)
+        const size_t __for_end_l4178_c5 = ((((*n)).call).argc);
+        for (i = 1; i <= __for_end_l4178_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*n)).call).args[i - 1]);
@@ -5052,8 +5061,8 @@ static void semantic_resolve_call(tmodc__semantic__semantic__pTSemanticContext c
             formal_index = 0;
         }
         {
-            const size_t __for_end_l4241_c6 = ((((*n)).call).argc);
-            for (fi = 1; fi <= __for_end_l4241_c6; fi++)
+            const size_t __for_end_l4249_c6 = ((((*n)).call).argc);
+            for (fi = 1; fi <= __for_end_l4249_c6; fi++)
             {
                 {
                     if (formal_index >= fcount)
@@ -5090,8 +5099,8 @@ static void semantic_resolve_call(tmodc__semantic__semantic__pTSemanticContext c
             formal_index = 0;
         }
         {
-            const size_t __for_end_l4272_c6 = ((((*n)).call).argc);
-            for (fi = 1; fi <= __for_end_l4272_c6; fi++)
+            const size_t __for_end_l4280_c6 = ((((*n)).call).argc);
+            for (fi = 1; fi <= __for_end_l4280_c6; fi++)
             {
                 {
                     int* slot = nil;
@@ -5380,8 +5389,8 @@ static void semantic_resolve_expr(tmodc__semantic__semantic__pTSemanticContext c
         {
             size_t i = 0;
             {
-                const size_t __for_end_l4520_c7 = ((((*n)).array_literal).count);
-                for (i = 1; i <= __for_end_l4520_c7; i++)
+                const size_t __for_end_l4528_c7 = ((((*n)).array_literal).count);
+                for (i = 1; i <= __for_end_l4528_c7; i++)
                 {
                     {
                         tmodc__node__pNode elem = (((*n)).array_literal).elements[i - 1];
@@ -5454,57 +5463,57 @@ static void semantic_register_var_decl(tmodc__semantic__semantic__pTSemanticCont
         tmodc__semantic__semantic__semantic_error_at(decl, "semantic_register_var_decl: internal error: unexpected var/const/let decl");
     }
     {
-        const size_t __for_end_l4575_c5 = (count);
-        for (i = 1; i <= __for_end_l4575_c5; i++)
+        const size_t __for_end_l4583_c5 = (count);
+        for (i = 1; i <= __for_end_l4583_c5; i++)
         {
             {
-                tmodc__node__pNode item_l4576_c11 = items[i - 1];
-                if (item_l4576_c11 == nil || (((*item_l4576_c11)).var_item).name == nil || (((*item_l4576_c11)).var_item).name_len == 0)
+                tmodc__node__pNode item_l4584_c11 = items[i - 1];
+                if (item_l4584_c11 == nil || (((*item_l4584_c11)).var_item).name == nil || (((*item_l4584_c11)).var_item).name_len == 0)
                 {
                     tmodc__semantic__semantic__semantic_error_at(decl, "semantic_register_var_decl: declaration item has no name");
                 }
-                if ((((*item_l4576_c11)).var_item).initializer != nil)
+                if ((((*item_l4584_c11)).var_item).initializer != nil)
                 {
-                    semantic_resolve_expr(ctx, (((*item_l4576_c11)).var_item).initializer);
+                    semantic_resolve_expr(ctx, (((*item_l4584_c11)).var_item).initializer);
                 }
-                if ((((*item_l4576_c11)).var_item).item_type == nil && (((*item_l4576_c11)).var_item).initializer != nil)
+                if ((((*item_l4584_c11)).var_item).item_type == nil && (((*item_l4584_c11)).var_item).initializer != nil)
                 {
-                    (((*item_l4576_c11)).var_item).item_type = semantic_type_of_expr(ctx, (((*item_l4576_c11)).var_item).initializer);
-                    if ((((*item_l4576_c11)).var_item).item_type == nil)
+                    (((*item_l4584_c11)).var_item).item_type = semantic_type_of_expr(ctx, (((*item_l4584_c11)).var_item).initializer);
+                    if ((((*item_l4584_c11)).var_item).item_type == nil)
                     {
-                        tmodc__semantic__semantic__semantic_error_at(item_l4576_c11, "semantic_register_var_decl: cannot infer type from initializer");
+                        tmodc__semantic__semantic__semantic_error_at(item_l4584_c11, "semantic_register_var_decl: cannot infer type from initializer");
                     }
                 }
-                if ((((*item_l4576_c11)).var_item).item_type != nil)
+                if ((((*item_l4584_c11)).var_item).item_type != nil)
                 {
-                    semantic_resolve_type(ctx, (((*item_l4576_c11)).var_item).item_type, item_l4576_c11);
+                    semantic_resolve_type(ctx, (((*item_l4584_c11)).var_item).item_type, item_l4584_c11);
                 }
-                if ((((*item_l4576_c11)).var_item).initializer != nil && (((*item_l4576_c11)).var_item).item_type != nil)
+                if ((((*item_l4584_c11)).var_item).initializer != nil && (((*item_l4584_c11)).var_item).item_type != nil)
                 {
-                    semantic_maybe_upcast(ctx, (((*item_l4576_c11)).var_item).initializer, (((*item_l4576_c11)).var_item).item_type);
+                    semantic_maybe_upcast(ctx, (((*item_l4584_c11)).var_item).initializer, (((*item_l4584_c11)).var_item).item_type);
                 }
                 if (((*decl)).kind == tmodc__node__NODE_VAR_DECL && (((*decl)).var_decl).is_extern)
                 {
-                    semantic_define_or_refine(ctx, kind, (((*item_l4576_c11)).var_item).name, (((*item_l4576_c11)).var_item).name_len, (((*item_l4576_c11)).var_item).item_type, item_l4576_c11, is_exported);
+                    semantic_define_or_refine(ctx, kind, (((*item_l4584_c11)).var_item).name, (((*item_l4584_c11)).var_item).name_len, (((*item_l4584_c11)).var_item).item_type, item_l4584_c11, is_exported);
                 }
                 else
                 {
-                    semantic_define(ctx, kind, (((*item_l4576_c11)).var_item).name, (((*item_l4576_c11)).var_item).name_len, (((*item_l4576_c11)).var_item).item_type, item_l4576_c11, is_exported);
+                    semantic_define(ctx, kind, (((*item_l4584_c11)).var_item).name, (((*item_l4584_c11)).var_item).name_len, (((*item_l4584_c11)).var_item).item_type, item_l4584_c11, is_exported);
                 }
-                if (kind == tmodc__node__SYM_KIND_CONST && (((*item_l4576_c11)).var_item).initializer != nil)
+                if (kind == tmodc__node__SYM_KIND_CONST && (((*item_l4584_c11)).var_item).initializer != nil)
                 {
                     tmodc__node__pTSymbol csym = nil;
                     integer cval = 0;
-                    csym = tmodc__semantic__symtab__symtab_lookup_current(((*ctx)).scope, (((*item_l4576_c11)).var_item).name, (((*item_l4576_c11)).var_item).name_len);
+                    csym = tmodc__semantic__symtab__symtab_lookup_current(((*ctx)).scope, (((*item_l4584_c11)).var_item).name, (((*item_l4584_c11)).var_item).name_len);
                     if (csym == nil)
                     {
-                        tmodc__semantic__semantic__semantic_error_at(item_l4576_c11, "semantic_register_var_decl: CONST not in scope after define");
+                        tmodc__semantic__semantic__semantic_error_at(item_l4584_c11, "semantic_register_var_decl: CONST not in scope after define");
                     }
-                    if (semantic_try_eval_const_expr(ctx, (((*item_l4576_c11)).var_item).initializer, &cval, nil))
+                    if (semantic_try_eval_const_expr(ctx, (((*item_l4584_c11)).var_item).initializer, &cval, nil))
                     {
                         ((*csym)).has_const_value = true;
                         ((*csym)).const_value = cval;
-                        ((*item_l4576_c11)).resolved_sym = csym;
+                        ((*item_l4584_c11)).resolved_sym = csym;
                     }
                 }
             }
@@ -5523,8 +5532,8 @@ static bool semantic_for_type_is_stepable(tmodc__semantic__semantic__pTSemanticC
     if (seen == nil)
     {
         /* return value captured before defers */
-        bool __ret_l4639 = false;
-        return __ret_l4639;
+        bool __ret_l4647 = false;
+        return __ret_l4647;
     }
     if (((*seen)).resolved_type != nil)
     {
@@ -5533,37 +5542,37 @@ static bool semantic_for_type_is_stepable(tmodc__semantic__semantic__pTSemanticC
     if (((*seen)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l4645 = true;
-        return __ret_l4645;
+        bool __ret_l4653 = true;
+        return __ret_l4653;
     }
     if (((*seen)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l4648 = false;
-        return __ret_l4648;
+        bool __ret_l4656 = false;
+        return __ret_l4656;
     }
     if (semantic_type_name_is(seen, "integer", 7) || semantic_type_name_is(seen, "int", 3) || semantic_type_name_is(seen, "char", 4) || semantic_type_name_is(seen, "byte", 4) || semantic_type_name_is(seen, "size_t", 6) || semantic_type_name_is(seen, "cardinal", 8))
     {
         /* return value captured before defers */
-        bool __ret_l4656 = true;
-        return __ret_l4656;
+        bool __ret_l4664 = true;
+        return __ret_l4664;
     }
     if (((*seen)).name == nil || ((*seen)).name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l4659 = false;
-        return __ret_l4659;
+        bool __ret_l4667 = false;
+        return __ret_l4667;
     }
     sym = tmodc__semantic__symtab__symtab_lookup(((*ctx)).scope, ((*seen)).name, ((*seen)).name_len);
     if (sym != nil && ((*sym)).kind == tmodc__node__SYM_KIND_TYPE && ((*sym)).decl != nil && ((*((*sym)).decl)).kind == tmodc__node__NODE_TYPE_DECL && (((*((*sym)).decl)).type_decl).enum_type != nil)
     {
         /* return value captured before defers */
-        bool __ret_l4665 = true;
-        return __ret_l4665;
+        bool __ret_l4673 = true;
+        return __ret_l4673;
     }
     /* return value captured before defers */
-    bool __ret_l4667 = false;
-    return __ret_l4667;
+    bool __ret_l4675 = false;
+    return __ret_l4675;
 }
 
 /**
@@ -5679,8 +5688,8 @@ static void semantic_switch_note(tmodc__semantic__semantic__pTSemanticContext ct
     {
         arr = (tmodc__arena__ppvoid)(*seen);
         {
-            const size_t __for_end_l4777_c6 = ((*seen_count));
-            for (i = 1; i <= __for_end_l4777_c6; i++)
+            const size_t __for_end_l4785_c6 = ((*seen_count));
+            for (i = 1; i <= __for_end_l4785_c6; i++)
             {
                 {
                     prev = (SwitchSeen*)(arr[i - 1]);
@@ -5798,8 +5807,8 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
                 }
             }
             {
-                const size_t __for_end_l4882_c7 = ((((*n)).for_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4882_c7; i++)
+                const size_t __for_end_l4890_c7 = ((((*n)).for_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4890_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).for_stmt).invariants[i - 1]);
@@ -5820,8 +5829,8 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
             semantic_resolve_expr(ctx, (((*n)).while_stmt).cond);
             semantic_bind_loop_bound(ctx, n, (((*n)).while_stmt).bound_expr);
             {
-                const size_t __for_end_l4895_c7 = ((((*n)).while_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4895_c7; i++)
+                const size_t __for_end_l4903_c7 = ((((*n)).while_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4903_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).while_stmt).invariants[i - 1]);
@@ -5837,8 +5846,8 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
             semantic_bind_loop_bound(ctx, n, (((*n)).repeat_until).bound_expr);
             semantic_resolve_expr(ctx, (((*n)).repeat_until).cond);
             {
-                const size_t __for_end_l4904_c7 = ((((*n)).repeat_until).invariant_count);
-                for (i = 1; i <= __for_end_l4904_c7; i++)
+                const size_t __for_end_l4912_c7 = ((((*n)).repeat_until).invariant_count);
+                for (i = 1; i <= __for_end_l4912_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).repeat_until).invariants[i - 1]);
@@ -5851,8 +5860,8 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
         {
             semantic_bind_loop_bound(ctx, n, (((*n)).loop_stmt).bound_expr);
             {
-                const size_t __for_end_l4910_c7 = ((((*n)).loop_stmt).invariant_count);
-                for (i = 1; i <= __for_end_l4910_c7; i++)
+                const size_t __for_end_l4918_c7 = ((((*n)).loop_stmt).invariant_count);
+                for (i = 1; i <= __for_end_l4918_c7; i++)
                 {
                     {
                         semantic_resolve_expr(ctx, (((*n)).loop_stmt).invariants[i - 1]);
@@ -5922,16 +5931,16 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
                 size_t seen_count = 0;
                 size_t seen_cap = 0;
                 {
-                    const size_t __for_end_l4957_c8 = ((((*n)).switch_stmt).case_count);
-                    for (i = 1; i <= __for_end_l4957_c8; i++)
+                    const size_t __for_end_l4965_c8 = ((((*n)).switch_stmt).case_count);
+                    for (i = 1; i <= __for_end_l4965_c8; i++)
                     {
                         {
                             sc = (((*n)).switch_stmt).cases[i - 1];
                             if (sc != nil)
                             {
                                 {
-                                    const size_t __for_end_l4960_c10 = (((*sc)).label_count);
-                                    for (j = 1; j <= __for_end_l4960_c10; j++)
+                                    const size_t __for_end_l4968_c10 = (((*sc)).label_count);
+                                    for (j = 1; j <= __for_end_l4968_c10; j++)
                                     {
                                         {
                                             semantic_resolve_expr(ctx, ((*sc)).labels[j - 1]);
@@ -5945,8 +5954,8 @@ static void semantic_resolve_stmt(tmodc__semantic__semantic__pTSemanticContext c
                     }
                 }
                 {
-                    const size_t __for_end_l4967_c8 = ((((*n)).switch_stmt).else_label_count);
-                    for (j = 1; j <= __for_end_l4967_c8; j++)
+                    const size_t __for_end_l4975_c8 = ((((*n)).switch_stmt).else_label_count);
+                    for (j = 1; j <= __for_end_l4975_c8; j++)
                     {
                         {
                             semantic_resolve_expr(ctx, (((*n)).switch_stmt).else_labels[j - 1]);
@@ -5986,8 +5995,8 @@ static void semantic_analyze_block_body(tmodc__semantic__semantic__pTSemanticCon
                 return;
     }
     {
-        const size_t __for_end_l4997_c5 = ((((*block)).block).require_count);
-        for (i = 1; i <= __for_end_l4997_c5; i++)
+        const size_t __for_end_l5005_c5 = ((((*block)).block).require_count);
+        for (i = 1; i <= __for_end_l5005_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*block)).block).requires[i - 1]);
@@ -5995,31 +6004,31 @@ static void semantic_analyze_block_body(tmodc__semantic__semantic__pTSemanticCon
         }
     }
     {
-        const size_t __for_end_l5001_c5 = ((((*block)).block).count);
-        for (i = 1; i <= __for_end_l5001_c5; i++)
+        const size_t __for_end_l5009_c5 = ((((*block)).block).count);
+        for (i = 1; i <= __for_end_l5009_c5; i++)
         {
             {
-                tmodc__node__pNode stmt_l5002_c11 = (((*block)).block).stmts[i - 1];
-                if (stmt_l5002_c11 == nil)
+                tmodc__node__pNode stmt_l5010_c11 = (((*block)).block).stmts[i - 1];
+                if (stmt_l5010_c11 == nil)
                 {
                                         /* INVARIANT (on loop exit) */
                     continue;
                 }
-                switch (((*stmt_l5002_c11)).kind)
+                switch (((*stmt_l5010_c11)).kind)
                 {
                     case tmodc__node__NODE_VAR_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l5002_c11, tmodc__node__SYM_KIND_VAR);
+                        semantic_register_var_decl(ctx, stmt_l5010_c11, tmodc__node__SYM_KIND_VAR);
                     }
                     break;
                     case tmodc__node__NODE_CONST_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l5002_c11, tmodc__node__SYM_KIND_CONST);
+                        semantic_register_var_decl(ctx, stmt_l5010_c11, tmodc__node__SYM_KIND_CONST);
                     }
                     break;
                     case tmodc__node__NODE_LET_DECL:
                     {
-                        semantic_register_var_decl(ctx, stmt_l5002_c11, tmodc__node__SYM_KIND_LET);
+                        semantic_register_var_decl(ctx, stmt_l5010_c11, tmodc__node__SYM_KIND_LET);
                     }
                     break;
                     case tmodc__node__NODE_BLOCK:
@@ -6027,13 +6036,13 @@ static void semantic_analyze_block_body(tmodc__semantic__semantic__pTSemanticCon
                         inner = tmodc__semantic__symtab__symtab_create(((*ctx)).arena, ((*ctx)).scope);
                         saved = ((*ctx)).scope;
                         ((*ctx)).scope = inner;
-                        semantic_analyze_block_body(ctx, stmt_l5002_c11);
+                        semantic_analyze_block_body(ctx, stmt_l5010_c11);
                         ((*ctx)).scope = saved;
                     }
                     break;
                     default:
                     {
-                        semantic_resolve_stmt(ctx, stmt_l5002_c11);
+                        semantic_resolve_stmt(ctx, stmt_l5010_c11);
                     }
                     break;
                 }
@@ -6041,8 +6050,8 @@ static void semantic_analyze_block_body(tmodc__semantic__semantic__pTSemanticCon
         }
     }
     {
-        const size_t __for_end_l5043_c5 = ((((*block)).block).ensure_count);
-        for (i = 1; i <= __for_end_l5043_c5; i++)
+        const size_t __for_end_l5051_c5 = ((((*block)).block).ensure_count);
+        for (i = 1; i <= __for_end_l5051_c5; i++)
         {
             {
                 semantic_resolve_expr(ctx, (((*block)).block).ensures[i - 1]);
@@ -6147,20 +6156,20 @@ static tmodc__node__pNode semantic_make_unit_entry_decl(tmodc__semantic__semanti
     if (ctx == nil || root == nil || ((*root)).kind != tmodc__node__NODE_PROGRAM)
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l5143 = nil;
-        return __ret_l5143;
+        tmodc__node__pNode __ret_l5151 = nil;
+        return __ret_l5151;
     }
     if ((((*root)).program_decl).unit_kind != tmodc__lexer__Lexer__TOK_KEYWORD_MODULE)
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l5146 = nil;
-        return __ret_l5146;
+        tmodc__node__pNode __ret_l5154 = nil;
+        return __ret_l5154;
     }
     if ((((*root)).program_decl).name == nil || (((*root)).program_decl).name_len == 0)
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l5149 = nil;
-        return __ret_l5149;
+        tmodc__node__pNode __ret_l5157 = nil;
+        return __ret_l5157;
     }
     if ((((*root)).program_decl).return_type != nil)
     {
@@ -6185,8 +6194,8 @@ static tmodc__node__pNode semantic_make_unit_entry_decl(tmodc__semantic__semanti
     (((*pl)).param_list).capacity = (((*root)).program_decl).param_capacity;
     (((*decl)).proc_decl).params = pl;
     /* return value captured before defers */
-    tmodc__node__pNode __ret_l5176 = decl;
-    return __ret_l5176;
+    tmodc__node__pNode __ret_l5184 = decl;
+    return __ret_l5184;
 }
 
 static void semantic_restamp_resolved_types(tmodc__semantic__semantic__pTSemanticContext ctx, tmodc__node__pNode root)
@@ -6202,8 +6211,8 @@ static void semantic_restamp_resolved_types(tmodc__semantic__semantic__pTSemanti
                 return;
     }
     {
-        const size_t __for_end_l5196_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l5196_c5; i++)
+        const size_t __for_end_l5204_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l5204_c5; i++)
         {
             {
                 decl = (((*root)).program_decl).decls[i - 1];
@@ -6237,8 +6246,8 @@ static void semantic_restamp_resolved_types(tmodc__semantic__semantic__pTSemanti
                         items = (((*decl)).let_decl).items;
                     }
                     {
-                        const size_t __for_end_l5217_c7 = (count);
-                        for (j = 1; j <= __for_end_l5217_c7; j++)
+                        const size_t __for_end_l5225_c7 = (count);
+                        for (j = 1; j <= __for_end_l5225_c7; j++)
                         {
                             {
                                 item = items[j - 1];
@@ -6268,8 +6277,8 @@ static void semantic_rebind_decl_initializers(tmodc__semantic__semantic__pTSeman
                 return;
     }
     {
-        const size_t __for_end_l5244_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l5244_c5; i++)
+        const size_t __for_end_l5252_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l5252_c5; i++)
         {
             {
                 decl = (((*root)).program_decl).decls[i - 1];
@@ -6299,8 +6308,8 @@ static void semantic_rebind_decl_initializers(tmodc__semantic__semantic__pTSeman
                     continue;
                 }
                 {
-                    const size_t __for_end_l5261_c6 = (count);
-                    for (j = 1; j <= __for_end_l5261_c6; j++)
+                    const size_t __for_end_l5269_c6 = (count);
+                    for (j = 1; j <= __for_end_l5269_c6; j++)
                     {
                         {
                             item = items[j - 1];
@@ -6339,27 +6348,27 @@ static void semantic_analyze_program(tmodc__semantic__semantic__pTSemanticContex
     ((*ctx)).unit_name_len = (((*root)).program_decl).name_len;
     semantic_register_prelude(ctx);
     {
-        const size_t __for_end_l5297_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l5297_c5; i++)
-        {
-            {
-                tmodc__node__pNode decl_l5298_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l5298_c11 != nil && ((*decl_l5298_c11)).kind == tmodc__node__NODE_IMPORT)
-                {
-                    semantic_register_import(ctx, root, decl_l5298_c11);
-                }
-            }
-        }
-    }
-    {
         const size_t __for_end_l5305_c5 = ((((*root)).program_decl).count);
         for (i = 1; i <= __for_end_l5305_c5; i++)
         {
             {
                 tmodc__node__pNode decl_l5306_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l5306_c11 != nil && ((*decl_l5306_c11)).kind != tmodc__node__NODE_IMPORT)
+                if (decl_l5306_c11 != nil && ((*decl_l5306_c11)).kind == tmodc__node__NODE_IMPORT)
                 {
-                    tmodc__semantic__semantic__semantic_register_decl(ctx, decl_l5306_c11);
+                    semantic_register_import(ctx, root, decl_l5306_c11);
+                }
+            }
+        }
+    }
+    {
+        const size_t __for_end_l5313_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l5313_c5; i++)
+        {
+            {
+                tmodc__node__pNode decl_l5314_c11 = (((*root)).program_decl).decls[i - 1];
+                if (decl_l5314_c11 != nil && ((*decl_l5314_c11)).kind != tmodc__node__NODE_IMPORT)
+                {
+                    tmodc__semantic__semantic__semantic_register_decl(ctx, decl_l5314_c11);
                 }
             }
         }
@@ -6384,30 +6393,30 @@ static void semantic_analyze_program(tmodc__semantic__semantic__pTSemanticContex
     if ((((*root)).program_decl).unit_kind == tmodc__lexer__Lexer__TOK_KEYWORD_HEADER)
     {
         {
-            const size_t __for_end_l5334_c6 = ((((*root)).program_decl).count);
-            for (i = 1; i <= __for_end_l5334_c6; i++)
+            const size_t __for_end_l5342_c6 = ((((*root)).program_decl).count);
+            for (i = 1; i <= __for_end_l5342_c6; i++)
             {
                 {
-                    tmodc__node__pNode decl_l5335_c12 = (((*root)).program_decl).decls[i - 1];
-                    if (decl_l5335_c12 != nil && (((*decl_l5335_c12)).kind == tmodc__node__NODE_PROC_DECL || ((*decl_l5335_c12)).kind == tmodc__node__NODE_FUNC_DECL) && (((*decl_l5335_c12)).proc_decl).body != nil)
+                    tmodc__node__pNode decl_l5343_c12 = (((*root)).program_decl).decls[i - 1];
+                    if (decl_l5343_c12 != nil && (((*decl_l5343_c12)).kind == tmodc__node__NODE_PROC_DECL || ((*decl_l5343_c12)).kind == tmodc__node__NODE_FUNC_DECL) && (((*decl_l5343_c12)).proc_decl).body != nil)
                     {
-                        tmodc__semantic__semantic__semantic_error_at((((*decl_l5335_c12)).proc_decl).body, "BEGIN is not allowed in a HEADER unit");
+                        tmodc__semantic__semantic__semantic_error_at((((*decl_l5343_c12)).proc_decl).body, "BEGIN is not allowed in a HEADER unit");
                     }
                 }
             }
         }
     }
     {
-        const size_t __for_end_l5345_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l5345_c5; i++)
+        const size_t __for_end_l5353_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l5353_c5; i++)
         {
             {
-                tmodc__node__pNode decl_l5346_c11 = (((*root)).program_decl).decls[i - 1];
-                if (decl_l5346_c11 != nil)
+                tmodc__node__pNode decl_l5354_c11 = (((*root)).program_decl).decls[i - 1];
+                if (decl_l5354_c11 != nil)
                 {
-                    if (((*decl_l5346_c11)).kind == tmodc__node__NODE_PROC_DECL || ((*decl_l5346_c11)).kind == tmodc__node__NODE_FUNC_DECL)
+                    if (((*decl_l5354_c11)).kind == tmodc__node__NODE_PROC_DECL || ((*decl_l5354_c11)).kind == tmodc__node__NODE_FUNC_DECL)
                     {
-                        semantic_analyze_proc(ctx, decl_l5346_c11, global);
+                        semantic_analyze_proc(ctx, decl_l5354_c11, global);
                     }
                 }
             }

@@ -299,7 +299,7 @@ export procedure Point__print complete instance Point (Point)
 - `import * as st from tmodc.lib.strings` binds `st` and does not also bind the qualident. `st()` is the module entry. `st.isString` is an export. `st.Point::print` is a method. `var p: st.Point` is a type. Generated C stays `tmodc__lib__strings__isString`. `import * as integer` is a duplicate of the prelude name.
 - A selective import is the bare name only. `import arena_init from tmodc.arena` is `import tmodc.arena.arena_init as arena_init`. A star and a selective import from the same module may stand together. A quoted path such as `"fixtures/i32alias.mh"` is a file path, not a package qualident.
 - `import *` is an `.mh` import. `import * from "stdio.h"` is an error. A second star of the same module is a duplicate. Include-only `import from` still binds nothing.
-- `obj.print()` still needs a selective `import Point::print`. The star supplies `tmodc.arena.Point::print(p)`.
+- `obj.print()` still needs a selective `import Point::print`. A receiver written `fixtures.starpack.Point` uses the source name `Point` for that lookup (**0.27.9.259**), so `q.print()` finds the same method as `p.print()`. The star also supplies `tmodc.arena.Point::print(p)`.
 - Inside the defining unit the source name stays bare: `arena_init`, `Point::print`. A unit with no package path keeps its source names in C. Hosted `main` stays `main`.
 - `import integer from` a width pack still rebinds `integer`. `import integer as i64` does not. `import TPoint as integer` is still a duplicate of the prelude name. The same four names are `integer`, `cardinal`, `real`, and `string`. A star cannot rebind them, because it creates no bare name.
 
@@ -1353,7 +1353,7 @@ Expression actuals (`a + b`, `g()`) are **illegal** for `VAR`/`REF` on non-point
 
 ### 8.3 Type-qualified methods *Implemented (0.23.9–0.25.3; 0.26.4; `^T` instance 0.26.5.178; `Type::m(p)` 0.26.5.179; parent-chain 0.26.5.180; C-index `p[i].m()` 0.26.7.191; named-type owner 0.26.8.196; type call 0.26.12.212)*
 
-Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**. A package prefix on that name is planned (§3.2): `tmodc.arena.Point::print` lowers to `tmodc__arena__Point__print`. `import *` is the same section. `obj.print()` still needs a selective `import Point::print`.
+Methods are ordinary `procedure` / `function` declarations whose name is **`Type::identifier`**. They are **not** declared inside `STRUCT` bodies. C mangling: `Type::name` → **`Type__name`**. A package prefix on that name is §3.2: `tmodc.arena.Point::print` lowers to `tmodc__arena__Point__print`. `obj.print()` still needs a selective `import Point::print`. A receiver written `fixtures.starpack.Point` uses `Point` for that lookup (**0.27.9.259**).
 
 Classification uses the **written type of the first formal** only. The formal’s name is free (need not be `self`). The **owner is the name**, not the layout after aliases: `type sds = ^char` then `s: sds` is instance; `s: ^sds` is not (**0.26.8.196**). Do not treat a named pointer alias as “not a type.” First formal `^Owner` as instance remains deferred.
 
@@ -1688,6 +1688,7 @@ Do not maintain a second full EBNF elsewhere.
 | 18 November 2026 | **§6.3 `IS` (0.27.8.255):** the lexer no longer reserves `IS`. `is` is an identifier. `IN` stays reserved for set membership. |
 | 19 November 2026 | **§3.2 `IMPORT *` and the C spelling (0.27.9.257):** `import *` binds the package qualident and no bare name. The module entry is that qualident called. A dotted qualident is a type. `.` and `::` become `__` on an exported C name, including an enum constant and both the tag and the typedef. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. `import * as Alias` stays later. |
 | 20 November 2026 | **§3.2 `import * as Alias` (0.27.9.258):** `import * as st from Module` binds `st` and not the qualident. `st()` is the module entry. An export is `st.name`. Generated C stays the module spelling. `import * as integer` is a duplicate of the prelude name. |
+| 20 November 2026 | **§3.2 / §8.3 instance call (0.27.9.259):** `q.getX()` looks up `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. |
 
 ---
 

@@ -2,16 +2,16 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.9 (build 258)  
+**Version:** 0.27.9 (build 259)  
 **Last updated:** 2026-11-20  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.9.258** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. `docs/project_bible.md` runs through **0.27.9.258**. This file is the live focus.
+History through **0.27.9.259** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. `docs/project_bible.md` runs through **0.27.9.258**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **258**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is **`import * as Alias` (0.27.9.258)**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **259**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote makes `q.getX()` find `Point__getX` when `q` is declared `fixtures.starpack.Point` (**0.27.9.259**). The call still needs `import Point::getX`. `import * as Alias` is **0.27.9.258**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
 **Next:** **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 
@@ -172,7 +172,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.258**, are in `changelog.md` and `docs/project_bible.md`.
+Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.259**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.9.258**.
 
 ## Useful Commands
 
