@@ -18,9 +18,7 @@ void tmodc__arena(void);
  * Growth never relocates existing slabs (pointer-stable).
  * Old bug: single-slab realloc invalidated interior pointers (AST, symtab).
  */
-#include "stddef.h"
-#include "string.h"
-#include "stdlib.h"
+#include "../System.h"
 #include "stdio.h"
 typedef tmodc__arena__ArenaChunk* pArenaChunk;
 /** One malloc'd slab: header + payload. Never realloc this block */
@@ -36,8 +34,8 @@ static void arena_add_chunk(tmodc__arena__pArena a, size_t needed);
 static tmodc__arena__pchar arena_chunk_data(pArenaChunk c)
 {
     /* return value captured before defers */
-    tmodc__arena__pchar __ret_l54 = ((tmodc__arena__pchar)c) + ((integer)sizeof(tmodc__arena__ArenaChunk));
-    return __ret_l54;
+    tmodc__arena__pchar __ret_l53 = ((tmodc__arena__pchar)c) + ((integer)sizeof(tmodc__arena__ArenaChunk));
+    return __ret_l53;
 }
 
 /**
@@ -71,8 +69,8 @@ static pArenaChunk arena_chunk_create(size_t payload_size)
     ((*c)).size = ps;
     ((*c)).used = 0;
     /* return value captured before defers */
-    pArenaChunk __ret_l93 = c;
-    return __ret_l93;
+    pArenaChunk __ret_l92 = c;
+    return __ret_l92;
 }
 
 /**
@@ -166,8 +164,8 @@ tmodc__arena__pvoid tmodc__arena__arena_alloc(tmodc__arena__pArena a, size_t siz
     memset(ptr, 0, aligned);
     ((*cur)).used = ((*cur)).used + aligned;
     /* return value captured before defers */
-    tmodc__arena__pvoid __ret_l195 = ptr;
-    return __ret_l195;
+    tmodc__arena__pvoid __ret_l194 = ptr;
+    return __ret_l194;
 }
 
 /**
@@ -261,8 +259,8 @@ void tmodc__arena__arena_ensure_capacity(tmodc__arena__Arena* arena, tmodc__aren
 void tmodc__arena__arena_append_ptr(tmodc__arena__Arena* arena, tmodc__arena__ppvoid array_ptr, size_t* count, size_t* capacity, tmodc__arena__pvoid item)
 {
     tmodc__arena__arena_ensure_capacity(arena, array_ptr, count, capacity);
-    tmodc__arena__ppvoid p_l301_c7 = (tmodc__arena__ppvoid)(*array_ptr);
-    p_l301_c7[(*count)] = item;
+    tmodc__arena__ppvoid p_l300_c7 = (tmodc__arena__ppvoid)(*array_ptr);
+    p_l300_c7[(*count)] = item;
     (*count) = (*count) + 1;
 }
 

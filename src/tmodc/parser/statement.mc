@@ -41,9 +41,8 @@ import TToken, TOK_KEYWORD_DEFER, TOK_KEYWORD_DEBUG, TOK_KEYWORD_SWITCH,
 import TType 
 	from tmodc.ttype
 
-import size_t from "stddef.h"
-import strtol from "stdlib.h"
-import fprintf, stderr from "stdio.h"
+import size_t, fprintf, strtol, from System
+import stderr from "stdio.h"
 
 
 type pcchar = const ^char

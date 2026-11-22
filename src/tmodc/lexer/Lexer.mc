@@ -9,11 +9,8 @@ module tmodc.lexer.Lexer(ref lexer: TLexer, source: const ^char)
  *)
 
 
-import printf from "stdio.h"
-import strlen, memcmp from "string.h"
-import size_t from "stddef.h"
-import from "stdbool.h"
-import toupper, isalnum, isalpha, isdigit, isspace, isxdigit from "ctype.h"
+import size_t, toupper, isalnum, isalpha, isdigit, isspace, isxdigit, printf, strlen, memcmp,
+	from System
 
 (**
  * Token kinds recognized by the TMod-c lexer.

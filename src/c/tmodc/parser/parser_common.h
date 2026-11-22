@@ -28,6 +28,9 @@ typedef float real;
  */
 
 /* === IMPORT === */
+#include "../../System.h"
+
+/* === IMPORT === */
 #include "../lexer/Lexer.h"
 
 /* === IMPORT === */
@@ -37,13 +40,7 @@ typedef float real;
 #include "../dynbuf.h"
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
 #include "stdio.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
 
 /**
  * One user TYPE name registered for sizeof() disambiguation at parse time.

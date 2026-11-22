@@ -1,0 +1,8 @@
+# modc-mh/1
+# hand fixture: array type and an alias of that type
+@module arralias
+@format 1
+export type Quad complete integer[4]
+export type Alias complete Quad
+export type Grid complete array[2] of integer[3]
+export procedure arralias complete

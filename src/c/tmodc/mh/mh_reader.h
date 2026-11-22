@@ -23,16 +23,7 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "string.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
-
-/* === IMPORT === */
-#include "ctype.h"
+#include "../../System.h"
 
 /* === IMPORT === */
 #include "stdio.h"

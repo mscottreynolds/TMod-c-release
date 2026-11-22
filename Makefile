@@ -139,7 +139,7 @@ tmodc: $(TARGET)
 all: tmodc examples
 	@echo "All done."
 
-# Increment BUILD_NUMBER and update src/tmodc/version.mc
+# Increment BUILD_NUMBER and update src/version.mc
 version:
 	@build=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0);			\
 	build=$$((build + 1)); 										\
@@ -152,7 +152,7 @@ version:
 		"export define VERSION_BASE = \"$(VERSION)\""			\
 		"export define BUILD_NUMBER = $$build"					\
 		"end"													\
-		> $(SRC_DIR)/tmodc/version.mc
+		> $(SRC_DIR)/version.mc
 	@echo VERSION=$(VERSION)
 	@echo BUILD_NUMBER=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
 
@@ -497,7 +497,7 @@ clean-all: examples-clean string-lib-clean clean
 
 help:
 	@echo "Available targets:"
-	@echo "  version            Increment the BUILD_NUMBER and update $(SRC_DIR)/tmodc/version.mc"
+	@echo "  version            Increment the BUILD_NUMBER and update $(SRC_DIR)/version.mc"
 	@echo "  all                Build the modc.$(VERSION) binary, examples, and string-lib"
 	@echo "  test               Run all preprocessor, compile, and run tests (test_*)"
 	@echo "  test2              Run just preprocessor tests (test2_*)"

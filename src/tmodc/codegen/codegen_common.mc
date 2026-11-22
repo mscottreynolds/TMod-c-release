@@ -14,14 +14,10 @@ module tmodc.codegen.codegen_common()
 
 
 import from "tmodc.h"
-import size_t 
-    from "stddef.h"
-import snprintf, fprintf, stderr,
+import size_t, snprintf, fprintf, exit, strncmp, memcmp, memcpy, 
+    from System
+import stderr,
     from "stdio.h"
-import exit,
-    from "stdlib.h"
-import strncmp, memcmp, memcpy,
-    from "string.h"
 
 import ppvoid, pchar 
     from tmodc.arena

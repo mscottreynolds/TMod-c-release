@@ -21,8 +21,7 @@ void tmodc__parser__statement(void);
 #include "parser_main.h"
 #include "../lexer/Lexer.h"
 #include "../ttype.h"
-#include "stddef.h"
-#include "stdlib.h"
+#include "../../System.h"
 #include "stdio.h"
 typedef const char* pcchar;
 static bool parse_qualident_span(tmodc__parser__parser_common__pParser p, pcchar* start, size_t* length);
@@ -50,8 +49,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_defer_stmt(tmodc__parser__par
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_DEFER); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l75 = n;
-    return __ret_l75;
+    tmodc__node__pNode __ret_l74 = n;
+    return __ret_l74;
 }
 
 /**
@@ -77,8 +76,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_debug_stmt(tmodc__parser__par
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_DEBUG); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l104 = n;
-    return __ret_l104;
+    tmodc__node__pNode __ret_l103 = n;
+    return __ret_l103;
 }
 
 /**
@@ -231,8 +230,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_switch_stmt(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_SWITCH); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l266 = n;
-    return __ret_l266;
+    tmodc__node__pNode __ret_l265 = n;
+    return __ret_l265;
 }
 
 /**
@@ -245,8 +244,8 @@ static bool parse_qualident_span(tmodc__parser__parser_common__pParser p, pcchar
     if ((((*p)).current).kind != tmodc__lexer__Lexer__TOK_IDENT)
     {
         /* return value captured before defers */
-        bool __ret_l281 = false;
-        return __ret_l281;
+        bool __ret_l280 = false;
+        return __ret_l280;
     }
     (*start) = (((*p)).current).start;
     (*length) = (((*p)).current).length;
@@ -263,8 +262,8 @@ static bool parse_qualident_span(tmodc__parser__parser_common__pParser p, pcchar
         }
     }
     /* return value captured before defers */
-    bool __ret_l296 = true;
-    return __ret_l296;
+    bool __ret_l295 = true;
+    return __ret_l295;
 }
 
 /**
@@ -326,8 +325,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_import_stmt(tmodc__parser__pa
         /* ENSURE (on return) */
     assert(((*imp)).kind == tmodc__node__NODE_IMPORT); /* postcodition */
 /* return value captured before defers */
-        tmodc__node__pNode __ret_l355 = imp;
-        return __ret_l355;
+        tmodc__node__pNode __ret_l354 = imp;
+        return __ret_l354;
     }
     while (!tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_KEYWORD_FROM) && !tmodc__parser__parser_common__isEOF(p))
     {
@@ -382,8 +381,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_import_stmt(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(((*imp)).kind == tmodc__node__NODE_IMPORT); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l408 = imp;
-    return __ret_l408;
+    tmodc__node__pNode __ret_l407 = imp;
+    return __ret_l407;
 }
 
 /**
@@ -406,8 +405,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_import_item(tmodc__parser__pa
         /* ENSURE (on return) */
     assert(item == nil || ((*item)).kind == tmodc__node__NODE_IMPORT_ITEM); /* postcodition */
 /* return value captured before defers */
-        tmodc__node__pNode __ret_l432 = nil;
-        return __ret_l432;
+        tmodc__node__pNode __ret_l431 = nil;
+        return __ret_l431;
     }
     qual_start = (((*p)).current).start;
     qual_len = (((*p)).current).length;
@@ -458,8 +457,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_import_item(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(item == nil || ((*item)).kind == tmodc__node__NODE_IMPORT_ITEM); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l478 = item;
-    return __ret_l478;
+    tmodc__node__pNode __ret_l477 = item;
+    return __ret_l477;
 }
 
 /**
@@ -479,8 +478,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_break_stmt(tmodc__parser__par
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_BREAK); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l503 = n;
-    return __ret_l503;
+    tmodc__node__pNode __ret_l502 = n;
+    return __ret_l502;
 }
 
 /**
@@ -500,8 +499,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_continue_stmt(tmodc__parser__
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_CONTINUE); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l527 = n;
-    return __ret_l527;
+    tmodc__node__pNode __ret_l526 = n;
+    return __ret_l526;
 }
 
 /**
@@ -527,8 +526,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_return_stmt(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_RETURN); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l558 = n;
-    return __ret_l558;
+    tmodc__node__pNode __ret_l557 = n;
+    return __ret_l557;
 }
 
 /**
@@ -586,8 +585,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_if_stmt(tmodc__parser__parser
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_IF); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l626 = n;
-    return __ret_l626;
+    tmodc__node__pNode __ret_l625 = n;
+    return __ret_l625;
 }
 
 /**
@@ -601,8 +600,8 @@ static tmodc__node__pNode parse_optional_bound(tmodc__parser__parser_common__pPa
     if (!tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_BOUND))
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l643 = nil;
-        return __ret_l643;
+        tmodc__node__pNode __ret_l642 = nil;
+        return __ret_l642;
     }
     expr = tmodc__parser__parser_main__TParser__parse_const_expression(&(*p));
     if (expr == nil)
@@ -619,8 +618,8 @@ static tmodc__node__pNode parse_optional_bound(tmodc__parser__parser_common__pPa
         tmodc__parser__parser_common__error_at(p, "parse_optional_bound: only one BOUND is allowed", true);
     }
     /* return value captured before defers */
-    tmodc__node__pNode __ret_l659 = expr;
-    return __ret_l659;
+    tmodc__node__pNode __ret_l658 = expr;
+    return __ret_l658;
 }
 
 /**
@@ -680,8 +679,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_while_stmt(tmodc__parser__par
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_WHILE); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l737 = n;
-    return __ret_l737;
+    tmodc__node__pNode __ret_l736 = n;
+    return __ret_l736;
 }
 
 /**
@@ -740,8 +739,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_for_stmt(tmodc__parser__parse
         tmodc__parser__parser_common__error_at(p, "parse_for_stmt: expected expression after FOR index", true);
     }
     tmodc__parser__parser_common__skip_layout_breaks(p);
-    bool is_downto_l801_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_DOWNTO);
-    if (!is_downto_l801_c15)
+    bool is_downto_l800_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_DOWNTO);
+    if (!is_downto_l800_c15)
     {
         tmodc__parser__parser_common__consume(p, tmodc__lexer__Lexer__TOK_KEYWORD_TO, "parse_for_stmt: expected TO or DOWNTO after start expression");
     }
@@ -778,7 +777,7 @@ tmodc__node__pNode tmodc__parser__statement__parse_for_stmt(tmodc__parser__parse
     (((*n)).for_stmt).var_len = var_len;
     (((*n)).for_stmt).start_ = start_expr;
     (((*n)).for_stmt).end_ = end_expr;
-    (((*n)).for_stmt).step = (is_downto_l801_c15 ? -step : step);
+    (((*n)).for_stmt).step = (is_downto_l800_c15 ? -step : step);
     (((*n)).for_stmt).declares = declares;
     (((*n)).for_stmt).index_type = index_type;
     (((*n)).for_stmt).invariants = nil;
@@ -815,8 +814,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_for_stmt(tmodc__parser__parse
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_FOR); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l884 = n;
-    return __ret_l884;
+    tmodc__node__pNode __ret_l883 = n;
+    return __ret_l883;
 }
 
 /**
@@ -865,8 +864,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_repeat_until_stmt(tmodc__pars
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_REPEAT_UNTIL); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l944 = n;
-    return __ret_l944;
+    tmodc__node__pNode __ret_l943 = n;
+    return __ret_l943;
 }
 
 /**
@@ -908,8 +907,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_loop_stmt(tmodc__parser__pars
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_LOOP); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l997 = n;
-    return __ret_l997;
+    tmodc__node__pNode __ret_l996 = n;
+    return __ret_l996;
 }
 
 /**
@@ -956,8 +955,8 @@ tmodc__node__pNode tmodc__parser__statement__parse_inc_dec_stmt(tmodc__parser__p
     /* ENSURE (on return) */
     assert(((*n)).kind == tmodc__node__NODE_INC || ((*n)).kind == tmodc__node__NODE_DEC); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l1050 = n;
-    return __ret_l1050;
+    tmodc__node__pNode __ret_l1049 = n;
+    return __ret_l1049;
 }
 
 

@@ -16,15 +16,12 @@ program tmodc.modc(args: ^char[]): int
  *)
 
 
-import size_t 
-    from "stddef.h"
-import stderr, SEEK_END, SEEK_SET, fclose, fopen, fprintf, fputs, 
-    fread, fseek, ftell, perror, printf, FILE, 
+import size_t, exit, free, malloc, memcmp, memcpy, strcmp, strlen,
+    fclose, fopen, fprintf, fputs, fread, fseek, ftell, perror, printf, FILE,
+    from System
+
+import stderr, SEEK_END, SEEK_SET, 
     from "stdio.h"
-import exit, free, malloc, 
-    from "stdlib.h"
-import memcmp, memcpy, strcmp, strlen, 
-    from "string.h"
 
 import TParser 
     from tmodc.parser.parser_common
@@ -34,7 +31,7 @@ import TParser::init, TParser::parse
 import NODE_PROGRAM, node_print, TNode, pNode,
     from tmodc.node
 import VERSION, VERSION_BASE, BUILD_NUMBER 
-    from "version.h"
+    from version
 
 import InitialContext, codegen_generate, 
     from tmodc.codegen.codegen

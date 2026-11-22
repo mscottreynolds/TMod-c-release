@@ -50,11 +50,10 @@ import
 	TType,
 	from tmodc.ttype
 
-import size_t from "stddef.h"
-import memcmp, memcpy, strlen from "string.h"
-import strtol, exit from "stdlib.h"
+import size_t, memcmp, memcpy, strlen, strtol, exit, fprintf, snprintf,
+	from System
 import strncasecmp from "strings.h"
-import fprintf, snprintf, stderr from "stdio.h"
+import stderr from "stdio.h"
 
 const SEMANTIC_MH_PATH_MAX: cardinal = 4096u
 
@@ -1484,10 +1483,64 @@ begin
 end semantic_eval_const_expr
 
 
+(*
+ * Follow a named alias until the array bound is visible.
+ * export type Alias complete Quad keeps the name Quad. Quad is looked
+ * up in the current scope, then in each star scope. A missing name
+ * stays unresolved. A pointer or a builtin stops.
+ *)
+function semantic_countof_array_type(ctx: pTSemanticContext, typ: pTType): pTType
+begin
+	var depth: size_t = 0
+	var sym: pTSymbol = nil
+	var i: size_t = 0
+	var ty: pTType = typ
+
+	if ctx == nil then
+		return ty
+	end
+	while ty <> nil and depth < 64 do
+		if ty^.resolved_type <> nil then
+			ty := ty^.resolved_type
+		elsif ty^.is_pointer or ty^.is_array then
+			return ty
+		elsif ty^.name == nil or ty^.name_len == 0 or
+				type_is_builtin_name(ty^.name, ty^.name_len) then
+			return ty
+		else
+			sym := nil
+			if semantic_text_has(ty^.name, ty^.name_len, '.') then
+				sym := semantic_star_export_named(ctx, ty^.name, ty^.name_len)
+			else
+				sym := symtab_lookup(ctx^.scope, ty^.name, ty^.name_len)
+			end
+			if (sym == nil or sym^.kind <> SYM_KIND_TYPE) and ctx^.star_count > 0 then
+				for i := 1 to ctx^.star_count do
+					sym := symtab_lookup_current(ctx^.stars[i - 1].scope,
+						ty^.name, ty^.name_len)
+					if sym <> nil and sym^.kind == SYM_KIND_TYPE then
+						break
+					end
+					sym := nil
+				end
+			end
+			if sym == nil or sym^.kind <> SYM_KIND_TYPE or
+					sym^.symbol_type == nil or sym^.symbol_type == ty then
+				return ty
+			end
+			ty := sym^.symbol_type
+		end
+		depth := depth + 1
+	end
+	return ty
+end semantic_countof_array_type
+
+
 (**
  * Element count of a COUNTOF operand. Outermost complete fixed array.
  * array_size 0 is an open array (array[0] shares that spelling) and is rejected.
  * Sets sizeof_expr.folded and sizeof_expr.count on success.
+ * An imported alias is followed to the array it names.
  *)
 function semantic_countof_value(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool
 begin
@@ -1536,9 +1589,7 @@ begin
 		end
 	end
 
-	if ty <> nil and ty^.resolved_type <> nil then
-		ty := ty^.resolved_type
-	end
+	ty := semantic_countof_array_type(ctx, ty)
 	if ty == nil or ty^.is_pointer or not ty^.is_array or ty^.array_size == 0 then
 		if msg <> nil then
 			msg^ := "semantic_countof_value: operand must be a complete array"

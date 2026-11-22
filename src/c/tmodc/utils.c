@@ -14,12 +14,9 @@ void tmodc__utils(void);
  *
  * utils.c - Portable helper functions and safe arithmetic utilities.
  */
-#include "stddef.h"
-#include "stdlib.h"
-#include "string.h"
+#include "../System.h"
 #include "limits.h"
 #include "stdio.h"
-#include "ctype.h"
 /**
  * Portable replacement for strnlen (not in C89/C95, but very useful).
  * Returns the length of the string or maxlen if no null terminator found.
@@ -29,10 +26,10 @@ size_t tmodc__utils__utils_strnlen(string s, size_t maxlen)
     size_t results = 0;
     if (s != nil)
     {
-        tmodc__utils__pchar z_l38_c11 = memchr(s, '\0', maxlen);
-        if (z_l38_c11 != nil)
+        tmodc__utils__pchar z_l35_c11 = memchr(s, '\0', maxlen);
+        if (z_l35_c11 != nil)
         {
-            results = (size_t)(z_l38_c11 - s);
+            results = (size_t)(z_l35_c11 - s);
         }
         else
         {
@@ -40,8 +37,8 @@ size_t tmodc__utils__utils_strnlen(string s, size_t maxlen)
         }
     }
     /* return value captured before defers */
-    size_t __ret_l45 = results;
-    return __ret_l45;
+    size_t __ret_l42 = results;
+    return __ret_l42;
 }
 
 /**
@@ -54,17 +51,17 @@ tmodc__utils__pchar tmodc__utils__utils_strndup(string s, size_t n)
     tmodc__utils__pchar new_str = nil;
     if (s != nil)
     {
-        size_t str_len_l59_c20 = tmodc__utils__utils_strnlen(s, n);
-        new_str = malloc(str_len_l59_c20 + 1);
+        size_t str_len_l56_c20 = tmodc__utils__utils_strnlen(s, n);
+        new_str = malloc(str_len_l56_c20 + 1);
         if (new_str != nil)
         {
-            memcpy(new_str, s, str_len_l59_c20);
-            new_str[str_len_l59_c20] = '\0';
+            memcpy(new_str, s, str_len_l56_c20);
+            new_str[str_len_l56_c20] = '\0';
         }
     }
     /* return value captured before defers */
-    tmodc__utils__pchar __ret_l66 = new_str;
-    return __ret_l66;
+    tmodc__utils__pchar __ret_l63 = new_str;
+    return __ret_l63;
 }
 
 /**
@@ -106,8 +103,8 @@ tmodc__utils__LONG tmodc__utils__utils_power(tmodc__utils__LONG base, cardinal e
         }
     }
     /* return value captured before defers */
-    tmodc__utils__LONG __ret_l105 = result;
-    return __ret_l105;
+    tmodc__utils__LONG __ret_l102 = result;
+    return __ret_l102;
 }
 
 /**
@@ -129,8 +126,8 @@ long long tmodc__utils__utils_safe_multiply(tmodc__utils__long_long a, tmodc__ut
     if (a == 0 || b == 0)
     {
         /* return value captured before defers */
-        long long __ret_l127 = 0;
-        return __ret_l127;
+        long long __ret_l124 = 0;
+        return __ret_l124;
     }
     if (a == LLONG_MIN && b == -(tmodc__utils__long_long)1)
     {
@@ -176,8 +173,8 @@ long long tmodc__utils__utils_safe_multiply(tmodc__utils__long_long a, tmodc__ut
         }
     }
     /* return value captured before defers */
-    long long __ret_l169 = a * b;
-    return __ret_l169;
+    long long __ret_l166 = a * b;
+    return __ret_l166;
 }
 
 /**
@@ -198,8 +195,8 @@ tmodc__utils__long_long tmodc__utils__utils_parse_integer_literal(string literal
     if (str == nil || str_len == 0)
     {
         /* return value captured before defers */
-        tmodc__utils__long_long __ret_l190 = 0;
-        return __ret_l190;
+        tmodc__utils__long_long __ret_l187 = 0;
+        return __ret_l187;
     }
     while (str_len > 0 && isspace((tmodc__utils__uchar)(*str)))
     {
@@ -210,18 +207,18 @@ tmodc__utils__long_long tmodc__utils__utils_parse_integer_literal(string literal
     }
     if (str_len >= 2 && str[0] == '0')
     {
-        char p_l202_c14 = str[1];
-        if (p_l202_c14 == 'x' || p_l202_c14 == 'X')
+        char p_l199_c14 = str[1];
+        if (p_l199_c14 == 'x' || p_l199_c14 == 'X')
         {
             base = 16;
             i = 2;
         }
-        else if (p_l202_c14 == 'o' || p_l202_c14 == 'O')
+        else if (p_l199_c14 == 'o' || p_l199_c14 == 'O')
         {
             base = 8;
             i = 2;
         }
-        else if (p_l202_c14 == 'b' || p_l202_c14 == 'B')
+        else if (p_l199_c14 == 'b' || p_l199_c14 == 'B')
         {
             base = 2;
             i = 2;
@@ -231,29 +228,29 @@ tmodc__utils__long_long tmodc__utils__utils_parse_integer_literal(string literal
     {
         {
             int digit = {0};
-            char c_l215_c14 = str[i];
-            if (c_l215_c14 != '_')
+            char c_l212_c14 = str[i];
+            if (c_l212_c14 != '_')
             {
-                if (isdigit((tmodc__utils__uchar)c_l215_c14))
+                if (isdigit((tmodc__utils__uchar)c_l212_c14))
                 {
-                    digit = c_l215_c14 - '0';
+                    digit = c_l212_c14 - '0';
                 }
-                else if (base == 16 && c_l215_c14 >= 'a' && c_l215_c14 <= 'f')
+                else if (base == 16 && c_l212_c14 >= 'a' && c_l212_c14 <= 'f')
                 {
-                    digit = 10 + (c_l215_c14 - 'a');
+                    digit = 10 + (c_l212_c14 - 'a');
                 }
-                else if (base == 16 && c_l215_c14 >= 'A' && c_l215_c14 <= 'F')
+                else if (base == 16 && c_l212_c14 >= 'A' && c_l212_c14 <= 'F')
                 {
-                    digit = 10 + (c_l215_c14 - 'A');
+                    digit = 10 + (c_l212_c14 - 'A');
                 }
                 else
                 {
-                    fprintf(stderr, "ERROR: utils_parse_integer_literal: invalid digit '%c' in bases %d\n", c_l215_c14, base);
+                    fprintf(stderr, "ERROR: utils_parse_integer_literal: invalid digit '%c' in bases %d\n", c_l212_c14, base);
                     exit(1);
                 }
                 if (digit >= base)
                 {
-                    fprintf(stderr, "ERROR: utils_parse_integer_literal: digit '%c' out of range for base %d\n", c_l215_c14, base);
+                    fprintf(stderr, "ERROR: utils_parse_integer_literal: digit '%c' out of range for base %d\n", c_l212_c14, base);
                     exit(1);
                 }
                 if (result > (LLONG_MAX - digit) / base)
@@ -267,8 +264,8 @@ tmodc__utils__long_long tmodc__utils__utils_parse_integer_literal(string literal
         }
     }
     /* return value captured before defers */
-    tmodc__utils__long_long __ret_l242 = result;
-    return __ret_l242;
+    tmodc__utils__long_long __ret_l239 = result;
+    return __ret_l239;
 }
 
 

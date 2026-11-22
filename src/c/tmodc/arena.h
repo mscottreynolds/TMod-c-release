@@ -31,13 +31,7 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "string.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "stdio.h"
@@ -52,13 +46,13 @@ typedef struct tmodc__arena__Arena tmodc__arena__Arena;
 typedef char* tmodc__arena__pchar;
 
 /* == TYPE EXPORT == */
-typedef void* tmodc__arena__pvoid;
+typedef tmodc__arena__Arena* tmodc__arena__pArena;
+
+/* === TYPE EXPORT === */
+typedef void *tmodc__arena__pvoid;
 
 /* == TYPE EXPORT == */
 typedef tmodc__arena__pvoid* tmodc__arena__ppvoid;
-
-/* == TYPE EXPORT == */
-typedef tmodc__arena__Arena* tmodc__arena__pArena;
 
 /** One malloc'd slab: header + payload. Never realloc this block */
 

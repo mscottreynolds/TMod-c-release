@@ -10,12 +10,9 @@ module tmodc.ttype()
  *)
  
 
-import size_t from "stddef.h"
-import printf from "stdio.h"
-import memset, memcmp from "string.h"
-import from "stdbool.h"
+import size_t, memset, memcmp, printf, pvoid, from System
 
-import Arena, arena_alloc, pvoid 
+import Arena, arena_alloc, 
 	from tmodc.arena
 
 

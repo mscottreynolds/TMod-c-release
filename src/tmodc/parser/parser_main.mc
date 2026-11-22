@@ -67,14 +67,10 @@ import
     NODE_UNARY, NODE_BLOCK, NODE_DEFER, NODE_RETURN, NODE_BREAK, NODE_CONTINUE, NODE_ASSIGN, 
     NODE_IDENT, NODE_CALL, NODE_EXPR_STMT, NODE_PROGRAM, NODE_ASSERT, NODE_DEFINE,
     from tmodc.node
-import size_t 
-    from "stddef.h"
-import stderr, fprintf 
+import size_t, fprintf, exit, memcmp, memcpy, 
+    from System
+import stderr,  
     from "stdio.h"
-import exit 
-    from "stdlib.h"
-import memcmp, memcpy 
-    from "string.h"
 
 
 (**
@@ -802,7 +798,10 @@ begin
         return parse_let_decl(@p, exported)
     end
     if p.check(TOK_KEYWORD_TYPE) then
-        return parse_type_decl(@p, exported)
+        if is_extern then
+            return parse_extern_type_decl(@p, exported)
+        end
+        return parse_type_decl(@p, exported) 
     end
     // PROCEDURE or FUNCTION
     if p.check(TOK_KEYWORD_PROCEDURE) or p.check(TOK_KEYWORD_FUNCTION) then

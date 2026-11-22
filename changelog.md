@@ -2,6 +2,19 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.9.261
+- **`export extern type`.** `export extern type Name` reaches `parse_extern_type_decl`. `extern export type Name` already did. A bare foreign type emits no typedef. The `.mh` line is `export type Name opaque`.
+- **`header System`.** `src/System.mc` gathers the C types and functions the compiler calls. `size_t` and `FILE` are foreign types. The functions are the ones from `stdio`, `stdlib`, `string`, and `ctype` that the `.mc` sources call. Generated C keeps those spellings. `^opaque` lowers to `void *`. `strtol`'s `endptr` is `char **`. `stderr`, `SEEK_END`, `SEEK_SET`, `LLONG_MAX`, and `LLONG_MIN` stay direct imports because they are macros. `strncasecmp` stays `import strncasecmp from "strings.h"` in `semantic.mc`. `header tmodc` still imports `size_t` from `"stddef.h"`.
+- The user reported a clean rebuild on gcc, clang, and tcc, with no warnings, and promoted **0.27.9.261**. Stem **0.27.9**. `Makefile` `VERSION` is **0.27.9**. Branch **`TMod-c_0.27`**. Build **261**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `docs/language-report.md`, `docs/syntax-ebnf.md`, `docs/grok_report-20261120-2025.md`, and an append in `docs/project_bible.md`.
+
+## Version 0.27.9.260
+- **`COUNTOF` of an imported array type.** An imported name whose type is a complete fixed array folds. `export type Quad complete integer[4]` makes `countof(Quad)` the constant 4, and `countof(fixtures.arralias.Quad)` does the same. An alias `export type Alias complete Quad` follows `Quad` when that type is in this scope or in a star scope. `array[countof(Alias)]` is a constant bound. `countof(a)` on `var a: Alias` folds. `import Alias` alone has no bound and stays `semantic_countof_value: operand must be a complete array`. A pointer, a builtin, and an open array stay rejected. `SIZEOF` is unchanged.
+- A star-imported alias used as a written type still resolves its right-hand name from the program scope. `var a: fixtures.arralias.Alias` is that case. `countof(fixtures.arralias.Alias)` does not need the variable.
+- **Tests:** `tests/test_countof_import.mc`, `tests/test3_countof_alias.mc`, `tests/fixtures/arralias.mh`, `tests/fixtures/arralias.h`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.9.260**. Stem **0.27.9**. `Makefile` `VERSION` is **0.27.9**. Branch **`TMod-c_0.27`**. Build **260**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `TODO-items-for-0.27.md`, and `docs/language-report.md`. No new grok report.
+
 ## Version 0.27.9.259
 - **Instance call on a package-qualified type.** `q.getX()` looks up `Point__getX` when `q` is declared `fixtures.starpack.Point`. The written qualident is reduced to the export's source name before the search. `p.getX()` is unchanged. The call still needs a selective `import Point::getX`. `fixtures.starpack.Point::getX(q)` is the same method.
 - **Test:** `tests/test_import_star2.mc`.

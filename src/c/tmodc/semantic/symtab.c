@@ -13,10 +13,8 @@ void tmodc__semantic__symtab(void);
  * Scoped symbol tables for semantic analysis.
  * Each table is one scope; parent links form a chain.
  */
-#include "stddef.h"
+#include "../../System.h"
 #include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 #include "../arena.h"
 #include "../node.h"
 /** One lexical scope */
@@ -51,8 +49,8 @@ tmodc__semantic__symtab__pTSymbolTable tmodc__semantic__symtab__symtab_create(tm
     ((*table)).count = 0;
     ((*table)).capacity = 0;
     /* return value captured before defers */
-    tmodc__semantic__symtab__pTSymbolTable __ret_l64 = table;
-    return __ret_l64;
+    tmodc__semantic__symtab__pTSymbolTable __ret_l62 = table;
+    return __ret_l62;
 }
 
 /**
@@ -63,20 +61,20 @@ static bool symtab_names_equal(const char* a_name, size_t a_len, const char* b_n
     if (a_name == nil || b_name == nil)
     {
         /* return value captured before defers */
-        bool __ret_l75 = false;
-        return __ret_l75;
+        bool __ret_l73 = false;
+        return __ret_l73;
     }
     else if (a_len != b_len)
     {
         /* return value captured before defers */
-        bool __ret_l77 = false;
-        return __ret_l77;
+        bool __ret_l75 = false;
+        return __ret_l75;
     }
     else
     {
         /* return value captured before defers */
-        bool __ret_l79 = memcmp(a_name, b_name, a_len) == 0;
-        return __ret_l79;
+        bool __ret_l77 = memcmp(a_name, b_name, a_len) == 0;
+        return __ret_l77;
     }
 }
 
@@ -90,27 +88,27 @@ tmodc__node__pTSymbol tmodc__semantic__symtab__symtab_lookup_current(tmodc__sema
     if (table == nil || name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        tmodc__node__pTSymbol __ret_l94 = nil;
-        return __ret_l94;
+        tmodc__node__pTSymbol __ret_l92 = nil;
+        return __ret_l92;
     }
     {
-        const size_t __for_end_l97_c5 = (((*table)).count);
-        for (i = 1; i <= __for_end_l97_c5; i++)
+        const size_t __for_end_l95_c5 = (((*table)).count);
+        for (i = 1; i <= __for_end_l95_c5; i++)
         {
             {
-                tmodc__node__pTSymbol sym_l98_c10 = ((*table)).symbols[i - 1];
-                if (sym_l98_c10 != nil && symtab_names_equal(((*sym_l98_c10)).name, ((*sym_l98_c10)).name_len, name, name_len))
+                tmodc__node__pTSymbol sym_l96_c10 = ((*table)).symbols[i - 1];
+                if (sym_l96_c10 != nil && symtab_names_equal(((*sym_l96_c10)).name, ((*sym_l96_c10)).name_len, name, name_len))
                 {
                     /* return value captured before defers */
-                    tmodc__node__pTSymbol __ret_l100 = sym_l98_c10;
-                    return __ret_l100;
+                    tmodc__node__pTSymbol __ret_l98 = sym_l96_c10;
+                    return __ret_l98;
                 }
             }
         }
     }
     /* return value captured before defers */
-    tmodc__node__pTSymbol __ret_l104 = nil;
-    return __ret_l104;
+    tmodc__node__pTSymbol __ret_l102 = nil;
+    return __ret_l102;
 }
 
 /**
@@ -124,8 +122,8 @@ tmodc__node__pTSymbol tmodc__semantic__symtab__symtab_lookup(tmodc__semantic__sy
     if (table == nil || name == nil || name_len == 0)
     {
         /* return value captured before defers */
-        tmodc__node__pTSymbol __ret_l119 = nil;
-        return __ret_l119;
+        tmodc__node__pTSymbol __ret_l117 = nil;
+        return __ret_l117;
     }
     while (current != nil)
     {
@@ -134,15 +132,15 @@ tmodc__node__pTSymbol tmodc__semantic__symtab__symtab_lookup(tmodc__semantic__sy
             if (sym != nil)
             {
                 /* return value captured before defers */
-                tmodc__node__pTSymbol __ret_l125 = sym;
-                return __ret_l125;
+                tmodc__node__pTSymbol __ret_l123 = sym;
+                return __ret_l123;
             }
             current = ((*current)).parent;
         }
     }
     /* return value captured before defers */
-    tmodc__node__pTSymbol __ret_l130 = nil;
-    return __ret_l130;
+    tmodc__node__pTSymbol __ret_l128 = nil;
+    return __ret_l128;
 }
 
 /**
@@ -210,8 +208,8 @@ void tmodc__semantic__symtab__symtab_define_let(tmodc__arena__Arena* arena, tmod
     if (((*existing)).kind == tmodc__node__SYM_KIND_LET)
     {
         {
-            const size_t __for_end_l191_c6 = (((*table)).count);
-            for (i = 1; i <= __for_end_l191_c6; i++)
+            const size_t __for_end_l189_c6 = (((*table)).count);
+            for (i = 1; i <= __for_end_l189_c6; i++)
             {
                 {
                     if (((*table)).symbols[i - 1] == existing)
@@ -251,8 +249,8 @@ void tmodc__semantic__symtab__symtab_refine_symbol(tmodc__arena__Arena* arena, t
         tmodc__semantic__symtab__symtab_fatal(nil, "symtab_refine_symbol: NULL symbol");
     }
     {
-        const size_t __for_end_l225_c5 = (((*table)).count);
-        for (i = 1; i <= __for_end_l225_c5; i++)
+        const size_t __for_end_l223_c5 = (((*table)).count);
+        for (i = 1; i <= __for_end_l223_c5; i++)
         {
             {
                 if (((*table)).symbols[i - 1] == existing)

@@ -8,12 +8,8 @@ module tmodc.parser.declaration()
  *)
 
 
-import size_t 
-    from "stddef.h"
-import snprintf 
-    from "stdio.h"
-import from "stdlib.h"
-import from "string.h"
+import size_t, snprintf, 
+    from System 
 import NODE_CONST_ITEM, NODE_CONST_DECL, NODE_LET_ITEM, NODE_VAR_DECL, NODE_VAR_ITEM, 
     NODE_LET_DECL, NODE_TYPE_DECL, NODE_PARAM, NODE_PARAM_LIST, NODE_FUNC_DECL, NODE_PROC_DECL,
     NODE_STRUCT_DECL, NODE_FIELD_DECL, NODE_METHOD_TYPE, NODE_ENUM_TYPE, NODE_ENUM_ITEM,

@@ -15,11 +15,7 @@ void tmodc__lexer__Lexer(tmodc__lexer__Lexer__TLexer* lexer, const char* source)
  * lexer.mc - Lexer/tokenizer for Mod-c source code
  * 27 July 2026 - Conversion to .mc started.
  */
-#include "stdio.h"
-#include "string.h"
-#include "stddef.h"
-#include "stdbool.h"
-#include "ctype.h"
+#include "../../System.h"
 /**
  * Token kinds recognized by the TMod-c lexer.
  * Ordered roughly by category for readability.
@@ -80,8 +76,8 @@ static tmodc__lexer__Lexer__TokenKind scan_decimal_number(tmodc__lexer__Lexer__T
 static integer NUM_KEYWORDS(void)
 {
     /* return value captured before defers */
-    integer __ret_l314 = (((integer)sizeof(keyword_table)) / ((integer)sizeof(keyword_table[0])));
-    return __ret_l314;
+    integer __ret_l311 = (((integer)sizeof(keyword_table)) / ((integer)sizeof(keyword_table[0])));
+    return __ret_l311;
 }
 
 /**
@@ -96,12 +92,12 @@ static tmodc__lexer__Lexer__TokenKind lookup_keyword(const char* start, size_t l
     if (length == 0 || length > 255)
     {
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TokenKind __ret_l339 = tmodc__lexer__Lexer__TOK_IDENT;
-        return __ret_l339;
+        tmodc__lexer__Lexer__TokenKind __ret_l336 = tmodc__lexer__Lexer__TOK_IDENT;
+        return __ret_l336;
     }
     {
-        const size_t __for_end_l342_c5 = (length);
-        for (i = 1; i <= __for_end_l342_c5; i++)
+        const size_t __for_end_l339_c5 = (length);
+        for (i = 1; i <= __for_end_l339_c5; i++)
         {
             {
                 upper_token[i - 1] = (char)toupper((uchar)start[i - 1]);
@@ -110,8 +106,8 @@ static tmodc__lexer__Lexer__TokenKind lookup_keyword(const char* start, size_t l
     }
     upper_token[length] = '\0';
     {
-        const size_t __for_end_l347_c5 = ((size_t)NUM_KEYWORDS());
-        for (i = 1; i <= __for_end_l347_c5; i++)
+        const size_t __for_end_l344_c5 = ((size_t)NUM_KEYWORDS());
+        for (i = 1; i <= __for_end_l344_c5; i++)
         {
             {
                 pcchar kw = (keyword_table[i - 1]).keyword;
@@ -119,15 +115,15 @@ static tmodc__lexer__Lexer__TokenKind lookup_keyword(const char* start, size_t l
                 if (length == kw_len && memcmp(upper_token, kw, length) == 0)
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TokenKind __ret_l352 = (keyword_table[i - 1]).kind;
-                    return __ret_l352;
+                    tmodc__lexer__Lexer__TokenKind __ret_l349 = (keyword_table[i - 1]).kind;
+                    return __ret_l349;
                 }
             }
         }
     }
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TokenKind __ret_l356 = tmodc__lexer__Lexer__TOK_IDENT;
-    return __ret_l356;
+    tmodc__lexer__Lexer__TokenKind __ret_l353 = tmodc__lexer__Lexer__TOK_IDENT;
+    return __ret_l353;
 }
 
 /**
@@ -156,8 +152,8 @@ static void advance(tmodc__lexer__Lexer__TLexer* l)
 static char peek(tmodc__lexer__Lexer__TLexer* l)
 {
     /* return value captured before defers */
-    char __ret_l382 = (*((*l)).current);
-    return __ret_l382;
+    char __ret_l379 = (*((*l)).current);
+    return __ret_l379;
 }
 
 /**
@@ -168,12 +164,12 @@ static char peek2(tmodc__lexer__Lexer__TLexer* l)
     if ((*((*l)).current) == '\0')
     {
         /* return value captured before defers */
-        char __ret_l392 = '\0';
-        return __ret_l392;
+        char __ret_l389 = '\0';
+        return __ret_l389;
     }
     /* return value captured before defers */
-    char __ret_l394 = ((*l)).current[1];
-    return __ret_l394;
+    char __ret_l391 = ((*l)).current[1];
+    return __ret_l391;
 }
 
 /**
@@ -182,8 +178,8 @@ static char peek2(tmodc__lexer__Lexer__TLexer* l)
 static bool is_ident_start(char c)
 {
     /* return value captured before defers */
-    bool __ret_l403 = isalpha((uchar)c) || c == '_';
-    return __ret_l403;
+    bool __ret_l400 = isalpha((uchar)c) || c == '_';
+    return __ret_l400;
 }
 
 /**
@@ -192,8 +188,8 @@ static bool is_ident_start(char c)
 static bool is_ident_char(char c)
 {
     /* return value captured before defers */
-    bool __ret_l412 = isalnum((uchar)c) || c == '_';
-    return __ret_l412;
+    bool __ret_l409 = isalnum((uchar)c) || c == '_';
+    return __ret_l409;
 }
 
 /**
@@ -202,8 +198,8 @@ static bool is_ident_char(char c)
 static bool is_line_continuation(tmodc__lexer__Lexer__TLexer* l)
 {
     /* return value captured before defers */
-    bool __ret_l421 = peek(&(*l)) == '\\' && (peek2(&(*l)) == '\n' || peek2(&(*l)) == '\r');
-    return __ret_l421;
+    bool __ret_l418 = peek(&(*l)) == '\\' && (peek2(&(*l)) == '\n' || peek2(&(*l)) == '\r');
+    return __ret_l418;
 }
 
 /**
@@ -214,13 +210,13 @@ static bool match(tmodc__lexer__Lexer__TLexer* l, char expected)
     if ((*((*l)).current) != expected)
     {
         /* return value captured before defers */
-        bool __ret_l431 = false;
-        return __ret_l431;
+        bool __ret_l428 = false;
+        return __ret_l428;
     }
     advance(&(*l));
     /* return value captured before defers */
-    bool __ret_l435 = true;
-    return __ret_l435;
+    bool __ret_l432 = true;
+    return __ret_l432;
 }
 
 /**
@@ -234,30 +230,30 @@ static bool scan_char_escape(tmodc__lexer__Lexer__TLexer* l)
     if ((*((*l)).current) == '\0' || (*((*l)).current) == '\n')
     {
         /* return value captured before defers */
-        bool __ret_l449 = false;
-        return __ret_l449;
+        bool __ret_l446 = false;
+        return __ret_l446;
     }
     if ((*((*l)).current) == 'x' || (*((*l)).current) == 'X')
     {
         advance(&(*l));
         {
-            const integer __for_end_l454_c6 = (2);
-            for (n = 1; n <= __for_end_l454_c6; n++)
+            const integer __for_end_l451_c6 = (2);
+            for (n = 1; n <= __for_end_l451_c6; n++)
             {
                 {
                     if (!isxdigit((uchar)(*((*l)).current)))
                     {
                         /* return value captured before defers */
-                        bool __ret_l456 = false;
-                        return __ret_l456;
+                        bool __ret_l453 = false;
+                        return __ret_l453;
                     }
                     advance(&(*l));
                 }
             }
         }
         /* return value captured before defers */
-        bool __ret_l460 = true;
-        return __ret_l460;
+        bool __ret_l457 = true;
+        return __ret_l457;
     }
     if ((*((*l)).current) >= '0' && (*((*l)).current) <= '7')
     {
@@ -271,13 +267,13 @@ static bool scan_char_escape(tmodc__lexer__Lexer__TLexer* l)
             }
         }
         /* return value captured before defers */
-        bool __ret_l471 = true;
-        return __ret_l471;
+        bool __ret_l468 = true;
+        return __ret_l468;
     }
     advance(&(*l));
     /* return value captured before defers */
-    bool __ret_l475 = true;
-    return __ret_l475;
+    bool __ret_l472 = true;
+    return __ret_l472;
 }
 
 /**
@@ -292,8 +288,8 @@ static tmodc__lexer__Lexer__TToken make_token(tmodc__lexer__Lexer__TLexer* l, tm
     (t).line = ((*l)).line;
     (t).column = ((*l)).column;
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TToken __ret_l490 = t;
-    return __ret_l490;
+    tmodc__lexer__Lexer__TToken __ret_l487 = t;
+    return __ret_l487;
 }
 
 /**
@@ -304,8 +300,8 @@ static tmodc__lexer__Lexer__TToken make_token_len(tmodc__lexer__Lexer__TLexer* l
     tmodc__lexer__Lexer__TToken t = make_token(&(*l), kind, start);
     (t).length = length;
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TToken __ret_l501 = t;
-    return __ret_l501;
+    tmodc__lexer__Lexer__TToken __ret_l498 = t;
+    return __ret_l498;
 }
 
 /**
@@ -345,8 +341,8 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__capture_line_from(tmodc
         }
     }
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TToken __ret_l535 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_IDENT, from_, (size_t)(((*l)).current - from_));
-    return __ret_l535;
+    tmodc__lexer__Lexer__TToken __ret_l532 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_IDENT, from_, (size_t)(((*l)).current - from_));
+    return __ret_l532;
 }
 
 /**
@@ -357,8 +353,8 @@ static tmodc__lexer__Lexer__TToken error_token(tmodc__lexer__Lexer__TLexer* l, p
     tmodc__lexer__Lexer__TToken t = make_token(&(*l), tmodc__lexer__Lexer__TOK_ERROR, ((*l)).current);
     (t).error_msg = msg;
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TToken __ret_l546 = t;
-    return __ret_l546;
+    tmodc__lexer__Lexer__TToken __ret_l543 = t;
+    return __ret_l543;
 }
 
 static tmodc__lexer__Lexer__TokenKind scan_decimal_number(tmodc__lexer__Lexer__TLexer* l)
@@ -410,16 +406,16 @@ static tmodc__lexer__Lexer__TokenKind scan_decimal_number(tmodc__lexer__Lexer__T
             }
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TokenKind __ret_l593 = tmodc__lexer__Lexer__TOK_NUMBER;
-        return __ret_l593;
+        tmodc__lexer__Lexer__TokenKind __ret_l590 = tmodc__lexer__Lexer__TOK_NUMBER;
+        return __ret_l590;
     }
     if ((*((*l)).current) == 'f' || (*((*l)).current) == 'F' || (*((*l)).current) == 'l' || (*((*l)).current) == 'L')
     {
         advance(&(*l));
     }
     /* return value captured before defers */
-    tmodc__lexer__Lexer__TokenKind __ret_l599 = tmodc__lexer__Lexer__TOK_REAL;
-    return __ret_l599;
+    tmodc__lexer__Lexer__TokenKind __ret_l596 = tmodc__lexer__Lexer__TOK_REAL;
+    return __ret_l596;
 }
 
 /**
@@ -463,22 +459,22 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             break;
         }
     }
-    const char* start_l644_c11 = ((*l)).current;
-    char c_l645_c7 = (*((*l)).current);
-    if (c_l645_c7 == '\0')
+    const char* start_l641_c11 = ((*l)).current;
+    char c_l642_c7 = (*((*l)).current);
+    if (c_l642_c7 == '\0')
     {
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l648 = make_token(&(*l), tmodc__lexer__Lexer__TOK_EOF, start_l644_c11);
-        return __ret_l648;
+        tmodc__lexer__Lexer__TToken __ret_l645 = make_token(&(*l), tmodc__lexer__Lexer__TOK_EOF, start_l641_c11);
+        return __ret_l645;
     }
-    if (c_l645_c7 == '\n')
+    if (c_l642_c7 == '\n')
     {
         advance(&(*l));
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l654 = make_token(&(*l), tmodc__lexer__Lexer__TOK_NEWLINE, start_l644_c11);
-        return __ret_l654;
+        tmodc__lexer__Lexer__TToken __ret_l651 = make_token(&(*l), tmodc__lexer__Lexer__TOK_NEWLINE, start_l641_c11);
+        return __ret_l651;
     }
-    if (c_l645_c7 == '#' && ((*l)).column == 1)
+    if (c_l642_c7 == '#' && ((*l)).column == 1)
     {
         while ((*((*l)).current) != '\0' && (*((*l)).current) != '\n')
         {
@@ -493,10 +489,10 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             }
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l666 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_PREPROCESSOR, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l666;
+        tmodc__lexer__Lexer__TToken __ret_l663 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_PREPROCESSOR, start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l663;
     }
-    if (is_ident_start(c_l645_c7))
+    if (is_ident_start(c_l642_c7))
     {
         while (is_ident_char((*((*l)).current)))
         {
@@ -504,23 +500,23 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
                 advance(&(*l));
             }
         }
-        size_t length_l675_c13 = (size_t)(((*l)).current - start_l644_c11);
-        if (length_l675_c13 > 255)
+        size_t length_l672_c13 = (size_t)(((*l)).current - start_l641_c11);
+        if (length_l672_c13 > 255)
         {
-            tmodc__lexer__Lexer__TToken t = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ERROR, start_l644_c11, length_l675_c13);
+            tmodc__lexer__Lexer__TToken t = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ERROR, start_l641_c11, length_l672_c13);
             (t).error_msg = "identifier longer than 255 characters";
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l679 = t;
-            return __ret_l679;
+            tmodc__lexer__Lexer__TToken __ret_l676 = t;
+            return __ret_l676;
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l681 = make_token_len(&(*l), lookup_keyword(start_l644_c11, length_l675_c13), start_l644_c11, length_l675_c13);
-        return __ret_l681;
+        tmodc__lexer__Lexer__TToken __ret_l678 = make_token_len(&(*l), lookup_keyword(start_l641_c11, length_l672_c13), start_l641_c11, length_l672_c13);
+        return __ret_l678;
     }
-    if (isdigit((uchar)c_l645_c7) || (c_l645_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B')))
+    if (isdigit((uchar)c_l642_c7) || (c_l642_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B')))
     {
         tmodc__lexer__Lexer__TokenKind kind = tmodc__lexer__Lexer__TOK_NUMBER;
-        if (c_l645_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B'))
+        if (c_l642_c7 == '0' && (peek2(&(*l)) == 'x' || peek2(&(*l)) == 'X' || peek2(&(*l)) == 'o' || peek2(&(*l)) == 'O' || peek2(&(*l)) == 'b' || peek2(&(*l)) == 'B'))
         {
                         advance(&(*l));
             advance(&(*l));
@@ -536,25 +532,25 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             kind = scan_decimal_number(&(*l));
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l710 = make_token_len(&(*l), kind, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l710;
+        tmodc__lexer__Lexer__TToken __ret_l707 = make_token_len(&(*l), kind, start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l707;
     }
-    if (c_l645_c7 == SINGLE_QUOTE)
+    if (c_l642_c7 == SINGLE_QUOTE)
     {
         advance(&(*l));
         if ((*((*l)).current) == '\0' || (*((*l)).current) == '\n')
         {
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l717 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
-            return __ret_l717;
+            tmodc__lexer__Lexer__TToken __ret_l714 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
+            return __ret_l714;
         }
         if ((*((*l)).current) == '\\')
         {
             if (!scan_char_escape(&(*l)))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l723 = error_token(&(*l), "TLexer::next: Invalid character escape.");
-                return __ret_l723;
+                tmodc__lexer__Lexer__TToken __ret_l720 = error_token(&(*l), "TLexer::next: Invalid character escape.");
+                return __ret_l720;
             }
         }
         else
@@ -564,14 +560,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
         if (!match(&(*l), SINGLE_QUOTE))
         {
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l729 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
-            return __ret_l729;
+            tmodc__lexer__Lexer__TToken __ret_l726 = error_token(&(*l), "TLexer::next: Unterminated character literal.");
+            return __ret_l726;
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l731 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_CHAR, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l731;
+        tmodc__lexer__Lexer__TToken __ret_l728 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_CHAR, start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l728;
     }
-    if (c_l645_c7 == DOUBLE_QUOTE)
+    if (c_l642_c7 == DOUBLE_QUOTE)
     {
         advance(&(*l));
         while ((*((*l)).current) != '\0' && (*((*l)).current) != DOUBLE_QUOTE)
@@ -588,8 +584,8 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
                 else if ((*((*l)).current) == '\n')
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l743 = error_token(&(*l), "TLexer::next: Unterminated string literal.");
-                    return __ret_l743;
+                    tmodc__lexer__Lexer__TToken __ret_l740 = error_token(&(*l), "TLexer::next: Unterminated string literal.");
+                    return __ret_l740;
                 }
                 advance(&(*l));
             }
@@ -597,15 +593,15 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
         if ((*((*l)).current) != DOUBLE_QUOTE)
         {
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l748 = error_token(&(*l), "TLexer::next: Unterminated string literal,");
-            return __ret_l748;
+            tmodc__lexer__Lexer__TToken __ret_l745 = error_token(&(*l), "TLexer::next: Unterminated string literal,");
+            return __ret_l745;
         }
         advance(&(*l));
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l751 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_STRING, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l751;
+        tmodc__lexer__Lexer__TToken __ret_l748 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_STRING, start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l748;
     }
-    if (c_l645_c7 == '/' && peek2(&(*l)) == '/')
+    if (c_l642_c7 == '/' && peek2(&(*l)) == '/')
     {
         advance(&(*l));
         advance(&(*l));
@@ -616,14 +612,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             }
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l761 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COMMENT_SINGLE, start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l761;
+        tmodc__lexer__Lexer__TToken __ret_l758 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COMMENT_SINGLE, start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l758;
     }
-    if (c_l645_c7 == '/' && peek2(&(*l)) == '*')
+    if (c_l642_c7 == '/' && peek2(&(*l)) == '*')
     {
         advance(&(*l));
         advance(&(*l));
-        bool is_doc_l769_c13 = peek(&(*l)) == '*';
+        bool is_doc_l766_c13 = peek(&(*l)) == '*';
         while ((*((*l)).current) != '\0')
         {
             {
@@ -640,19 +636,19 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
         if ((*((*l)).current) == '\0')
         {
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l780 = error_token(&(*l), "TLexer::next: Unterminated multi-line comment. /* */");
-            return __ret_l780;
+            tmodc__lexer__Lexer__TToken __ret_l777 = error_token(&(*l), "TLexer::next: Unterminated multi-line comment. /* */");
+            return __ret_l777;
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l783 = make_token_len(&(*l), ((is_doc_l769_c13 ? tmodc__lexer__Lexer__TOK_DOC_COMMENT : tmodc__lexer__Lexer__TOK_COMMENT_MULTI)), start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l783;
+        tmodc__lexer__Lexer__TToken __ret_l780 = make_token_len(&(*l), ((is_doc_l766_c13 ? tmodc__lexer__Lexer__TOK_DOC_COMMENT : tmodc__lexer__Lexer__TOK_COMMENT_MULTI)), start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l780;
     }
-    if (c_l645_c7 == '(' && peek2(&(*l)) == '*')
+    if (c_l642_c7 == '(' && peek2(&(*l)) == '*')
     {
         integer nesting = {0};
         advance(&(*l));
         advance(&(*l));
-        bool is_doc_l793_c13 = peek(&(*l)) == '*';
+        bool is_doc_l790_c13 = peek(&(*l)) == '*';
         nesting = 1;
         while ((*((*l)).current) != '\0' && nesting > 0)
         {
@@ -679,77 +675,77 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
         if (nesting > 0)
         {
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l812 = error_token(&(*l), "TLexer::next: Unterminated Pascal-style comment (* *)");
-            return __ret_l812;
+            tmodc__lexer__Lexer__TToken __ret_l809 = error_token(&(*l), "TLexer::next: Unterminated Pascal-style comment (* *)");
+            return __ret_l809;
         }
         /* return value captured before defers */
-        tmodc__lexer__Lexer__TToken __ret_l814 = make_token_len(&(*l), ((is_doc_l793_c13 ? tmodc__lexer__Lexer__TOK_DOC_COMMENT : tmodc__lexer__Lexer__TOK_COMMENT_PASCAL)), start_l644_c11, (size_t)(((*l)).current - start_l644_c11));
-        return __ret_l814;
+        tmodc__lexer__Lexer__TToken __ret_l811 = make_token_len(&(*l), ((is_doc_l790_c13 ? tmodc__lexer__Lexer__TOK_DOC_COMMENT : tmodc__lexer__Lexer__TOK_COMMENT_PASCAL)), start_l641_c11, (size_t)(((*l)).current - start_l641_c11));
+        return __ret_l811;
     }
-    switch (c_l645_c7)
+    switch (c_l642_c7)
     {
         case '(':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l820 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LPAREN, start_l644_c11, 1);
-            return __ret_l820;
+            tmodc__lexer__Lexer__TToken __ret_l817 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LPAREN, start_l641_c11, 1);
+            return __ret_l817;
         }
         break;
         case ')':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l821 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RPAREN, start_l644_c11, 1);
-            return __ret_l821;
+            tmodc__lexer__Lexer__TToken __ret_l818 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RPAREN, start_l641_c11, 1);
+            return __ret_l818;
         }
         break;
         case '{':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l822 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LBRACE, start_l644_c11, 1);
-            return __ret_l822;
+            tmodc__lexer__Lexer__TToken __ret_l819 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LBRACE, start_l641_c11, 1);
+            return __ret_l819;
         }
         break;
         case '}':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l823 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RBRACE, start_l644_c11, 1);
-            return __ret_l823;
+            tmodc__lexer__Lexer__TToken __ret_l820 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RBRACE, start_l641_c11, 1);
+            return __ret_l820;
         }
         break;
         case '[':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l824 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LBRACKET, start_l644_c11, 1);
-            return __ret_l824;
+            tmodc__lexer__Lexer__TToken __ret_l821 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LBRACKET, start_l641_c11, 1);
+            return __ret_l821;
         }
         break;
         case ']':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l825 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RBRACKET, start_l644_c11, 1);
-            return __ret_l825;
+            tmodc__lexer__Lexer__TToken __ret_l822 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RBRACKET, start_l641_c11, 1);
+            return __ret_l822;
         }
         break;
         case ';':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l826 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SEMICOLON, start_l644_c11, 1);
-            return __ret_l826;
+            tmodc__lexer__Lexer__TToken __ret_l823 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SEMICOLON, start_l641_c11, 1);
+            return __ret_l823;
         }
         break;
         case ',':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l827 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COMMA, start_l644_c11, 1);
-            return __ret_l827;
+            tmodc__lexer__Lexer__TToken __ret_l824 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COMMA, start_l641_c11, 1);
+            return __ret_l824;
         }
         break;
         case '+':
@@ -758,14 +754,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l831 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ADD_EQ, start_l644_c11, 2);
-                return __ret_l831;
+                tmodc__lexer__Lexer__TToken __ret_l828 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ADD_EQ, start_l641_c11, 2);
+                return __ret_l828;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l833 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ADD, start_l644_c11, 1);
-                return __ret_l833;
+                tmodc__lexer__Lexer__TToken __ret_l830 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_ADD, start_l641_c11, 1);
+                return __ret_l830;
             }
         }
         break;
@@ -775,14 +771,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l838 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SUB_EQ, start_l644_c11, 2);
-                return __ret_l838;
+                tmodc__lexer__Lexer__TToken __ret_l835 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SUB_EQ, start_l641_c11, 2);
+                return __ret_l835;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l840 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SUB, start_l644_c11, 1);
-                return __ret_l840;
+                tmodc__lexer__Lexer__TToken __ret_l837 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_SUB, start_l641_c11, 1);
+                return __ret_l837;
             }
         }
         break;
@@ -792,18 +788,18 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '*'))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l844 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_POWER, start_l644_c11, 2);
-                return __ret_l844;
+                tmodc__lexer__Lexer__TToken __ret_l841 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_POWER, start_l641_c11, 2);
+                return __ret_l841;
             }
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l845 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MUL_EQ, start_l644_c11, 2);
-                return __ret_l845;
+                tmodc__lexer__Lexer__TToken __ret_l842 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MUL_EQ, start_l641_c11, 2);
+                return __ret_l842;
             }
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l846 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MUL, start_l644_c11, 1);
-            return __ret_l846;
+            tmodc__lexer__Lexer__TToken __ret_l843 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MUL, start_l641_c11, 1);
+            return __ret_l843;
         }
         break;
         case '/':
@@ -812,14 +808,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l850 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DIV_EQ, start_l644_c11, 2);
-                return __ret_l850;
+                tmodc__lexer__Lexer__TToken __ret_l847 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DIV_EQ, start_l641_c11, 2);
+                return __ret_l847;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l852 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DIV, start_l644_c11, 1);
-                return __ret_l852;
+                tmodc__lexer__Lexer__TToken __ret_l849 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DIV, start_l641_c11, 1);
+                return __ret_l849;
             }
         }
         break;
@@ -829,14 +825,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l857 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MOD_EQ, start_l644_c11, 2);
-                return __ret_l857;
+                tmodc__lexer__Lexer__TToken __ret_l854 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MOD_EQ, start_l641_c11, 2);
+                return __ret_l854;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l859 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MOD, start_l644_c11, 1);
-                return __ret_l859;
+                tmodc__lexer__Lexer__TToken __ret_l856 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_MOD, start_l641_c11, 1);
+                return __ret_l856;
             }
         }
         break;
@@ -846,14 +842,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l864 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_EQ_EQ, start_l644_c11, 2);
-                return __ret_l864;
+                tmodc__lexer__Lexer__TToken __ret_l861 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_EQ_EQ, start_l641_c11, 2);
+                return __ret_l861;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l866 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_EQ, start_l644_c11, 1);
-                return __ret_l866;
+                tmodc__lexer__Lexer__TToken __ret_l863 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_EQ, start_l641_c11, 1);
+                return __ret_l863;
             }
         }
         break;
@@ -863,14 +859,14 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l871 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT_EQ, start_l644_c11, 2);
-                return __ret_l871;
+                tmodc__lexer__Lexer__TToken __ret_l868 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT_EQ, start_l641_c11, 2);
+                return __ret_l868;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l873 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT, start_l644_c11, 1);
-                return __ret_l873;
+                tmodc__lexer__Lexer__TToken __ret_l870 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT, start_l641_c11, 1);
+                return __ret_l870;
             }
         }
         break;
@@ -882,33 +878,33 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
                 if (match(&(*l), '='))
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l879 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LSHIFT_EQ, start_l644_c11, 3);
-                    return __ret_l879;
+                    tmodc__lexer__Lexer__TToken __ret_l876 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LSHIFT_EQ, start_l641_c11, 3);
+                    return __ret_l876;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l881 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_LSHIFT, start_l644_c11, 2);
-                    return __ret_l881;
+                    tmodc__lexer__Lexer__TToken __ret_l878 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_LSHIFT, start_l641_c11, 2);
+                    return __ret_l878;
                 }
             }
             else if (match(&(*l), '>'))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l884 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT_EQ, start_l644_c11, 2);
-                return __ret_l884;
+                tmodc__lexer__Lexer__TToken __ret_l881 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_NOT_EQ, start_l641_c11, 2);
+                return __ret_l881;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l886 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LESS_EQ, start_l644_c11, 2);
-                return __ret_l886;
+                tmodc__lexer__Lexer__TToken __ret_l883 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LESS_EQ, start_l641_c11, 2);
+                return __ret_l883;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l888 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LESS, start_l644_c11, 1);
-                return __ret_l888;
+                tmodc__lexer__Lexer__TToken __ret_l885 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_LESS, start_l641_c11, 1);
+                return __ret_l885;
             }
         }
         break;
@@ -920,27 +916,27 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
                 if (match(&(*l), '='))
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l894 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RSHIFT_EQ, start_l644_c11, 3);
-                    return __ret_l894;
+                    tmodc__lexer__Lexer__TToken __ret_l891 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_RSHIFT_EQ, start_l641_c11, 3);
+                    return __ret_l891;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l896 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_RSHIFT, start_l644_c11, 2);
-                    return __ret_l896;
+                    tmodc__lexer__Lexer__TToken __ret_l893 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_RSHIFT, start_l641_c11, 2);
+                    return __ret_l893;
                 }
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l899 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_GREATER_EQ, start_l644_c11, 2);
-                return __ret_l899;
+                tmodc__lexer__Lexer__TToken __ret_l896 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_GREATER_EQ, start_l641_c11, 2);
+                return __ret_l896;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l901 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_GREATER, start_l644_c11, 1);
-                return __ret_l901;
+                tmodc__lexer__Lexer__TToken __ret_l898 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_GREATER, start_l641_c11, 1);
+                return __ret_l898;
             }
         }
         break;
@@ -950,20 +946,20 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), ':'))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l906 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON_COLON, start_l644_c11, 2);
-                return __ret_l906;
+                tmodc__lexer__Lexer__TToken __ret_l903 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON_COLON, start_l641_c11, 2);
+                return __ret_l903;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l908 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON_EQ, start_l644_c11, 2);
-                return __ret_l908;
+                tmodc__lexer__Lexer__TToken __ret_l905 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON_EQ, start_l641_c11, 2);
+                return __ret_l905;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l910 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON, start_l644_c11, 1);
-                return __ret_l910;
+                tmodc__lexer__Lexer__TToken __ret_l907 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_COLON, start_l641_c11, 1);
+                return __ret_l907;
             }
         }
         break;
@@ -975,21 +971,21 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
                 if (match(&(*l), '.'))
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l916 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT_DOT_DOT, start_l644_c11, 3);
-                    return __ret_l916;
+                    tmodc__lexer__Lexer__TToken __ret_l913 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT_DOT_DOT, start_l641_c11, 3);
+                    return __ret_l913;
                 }
                 else
                 {
                     /* return value captured before defers */
-                    tmodc__lexer__Lexer__TToken __ret_l918 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT_DOT, start_l644_c11, 2);
-                    return __ret_l918;
+                    tmodc__lexer__Lexer__TToken __ret_l915 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT_DOT, start_l641_c11, 2);
+                    return __ret_l915;
                 }
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l921 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT, start_l644_c11, 1);
-                return __ret_l921;
+                tmodc__lexer__Lexer__TToken __ret_l918 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_DOT, start_l641_c11, 1);
+                return __ret_l918;
             }
         }
         break;
@@ -999,20 +995,20 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '&'))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l926 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_KEYWORD_AND, start_l644_c11, 2);
-                return __ret_l926;
+                tmodc__lexer__Lexer__TToken __ret_l923 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_KEYWORD_AND, start_l641_c11, 2);
+                return __ret_l923;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l928 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_AND_EQ, start_l644_c11, 2);
-                return __ret_l928;
+                tmodc__lexer__Lexer__TToken __ret_l925 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_AND_EQ, start_l641_c11, 2);
+                return __ret_l925;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l930 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_AND, start_l644_c11, 1);
-                return __ret_l930;
+                tmodc__lexer__Lexer__TToken __ret_l927 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_AND, start_l641_c11, 1);
+                return __ret_l927;
             }
         }
         break;
@@ -1022,20 +1018,20 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
             if (match(&(*l), '|'))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l935 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_KEYWORD_OR, start_l644_c11, 2);
-                return __ret_l935;
+                tmodc__lexer__Lexer__TToken __ret_l932 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_KEYWORD_OR, start_l641_c11, 2);
+                return __ret_l932;
             }
             else if (match(&(*l), '='))
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l937 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_OR_EQ, start_l644_c11, 2);
-                return __ret_l937;
+                tmodc__lexer__Lexer__TToken __ret_l934 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_OR_EQ, start_l641_c11, 2);
+                return __ret_l934;
             }
             else
             {
                 /* return value captured before defers */
-                tmodc__lexer__Lexer__TToken __ret_l939 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_OR, start_l644_c11, 1);
-                return __ret_l939;
+                tmodc__lexer__Lexer__TToken __ret_l936 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_OR, start_l641_c11, 1);
+                return __ret_l936;
             }
         }
         break;
@@ -1043,40 +1039,40 @@ tmodc__lexer__Lexer__TToken tmodc__lexer__Lexer__TLexer__next(tmodc__lexer__Lexe
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l941 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_CARET, start_l644_c11, 1);
-            return __ret_l941;
+            tmodc__lexer__Lexer__TToken __ret_l938 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_CARET, start_l641_c11, 1);
+            return __ret_l938;
         }
         break;
         case '~':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l942 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_NOT, start_l644_c11, 1);
-            return __ret_l942;
+            tmodc__lexer__Lexer__TToken __ret_l939 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_BITWISE_NOT, start_l641_c11, 1);
+            return __ret_l939;
         }
         break;
         case '?':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l943 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_QUESTION, start_l644_c11, 1);
-            return __ret_l943;
+            tmodc__lexer__Lexer__TToken __ret_l940 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_QUESTION, start_l641_c11, 1);
+            return __ret_l940;
         }
         break;
         case '@':
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l944 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_AT, start_l644_c11, 1);
-            return __ret_l944;
+            tmodc__lexer__Lexer__TToken __ret_l941 = make_token_len(&(*l), tmodc__lexer__Lexer__TOK_AT, start_l641_c11, 1);
+            return __ret_l941;
         }
         break;
         default:
         {
             advance(&(*l));
             /* return value captured before defers */
-            tmodc__lexer__Lexer__TToken __ret_l948 = error_token(&(*l), "TLexer::next: Unexpected character");
-            return __ret_l948;
+            tmodc__lexer__Lexer__TToken __ret_l945 = error_token(&(*l), "TLexer::next: Unexpected character");
+            return __ret_l945;
         }
         break;
     }
@@ -1092,897 +1088,897 @@ const char* tmodc__lexer__Lexer__TokenKind__to_string(const tmodc__lexer__Lexer_
         case tmodc__lexer__Lexer__TOK_EOF:
         {
             /* return value captured before defers */
-            const char* __ret_l959 = "EOF";
-            return __ret_l959;
+            const char* __ret_l956 = "EOF";
+            return __ret_l956;
         }
         break;
         case tmodc__lexer__Lexer__TOK_IDENT:
         {
             /* return value captured before defers */
-            const char* __ret_l960 = "IDENT";
-            return __ret_l960;
+            const char* __ret_l957 = "IDENT";
+            return __ret_l957;
         }
         break;
         case tmodc__lexer__Lexer__TOK_NUMBER:
         {
             /* return value captured before defers */
-            const char* __ret_l961 = "NUMBER";
-            return __ret_l961;
+            const char* __ret_l958 = "NUMBER";
+            return __ret_l958;
         }
         break;
         case tmodc__lexer__Lexer__TOK_REAL:
         {
             /* return value captured before defers */
-            const char* __ret_l962 = "REAL";
-            return __ret_l962;
+            const char* __ret_l959 = "REAL";
+            return __ret_l959;
         }
         break;
         case tmodc__lexer__Lexer__TOK_CHAR:
         {
             /* return value captured before defers */
-            const char* __ret_l963 = "CHAR";
-            return __ret_l963;
+            const char* __ret_l960 = "CHAR";
+            return __ret_l960;
         }
         break;
         case tmodc__lexer__Lexer__TOK_STRING:
         {
             /* return value captured before defers */
-            const char* __ret_l964 = "STRING";
-            return __ret_l964;
+            const char* __ret_l961 = "STRING";
+            return __ret_l961;
         }
         break;
         case tmodc__lexer__Lexer__TOK_PREPROCESSOR:
         {
             /* return value captured before defers */
-            const char* __ret_l965 = "PREPROC";
-            return __ret_l965;
+            const char* __ret_l962 = "PREPROC";
+            return __ret_l962;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COMMENT:
         {
             /* return value captured before defers */
-            const char* __ret_l966 = "COMMENT";
-            return __ret_l966;
+            const char* __ret_l963 = "COMMENT";
+            return __ret_l963;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COMMENT_SINGLE:
         {
             /* return value captured before defers */
-            const char* __ret_l967 = "// COMMENT";
-            return __ret_l967;
+            const char* __ret_l964 = "// COMMENT";
+            return __ret_l964;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COMMENT_MULTI:
         {
             /* return value captured before defers */
-            const char* __ret_l968 = "/* COMMENT */";
-            return __ret_l968;
+            const char* __ret_l965 = "/* COMMENT */";
+            return __ret_l965;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COMMENT_PASCAL:
         {
             /* return value captured before defers */
-            const char* __ret_l969 = "(* COMMENT *)";
-            return __ret_l969;
+            const char* __ret_l966 = "(* COMMENT *)";
+            return __ret_l966;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DOC_COMMENT:
         {
             /* return value captured before defers */
-            const char* __ret_l970 = "/** DOC COMMENT */";
-            return __ret_l970;
+            const char* __ret_l967 = "/** DOC COMMENT */";
+            return __ret_l967;
         }
         break;
         case tmodc__lexer__Lexer__TOK_NEWLINE:
         {
             /* return value captured before defers */
-            const char* __ret_l971 = "NEWLINE";
-            return __ret_l971;
+            const char* __ret_l968 = "NEWLINE";
+            return __ret_l968;
         }
         break;
         case tmodc__lexer__Lexer__TOK_SEMICOLON:
         {
             /* return value captured before defers */
-            const char* __ret_l972 = ";";
-            return __ret_l972;
+            const char* __ret_l969 = ";";
+            return __ret_l969;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COLON:
         {
             /* return value captured before defers */
-            const char* __ret_l973 = ":";
-            return __ret_l973;
+            const char* __ret_l970 = ":";
+            return __ret_l970;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COLON_COLON:
         {
             /* return value captured before defers */
-            const char* __ret_l974 = "::";
-            return __ret_l974;
+            const char* __ret_l971 = "::";
+            return __ret_l971;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COLON_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l975 = ":=";
-            return __ret_l975;
+            const char* __ret_l972 = ":=";
+            return __ret_l972;
         }
         break;
         case tmodc__lexer__Lexer__TOK_COMMA:
         {
             /* return value captured before defers */
-            const char* __ret_l976 = ",";
-            return __ret_l976;
+            const char* __ret_l973 = ",";
+            return __ret_l973;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LPAREN:
         {
             /* return value captured before defers */
-            const char* __ret_l977 = "(";
-            return __ret_l977;
+            const char* __ret_l974 = "(";
+            return __ret_l974;
         }
         break;
         case tmodc__lexer__Lexer__TOK_RPAREN:
         {
             /* return value captured before defers */
-            const char* __ret_l978 = ")";
-            return __ret_l978;
+            const char* __ret_l975 = ")";
+            return __ret_l975;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LBRACKET:
         {
             /* return value captured before defers */
-            const char* __ret_l979 = "[";
-            return __ret_l979;
+            const char* __ret_l976 = "[";
+            return __ret_l976;
         }
         break;
         case tmodc__lexer__Lexer__TOK_RBRACKET:
         {
             /* return value captured before defers */
-            const char* __ret_l980 = "]";
-            return __ret_l980;
+            const char* __ret_l977 = "]";
+            return __ret_l977;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LBRACE:
         {
             /* return value captured before defers */
-            const char* __ret_l981 = "{";
-            return __ret_l981;
+            const char* __ret_l978 = "{";
+            return __ret_l978;
         }
         break;
         case tmodc__lexer__Lexer__TOK_RBRACE:
         {
             /* return value captured before defers */
-            const char* __ret_l982 = "}";
-            return __ret_l982;
+            const char* __ret_l979 = "}";
+            return __ret_l979;
         }
         break;
         case tmodc__lexer__Lexer__TOK_QUESTION:
         {
             /* return value captured before defers */
-            const char* __ret_l983 = "?";
-            return __ret_l983;
+            const char* __ret_l980 = "?";
+            return __ret_l980;
         }
         break;
         case tmodc__lexer__Lexer__TOK_ADD:
         {
             /* return value captured before defers */
-            const char* __ret_l984 = "+";
-            return __ret_l984;
+            const char* __ret_l981 = "+";
+            return __ret_l981;
         }
         break;
         case tmodc__lexer__Lexer__TOK_SUB:
         {
             /* return value captured before defers */
-            const char* __ret_l985 = "-";
-            return __ret_l985;
+            const char* __ret_l982 = "-";
+            return __ret_l982;
         }
         break;
         case tmodc__lexer__Lexer__TOK_MUL:
         {
             /* return value captured before defers */
-            const char* __ret_l986 = "*";
-            return __ret_l986;
+            const char* __ret_l983 = "*";
+            return __ret_l983;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DIV:
         {
             /* return value captured before defers */
-            const char* __ret_l987 = "/";
-            return __ret_l987;
+            const char* __ret_l984 = "/";
+            return __ret_l984;
         }
         break;
         case tmodc__lexer__Lexer__TOK_MOD:
         {
             /* return value captured before defers */
-            const char* __ret_l988 = "%";
-            return __ret_l988;
+            const char* __ret_l985 = "%";
+            return __ret_l985;
         }
         break;
         case tmodc__lexer__Lexer__TOK_CARET:
         {
             /* return value captured before defers */
-            const char* __ret_l989 = "^";
-            return __ret_l989;
+            const char* __ret_l986 = "^";
+            return __ret_l986;
         }
         break;
         case tmodc__lexer__Lexer__TOK_AT:
         {
             /* return value captured before defers */
-            const char* __ret_l990 = "@";
-            return __ret_l990;
+            const char* __ret_l987 = "@";
+            return __ret_l987;
         }
         break;
         case tmodc__lexer__Lexer__TOK_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l991 = "=";
-            return __ret_l991;
+            const char* __ret_l988 = "=";
+            return __ret_l988;
         }
         break;
         case tmodc__lexer__Lexer__TOK_EQ_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l992 = "==";
-            return __ret_l992;
+            const char* __ret_l989 = "==";
+            return __ret_l989;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LESS_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l993 = "<=";
-            return __ret_l993;
+            const char* __ret_l990 = "<=";
+            return __ret_l990;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LESS:
         {
             /* return value captured before defers */
-            const char* __ret_l994 = "<";
-            return __ret_l994;
+            const char* __ret_l991 = "<";
+            return __ret_l991;
         }
         break;
         case tmodc__lexer__Lexer__TOK_GREATER_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l995 = ">=";
-            return __ret_l995;
+            const char* __ret_l992 = ">=";
+            return __ret_l992;
         }
         break;
         case tmodc__lexer__Lexer__TOK_GREATER:
         {
             /* return value captured before defers */
-            const char* __ret_l996 = ">";
-            return __ret_l996;
+            const char* __ret_l993 = ">";
+            return __ret_l993;
         }
         break;
         case tmodc__lexer__Lexer__TOK_NOT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l997 = "!=";
-            return __ret_l997;
+            const char* __ret_l994 = "!=";
+            return __ret_l994;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l998 = ".";
-            return __ret_l998;
+            const char* __ret_l995 = ".";
+            return __ret_l995;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DOT_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l999 = "..";
-            return __ret_l999;
+            const char* __ret_l996 = "..";
+            return __ret_l996;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DOT_DOT_DOT:
         {
             /* return value captured before defers */
-            const char* __ret_l1000 = "...";
-            return __ret_l1000;
+            const char* __ret_l997 = "...";
+            return __ret_l997;
         }
         break;
         case tmodc__lexer__Lexer__TOK_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l1001 = "!";
-            return __ret_l1001;
+            const char* __ret_l998 = "!";
+            return __ret_l998;
         }
         break;
         case tmodc__lexer__Lexer__TOK_POWER:
         {
             /* return value captured before defers */
-            const char* __ret_l1002 = "**";
-            return __ret_l1002;
+            const char* __ret_l999 = "**";
+            return __ret_l999;
         }
         break;
         case tmodc__lexer__Lexer__TOK_MUL_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1003 = "*=";
-            return __ret_l1003;
+            const char* __ret_l1000 = "*=";
+            return __ret_l1000;
         }
         break;
         case tmodc__lexer__Lexer__TOK_DIV_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1004 = "/=";
-            return __ret_l1004;
+            const char* __ret_l1001 = "/=";
+            return __ret_l1001;
         }
         break;
         case tmodc__lexer__Lexer__TOK_MOD_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1005 = "%=";
-            return __ret_l1005;
+            const char* __ret_l1002 = "%=";
+            return __ret_l1002;
         }
         break;
         case tmodc__lexer__Lexer__TOK_ADD_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1006 = "+=";
-            return __ret_l1006;
+            const char* __ret_l1003 = "+=";
+            return __ret_l1003;
         }
         break;
         case tmodc__lexer__Lexer__TOK_SUB_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1007 = "-=";
-            return __ret_l1007;
+            const char* __ret_l1004 = "-=";
+            return __ret_l1004;
         }
         break;
         case tmodc__lexer__Lexer__TOK_LSHIFT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1008 = "<<=";
-            return __ret_l1008;
+            const char* __ret_l1005 = "<<=";
+            return __ret_l1005;
         }
         break;
         case tmodc__lexer__Lexer__TOK_RSHIFT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1009 = ">>=";
-            return __ret_l1009;
+            const char* __ret_l1006 = ">>=";
+            return __ret_l1006;
         }
         break;
         case tmodc__lexer__Lexer__TOK_AND_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1010 = "&=";
-            return __ret_l1010;
+            const char* __ret_l1007 = "&=";
+            return __ret_l1007;
         }
         break;
         case tmodc__lexer__Lexer__TOK_OR_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1011 = "|=";
-            return __ret_l1011;
+            const char* __ret_l1008 = "|=";
+            return __ret_l1008;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_NOT_EQ:
         {
             /* return value captured before defers */
-            const char* __ret_l1012 = "~|";
-            return __ret_l1012;
+            const char* __ret_l1009 = "~|";
+            return __ret_l1009;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_BEGIN:
         {
             /* return value captured before defers */
-            const char* __ret_l1013 = "BEGIN";
-            return __ret_l1013;
+            const char* __ret_l1010 = "BEGIN";
+            return __ret_l1010;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_END:
         {
             /* return value captured before defers */
-            const char* __ret_l1014 = "END";
-            return __ret_l1014;
+            const char* __ret_l1011 = "END";
+            return __ret_l1011;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_IF:
         {
             /* return value captured before defers */
-            const char* __ret_l1015 = "IF";
-            return __ret_l1015;
+            const char* __ret_l1012 = "IF";
+            return __ret_l1012;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_THEN:
         {
             /* return value captured before defers */
-            const char* __ret_l1016 = "THEN";
-            return __ret_l1016;
+            const char* __ret_l1013 = "THEN";
+            return __ret_l1013;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ELSE:
         {
             /* return value captured before defers */
-            const char* __ret_l1017 = "ELSE";
-            return __ret_l1017;
+            const char* __ret_l1014 = "ELSE";
+            return __ret_l1014;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ELSIF:
         {
             /* return value captured before defers */
-            const char* __ret_l1018 = "ELSIF";
-            return __ret_l1018;
+            const char* __ret_l1015 = "ELSIF";
+            return __ret_l1015;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_FOR:
         {
             /* return value captured before defers */
-            const char* __ret_l1019 = "FOR";
-            return __ret_l1019;
+            const char* __ret_l1016 = "FOR";
+            return __ret_l1016;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_TO:
         {
             /* return value captured before defers */
-            const char* __ret_l1020 = "TO";
-            return __ret_l1020;
+            const char* __ret_l1017 = "TO";
+            return __ret_l1017;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_BY:
         {
             /* return value captured before defers */
-            const char* __ret_l1021 = "BY";
-            return __ret_l1021;
+            const char* __ret_l1018 = "BY";
+            return __ret_l1018;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_BOUND:
         {
             /* return value captured before defers */
-            const char* __ret_l1022 = "BOUND";
-            return __ret_l1022;
+            const char* __ret_l1019 = "BOUND";
+            return __ret_l1019;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DO:
         {
             /* return value captured before defers */
-            const char* __ret_l1023 = "DO";
-            return __ret_l1023;
+            const char* __ret_l1020 = "DO";
+            return __ret_l1020;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DOWNTO:
         {
             /* return value captured before defers */
-            const char* __ret_l1024 = "DOWNTO";
-            return __ret_l1024;
+            const char* __ret_l1021 = "DOWNTO";
+            return __ret_l1021;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_PROGRAM:
         {
             /* return value captured before defers */
-            const char* __ret_l1025 = "PROGRAM";
-            return __ret_l1025;
+            const char* __ret_l1022 = "PROGRAM";
+            return __ret_l1022;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_MODULE:
         {
             /* return value captured before defers */
-            const char* __ret_l1026 = "MODULE";
-            return __ret_l1026;
+            const char* __ret_l1023 = "MODULE";
+            return __ret_l1023;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_HEADER:
         {
             /* return value captured before defers */
-            const char* __ret_l1027 = "HEADER";
-            return __ret_l1027;
+            const char* __ret_l1024 = "HEADER";
+            return __ret_l1024;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_IMPORT:
         {
             /* return value captured before defers */
-            const char* __ret_l1028 = "IMPORT";
-            return __ret_l1028;
+            const char* __ret_l1025 = "IMPORT";
+            return __ret_l1025;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_FROM:
         {
             /* return value captured before defers */
-            const char* __ret_l1029 = "FROM";
-            return __ret_l1029;
+            const char* __ret_l1026 = "FROM";
+            return __ret_l1026;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_PROCEDURE:
         {
             /* return value captured before defers */
-            const char* __ret_l1030 = "PROCEDURE";
-            return __ret_l1030;
+            const char* __ret_l1027 = "PROCEDURE";
+            return __ret_l1027;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_FUNCTION:
         {
             /* return value captured before defers */
-            const char* __ret_l1031 = "FUNCTION";
-            return __ret_l1031;
+            const char* __ret_l1028 = "FUNCTION";
+            return __ret_l1028;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_FORWARD:
         {
             /* return value captured before defers */
-            const char* __ret_l1032 = "FORWARD";
-            return __ret_l1032;
+            const char* __ret_l1029 = "FORWARD";
+            return __ret_l1029;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_EXPORT:
         {
             /* return value captured before defers */
-            const char* __ret_l1033 = "EXPORT";
-            return __ret_l1033;
+            const char* __ret_l1030 = "EXPORT";
+            return __ret_l1030;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_VAR:
         {
             /* return value captured before defers */
-            const char* __ret_l1034 = "VAR";
-            return __ret_l1034;
+            const char* __ret_l1031 = "VAR";
+            return __ret_l1031;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_COUNTOF:
         {
             /* return value captured before defers */
-            const char* __ret_l1035 = "COUNTOF";
-            return __ret_l1035;
+            const char* __ret_l1032 = "COUNTOF";
+            return __ret_l1032;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_LET:
         {
             /* return value captured before defers */
-            const char* __ret_l1036 = "LET";
-            return __ret_l1036;
+            const char* __ret_l1033 = "LET";
+            return __ret_l1033;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_CONST:
         {
             /* return value captured before defers */
-            const char* __ret_l1037 = "CONST";
-            return __ret_l1037;
+            const char* __ret_l1034 = "CONST";
+            return __ret_l1034;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_WHILE:
         {
             /* return value captured before defers */
-            const char* __ret_l1038 = "WHILE";
-            return __ret_l1038;
+            const char* __ret_l1035 = "WHILE";
+            return __ret_l1035;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_LOOP:
         {
             /* return value captured before defers */
-            const char* __ret_l1039 = "LOOP";
-            return __ret_l1039;
+            const char* __ret_l1036 = "LOOP";
+            return __ret_l1036;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_REPEAT:
         {
             /* return value captured before defers */
-            const char* __ret_l1040 = "REPEAT";
-            return __ret_l1040;
+            const char* __ret_l1037 = "REPEAT";
+            return __ret_l1037;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_UNTIL:
         {
             /* return value captured before defers */
-            const char* __ret_l1041 = "UNTIL";
-            return __ret_l1041;
+            const char* __ret_l1038 = "UNTIL";
+            return __ret_l1038;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_INC:
         {
             /* return value captured before defers */
-            const char* __ret_l1042 = "INC";
-            return __ret_l1042;
+            const char* __ret_l1039 = "INC";
+            return __ret_l1039;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DEC:
         {
             /* return value captured before defers */
-            const char* __ret_l1043 = "DEC";
-            return __ret_l1043;
+            const char* __ret_l1040 = "DEC";
+            return __ret_l1040;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_TYPE:
         {
             /* return value captured before defers */
-            const char* __ret_l1044 = "TYPE";
-            return __ret_l1044;
+            const char* __ret_l1041 = "TYPE";
+            return __ret_l1041;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_AS:
         {
             /* return value captured before defers */
-            const char* __ret_l1045 = "AS";
-            return __ret_l1045;
+            const char* __ret_l1042 = "AS";
+            return __ret_l1042;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_CAST:
         {
             /* return value captured before defers */
-            const char* __ret_l1046 = "CAST";
-            return __ret_l1046;
+            const char* __ret_l1043 = "CAST";
+            return __ret_l1043;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DIV:
         {
             /* return value captured before defers */
-            const char* __ret_l1047 = "DIV";
-            return __ret_l1047;
+            const char* __ret_l1044 = "DIV";
+            return __ret_l1044;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_MOD:
         {
             /* return value captured before defers */
-            const char* __ret_l1048 = "MOD";
-            return __ret_l1048;
+            const char* __ret_l1045 = "MOD";
+            return __ret_l1045;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_XOR:
         {
             /* return value captured before defers */
-            const char* __ret_l1049 = "XOR";
-            return __ret_l1049;
+            const char* __ret_l1046 = "XOR";
+            return __ret_l1046;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_AND:
         {
             /* return value captured before defers */
-            const char* __ret_l1050 = "AND";
-            return __ret_l1050;
+            const char* __ret_l1047 = "AND";
+            return __ret_l1047;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_OF:
         {
             /* return value captured before defers */
-            const char* __ret_l1051 = "OF";
-            return __ret_l1051;
+            const char* __ret_l1048 = "OF";
+            return __ret_l1048;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_OR:
         {
             /* return value captured before defers */
-            const char* __ret_l1052 = "OR";
-            return __ret_l1052;
+            const char* __ret_l1049 = "OR";
+            return __ret_l1049;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l1053 = "NOT";
-            return __ret_l1053;
+            const char* __ret_l1050 = "NOT";
+            return __ret_l1050;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_REQUIRE:
         {
             /* return value captured before defers */
-            const char* __ret_l1054 = "REQUIRE";
-            return __ret_l1054;
+            const char* __ret_l1051 = "REQUIRE";
+            return __ret_l1051;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ENSURE:
         {
             /* return value captured before defers */
-            const char* __ret_l1055 = "ENSURE";
-            return __ret_l1055;
+            const char* __ret_l1052 = "ENSURE";
+            return __ret_l1052;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_INVARIANT:
         {
             /* return value captured before defers */
-            const char* __ret_l1056 = "INVARIANT";
-            return __ret_l1056;
+            const char* __ret_l1053 = "INVARIANT";
+            return __ret_l1053;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_SWITCH:
         {
             /* return value captured before defers */
-            const char* __ret_l1057 = "SWITCH";
-            return __ret_l1057;
+            const char* __ret_l1054 = "SWITCH";
+            return __ret_l1054;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_CASE:
         {
             /* return value captured before defers */
-            const char* __ret_l1058 = "CASE";
-            return __ret_l1058;
+            const char* __ret_l1055 = "CASE";
+            return __ret_l1055;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DEFAULT:
         {
             /* return value captured before defers */
-            const char* __ret_l1059 = "DEFAULT";
-            return __ret_l1059;
+            const char* __ret_l1056 = "DEFAULT";
+            return __ret_l1056;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_BREAK:
         {
             /* return value captured before defers */
-            const char* __ret_l1060 = "BREAK";
-            return __ret_l1060;
+            const char* __ret_l1057 = "BREAK";
+            return __ret_l1057;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_CONTINUE:
         {
             /* return value captured before defers */
-            const char* __ret_l1061 = "CONTINUE";
-            return __ret_l1061;
+            const char* __ret_l1058 = "CONTINUE";
+            return __ret_l1058;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_RETURN:
         {
             /* return value captured before defers */
-            const char* __ret_l1062 = "RETURN";
-            return __ret_l1062;
+            const char* __ret_l1059 = "RETURN";
+            return __ret_l1059;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DEFER:
         {
             /* return value captured before defers */
-            const char* __ret_l1063 = "DEFER";
-            return __ret_l1063;
+            const char* __ret_l1060 = "DEFER";
+            return __ret_l1060;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DEBUG:
         {
             /* return value captured before defers */
-            const char* __ret_l1064 = "DEBUG";
-            return __ret_l1064;
+            const char* __ret_l1061 = "DEBUG";
+            return __ret_l1061;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_RECURSIVE:
         {
             /* return value captured before defers */
-            const char* __ret_l1065 = "RECURSIVE";
-            return __ret_l1065;
+            const char* __ret_l1062 = "RECURSIVE";
+            return __ret_l1062;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_STRUCT:
         {
             /* return value captured before defers */
-            const char* __ret_l1066 = "STRUCT";
-            return __ret_l1066;
+            const char* __ret_l1063 = "STRUCT";
+            return __ret_l1063;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_EXTENDS:
         {
             /* return value captured before defers */
-            const char* __ret_l1067 = "EXTENDS";
-            return __ret_l1067;
+            const char* __ret_l1064 = "EXTENDS";
+            return __ret_l1064;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ARRAY:
         {
             /* return value captured before defers */
-            const char* __ret_l1070 = "ARRAY";
-            return __ret_l1070;
+            const char* __ret_l1067 = "ARRAY";
+            return __ret_l1067;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_POINTER:
         {
             /* return value captured before defers */
-            const char* __ret_l1071 = "POINTER";
-            return __ret_l1071;
+            const char* __ret_l1068 = "POINTER";
+            return __ret_l1068;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_OPAQUE:
         {
             /* return value captured before defers */
-            const char* __ret_l1072 = "OPAQUE";
-            return __ret_l1072;
+            const char* __ret_l1069 = "OPAQUE";
+            return __ret_l1069;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_REF:
         {
             /* return value captured before defers */
-            const char* __ret_l1073 = "REF";
-            return __ret_l1073;
+            const char* __ret_l1070 = "REF";
+            return __ret_l1070;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_IN:
         {
             /* return value captured before defers */
-            const char* __ret_l1074 = "IN";
-            return __ret_l1074;
+            const char* __ret_l1071 = "IN";
+            return __ret_l1071;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ENUM:
         {
             /* return value captured before defers */
-            const char* __ret_l1076 = "ENUM";
-            return __ret_l1076;
+            const char* __ret_l1073 = "ENUM";
+            return __ret_l1073;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_ASSERT:
         {
             /* return value captured before defers */
-            const char* __ret_l1077 = "ASSERT";
-            return __ret_l1077;
+            const char* __ret_l1074 = "ASSERT";
+            return __ret_l1074;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_SIZEOF:
         {
             /* return value captured before defers */
-            const char* __ret_l1078 = "SIZEOF";
-            return __ret_l1078;
+            const char* __ret_l1075 = "SIZEOF";
+            return __ret_l1075;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_EXTERN:
         {
             /* return value captured before defers */
-            const char* __ret_l1079 = "EXTERN";
-            return __ret_l1079;
+            const char* __ret_l1076 = "EXTERN";
+            return __ret_l1076;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_STATIC:
         {
             /* return value captured before defers */
-            const char* __ret_l1080 = "STATIC";
-            return __ret_l1080;
+            const char* __ret_l1077 = "STATIC";
+            return __ret_l1077;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_PACKED:
         {
             /* return value captured before defers */
-            const char* __ret_l1081 = "PACKED";
-            return __ret_l1081;
+            const char* __ret_l1078 = "PACKED";
+            return __ret_l1078;
         }
         break;
         case tmodc__lexer__Lexer__TOK_KEYWORD_DEFINE:
         {
             /* return value captured before defers */
-            const char* __ret_l1082 = "DEFINE";
-            return __ret_l1082;
+            const char* __ret_l1079 = "DEFINE";
+            return __ret_l1079;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_AND:
         {
             /* return value captured before defers */
-            const char* __ret_l1083 = "&";
-            return __ret_l1083;
+            const char* __ret_l1080 = "&";
+            return __ret_l1080;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_OR:
         {
             /* return value captured before defers */
-            const char* __ret_l1084 = "|";
-            return __ret_l1084;
+            const char* __ret_l1081 = "|";
+            return __ret_l1081;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_NOT:
         {
             /* return value captured before defers */
-            const char* __ret_l1085 = "~";
-            return __ret_l1085;
+            const char* __ret_l1082 = "~";
+            return __ret_l1082;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_LSHIFT:
         {
             /* return value captured before defers */
-            const char* __ret_l1086 = "<<";
-            return __ret_l1086;
+            const char* __ret_l1083 = "<<";
+            return __ret_l1083;
         }
         break;
         case tmodc__lexer__Lexer__TOK_BITWISE_RSHIFT:
         {
             /* return value captured before defers */
-            const char* __ret_l1087 = ">>";
-            return __ret_l1087;
+            const char* __ret_l1084 = ">>";
+            return __ret_l1084;
         }
         break;
         case tmodc__lexer__Lexer__TOK_ERROR:
         {
             /* return value captured before defers */
-            const char* __ret_l1088 = "ERROR";
-            return __ret_l1088;
+            const char* __ret_l1085 = "ERROR";
+            return __ret_l1085;
         }
         break;
         default:
         {
             /* return value captured before defers */
-            const char* __ret_l1089 = "UNKNOWN";
-            return __ret_l1089;
+            const char* __ret_l1086 = "UNKNOWN";
+            return __ret_l1086;
         }
         break;
     }
@@ -1993,8 +1989,8 @@ const char* tmodc__lexer__Lexer__TokenKind__to_string(const tmodc__lexer__Lexer_
  */
 void tmodc__lexer__Lexer__TToken__print(tmodc__lexer__Lexer__TToken* t)
 {
-    const char* kind_name_l1104_c15 = tmodc__lexer__Lexer__TokenKind__to_string(((*t)).kind);
-    printf("Token { kind: '%-12s', line: %3d, column: %3d, ", kind_name_l1104_c15, ((*t)).line, ((*t)).column);
+    const char* kind_name_l1101_c15 = tmodc__lexer__Lexer__TokenKind__to_string(((*t)).kind);
+    printf("Token { kind: '%-12s', line: %3d, column: %3d, ", kind_name_l1101_c15, ((*t)).line, ((*t)).column);
     if (((*t)).length > 0 && ((*t)).start != nil)
     {
         printf("text: '%.*s', ", (int)((*t)).length, ((*t)).start);

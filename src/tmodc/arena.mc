@@ -11,11 +11,10 @@ module tmodc.arena()
  * Old bug: single-slab realloc invalidated interior pointers (AST, symtab).
  *)
 
+import size_t, calloc, free, exit, memset, memcpy, strlen, memcmp, fprintf, 
+	from System
 
-import size_t, void from "stddef.h"
-import memset, memcpy, strlen, memcmp, strchr, memchr, from "string.h"
-import calloc, free, exit from "stdlib.h"
-import fprintf, stderr from "stdio.h"
+import stderr from "stdio.h"
 
 
 const ARENA_ALIGNMENT: cardinal = 8
@@ -23,7 +22,7 @@ const ARENA_MIN_SIZE: cardinal = 1_048_576		// Default / first chunk floor
 // const ARENA_MIN_SIZE: cardinal = 16_384			// Debug value
 
 export type pchar = ^char
-export type pvoid = ^void
+export type pvoid = ^opaque
 export type ppvoid = ^pvoid
 
 

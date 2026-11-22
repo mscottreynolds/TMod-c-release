@@ -8,10 +8,8 @@ module tmodc.semantic.symtab()
  *)
 
 
-import size_t from "stddef.h"
-import stderr, fprintf, from "stdio.h"
-import exit from "stdlib.h"
-import memcmp from "string.h"
+import size_t, fprintf, exit, memcmp, from System
+import stderr, from "stdio.h"
 
 import Arena, pvoid, ppvoid, arena_alloc, arena_append_ptr 
 	from tmodc.arena

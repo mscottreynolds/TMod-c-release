@@ -35,16 +35,10 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "stdio.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
-
-/* === IMPORT === */
-#include "string.h"
 
 /* === IMPORT === */
 #include "parser/parser_common.h"
@@ -56,7 +50,7 @@ typedef float real;
 #include "node.h"
 
 /* === IMPORT === */
-#include "version.h"
+#include "../version.h"
 
 /* === IMPORT === */
 #include "codegen/codegen.h"

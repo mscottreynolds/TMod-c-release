@@ -14,10 +14,8 @@ void tmodc__dynbuf(void);
  *
  * dynbuf.c - Dynamic null-terminated string buffer with exponential growth.
  */
-#include "stddef.h"
+#include "../System.h"
 #include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 /**
  * Dynamic string buffer with exponential growth and null-termination.
  * All functions maintain null-termination (data[used] == '\0').
@@ -57,8 +55,8 @@ void tmodc__dynbuf__dynbuf_appendn(tmodc__dynbuf__DynBuf* b, const char* str, si
         fprintf(stderr, "ERROR: dynbuf_appendn: invalid argument (NULL pointer)\n");
         exit(1);
     }
-    size_t needed_l70_c15 = ((*b)).used + str_len + 1;
-    while (needed_l70_c15 > ((*b)).size)
+    size_t needed_l69_c15 = ((*b)).used + str_len + 1;
+    while (needed_l69_c15 > ((*b)).size)
     {
         {
             size_t new_size = {0};
@@ -101,8 +99,8 @@ void tmodc__dynbuf__dynbuf_append(tmodc__dynbuf__DynBuf* b, const char* str)
         fprintf(stderr, "ERROR: dynbuf_append: invalid argument (NULL pointer)\n");
         exit(1);
     }
-    size_t str_len_l115_c16 = strlen(str);
-    tmodc__dynbuf__dynbuf_appendn(b, str, str_len_l115_c16);
+    size_t str_len_l114_c16 = strlen(str);
+    tmodc__dynbuf__dynbuf_appendn(b, str, str_len_l114_c16);
 }
 
 /**
@@ -117,8 +115,8 @@ void tmodc__dynbuf__dynbuf_append_char(tmodc__dynbuf__DynBuf* b, char c)
         fprintf(stderr, "ERROR: dynbuf_append_char: invalid buffer\n");
         exit(1);
     }
-    size_t needed_l133_c15 = ((*b)).used + 2;
-    if (needed_l133_c15 > ((*b)).size)
+    size_t needed_l132_c15 = ((*b)).used + 2;
+    if (needed_l132_c15 > ((*b)).size)
     {
         size_t new_size = {0};
         char* new_data = {0};

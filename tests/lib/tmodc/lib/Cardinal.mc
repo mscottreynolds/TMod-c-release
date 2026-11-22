@@ -33,7 +33,7 @@ begin
 end
 
 
-export function TCardinal::to_string(ref self: TCardinal): string
+export function TCardinal::toString(ref self: TCardinal): string
 begin
     return @self.str[0] as string
 end

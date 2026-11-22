@@ -208,12 +208,19 @@ method-decl = [ "EXPORT" ] [ "EXTERN" ] method-prototype ;
 
 (* Foreign symbols — see "Modules, imports, exports, and foreign symbols" *)
 
-extern-type-decl = "EXTERN" "TYPE" identifier [ "=" extern-type-rhs ] EOS ;
+(* EXPORT may lead or follow EXTERN (0.27.9.261).
+   export extern type Name and extern export type Name are one declaration.
+   A bare foreign type emits no typedef. The .mh line is
+   export type Name opaque. Language Report §3.2. *)
+
+extern-prefix    = "EXTERN" [ "EXPORT" ]
+                 | "EXPORT" "EXTERN" ;
+extern-type-decl = extern-prefix "TYPE" identifier [ "=" extern-type-rhs ] EOS ;
 extern-type-rhs  = type-expression
                  | "STRUCT" [ type-identifier ] ;   (* C tag alias; no fields, no END *)
-extern-var-decl  = "EXTERN" "VAR" var-item { "," var-item } EOS ;
-extern-proc-decl = "EXTERN" [ "EXPORT" ] "PROCEDURE" identifier formal-parameters EOS ;
-extern-func-decl = "EXTERN" [ "EXPORT" ] "FUNCTION" identifier formal-parameters EOS ;
+extern-var-decl  = extern-prefix "VAR" var-item { "," var-item } EOS ;
+extern-proc-decl = extern-prefix "PROCEDURE" identifier formal-parameters EOS ;
+extern-func-decl = extern-prefix "FUNCTION" identifier formal-parameters EOS ;
 
 method-prototype = [ "RECURSIVE" ] ( "PROCEDURE" | "FUNCTION" )
     method-name formal-parameters [ "FORWARD" ] EOS ;

@@ -28,16 +28,7 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "stdio.h"
-
-/* === IMPORT === */
-#include "string.h"
-
-/* === IMPORT === */
-#include "stdbool.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "arena.h"
@@ -64,7 +55,7 @@ typedef struct tmodc__ttype__TType {
     bool is_const;
     bool is_opaque;
     size_t array_size;
-    tmodc__arena__pvoid size_expr;
+    pvoid size_expr;
     tmodc__ttype__TType* element_type;
     tmodc__ttype__TType* base_type;
     tmodc__ttype__TType* resolved_type;
@@ -135,7 +126,7 @@ tmodc__ttype__TType* tmodc__ttype__type_create_array(tmodc__arena__Arena* arena,
  */
 
 /* === PROC/FUNC EXPORT === */
-tmodc__ttype__TType* tmodc__ttype__type_create_array_expr(tmodc__arena__Arena* arena, tmodc__ttype__TType* element, tmodc__arena__pvoid size_expr);
+tmodc__ttype__TType* tmodc__ttype__type_create_array_expr(tmodc__arena__Arena* arena, tmodc__ttype__TType* element, pvoid size_expr);
 
 /**
  * Create opaque

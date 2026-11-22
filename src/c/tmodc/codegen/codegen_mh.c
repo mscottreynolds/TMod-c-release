@@ -10,10 +10,8 @@ void tmodc__codegen__codegen_mh(tmodc__codegen__codegen_common__CodegenContext c
 /**
  * codegen_mh.mc - Emit modc-mh/1 symbol export files for EXPORT declarations.
  */
-#include "stddef.h"
+#include "../../System.h"
 #include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 #include "version.h"
 #include "../dynbuf.h"
 #include "../lexer/Lexer.h"
@@ -48,18 +46,18 @@ static bool mh_proc_complete(const tmodc__node__TNode* n)
     if ((((*n)).proc_decl).is_forward)
     {
         /* return value captured before defers */
-        bool __ret_l36 = false;
-        return __ret_l36;
+        bool __ret_l32 = false;
+        return __ret_l32;
     }
     if ((((*n)).proc_decl).is_extern && (((*n)).proc_decl).params == nil)
     {
         /* return value captured before defers */
-        bool __ret_l39 = false;
-        return __ret_l39;
+        bool __ret_l35 = false;
+        return __ret_l35;
     }
     /* return value captured before defers */
-    bool __ret_l41 = true;
-    return __ret_l41;
+    bool __ret_l37 = true;
+    return __ret_l37;
 }
 
 static bool mh_type_opaque(const tmodc__node__TNode* n)
@@ -68,8 +66,8 @@ static bool mh_type_opaque(const tmodc__node__TNode* n)
     if ((((*n)).type_decl).is_extern)
     {
         /* return value captured before defers */
-        bool __ret_l50 = true;
-        return __ret_l50;
+        bool __ret_l46 = true;
+        return __ret_l46;
     }
     ty = (((*n)).type_decl).defined_type;
     if (ty != nil)
@@ -81,13 +79,13 @@ static bool mh_type_opaque(const tmodc__node__TNode* n)
         if (((*ty)).is_opaque && !((*ty)).is_pointer)
         {
             /* return value captured before defers */
-            bool __ret_l59 = true;
-            return __ret_l59;
+            bool __ret_l55 = true;
+            return __ret_l55;
         }
     }
     /* return value captured before defers */
-    bool __ret_l62 = false;
-    return __ret_l62;
+    bool __ret_l58 = false;
+    return __ret_l58;
 }
 
 static bool mh_first_formal_type_name(const tmodc__node__TNode* n, pcchar* out_name, size_t* out_len)
@@ -100,47 +98,47 @@ static bool mh_first_formal_type_name(const tmodc__node__TNode* n, pcchar* out_n
     if (n == nil)
     {
         /* return value captured before defers */
-        bool __ret_l82 = false;
-        return __ret_l82;
+        bool __ret_l78 = false;
+        return __ret_l78;
     }
     pl = (((*n)).proc_decl).params;
     if (pl == nil || ((*pl)).kind != tmodc__node__NODE_PARAM_LIST || (((*pl)).param_list).count == 0)
     {
         /* return value captured before defers */
-        bool __ret_l86 = false;
-        return __ret_l86;
+        bool __ret_l82 = false;
+        return __ret_l82;
     }
     self_param = (((*pl)).param_list).params[0];
     if (self_param == nil || ((*self_param)).kind != tmodc__node__NODE_PARAM)
     {
         /* return value captured before defers */
-        bool __ret_l90 = false;
-        return __ret_l90;
+        bool __ret_l86 = false;
+        return __ret_l86;
     }
     pt = (((*self_param)).param).param_type;
     if (pt == nil)
     {
         /* return value captured before defers */
-        bool __ret_l94 = false;
-        return __ret_l94;
+        bool __ret_l90 = false;
+        return __ret_l90;
     }
     if (((*pt)).is_pointer || ((*pt)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l100 = false;
-        return __ret_l100;
+        bool __ret_l96 = false;
+        return __ret_l96;
     }
     if (((*pt)).name == nil || ((*pt)).name_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l103 = false;
-        return __ret_l103;
+        bool __ret_l99 = false;
+        return __ret_l99;
     }
     (*out_name) = ((*pt)).name;
     (*out_len) = ((*pt)).name_len;
     /* return value captured before defers */
-    bool __ret_l107 = true;
-    return __ret_l107;
+    bool __ret_l103 = true;
+    return __ret_l103;
 }
 
 static bool mh_method_is_instance(const tmodc__node__TNode* n)
@@ -150,24 +148,24 @@ static bool mh_method_is_instance(const tmodc__node__TNode* n)
     if (n == nil || (((*n)).proc_decl).method_owner == nil || (((*n)).proc_decl).method_owner_len == 0)
     {
         /* return value captured before defers */
-        bool __ret_l118 = false;
-        return __ret_l118;
+        bool __ret_l114 = false;
+        return __ret_l114;
     }
     if (!mh_first_formal_type_name(n, &ft_name, &ft_len))
     {
         /* return value captured before defers */
-        bool __ret_l121 = false;
-        return __ret_l121;
+        bool __ret_l117 = false;
+        return __ret_l117;
     }
     if (ft_len != (((*n)).proc_decl).method_owner_len)
     {
         /* return value captured before defers */
-        bool __ret_l124 = false;
-        return __ret_l124;
+        bool __ret_l120 = false;
+        return __ret_l120;
     }
     /* return value captured before defers */
-    bool __ret_l126 = memcmp(ft_name, (((*n)).proc_decl).method_owner, ft_len) == 0;
-    return __ret_l126;
+    bool __ret_l122 = memcmp(ft_name, (((*n)).proc_decl).method_owner, ft_len) == 0;
+    return __ret_l122;
 }
 
 static void mh_append_leaf_type_spec(tmodc__dynbuf__DynBuf* out, const tmodc__ttype__TType* ty)
@@ -229,37 +227,37 @@ static bool mh_array_suffix_form(const tmodc__ttype__TType* ty)
     if (ty == nil || !((*ty)).is_array || ((*ty)).is_pointer)
     {
         /* return value captured before defers */
-        bool __ret_l191 = false;
-        return __ret_l191;
+        bool __ret_l187 = false;
+        return __ret_l187;
     }
     el = ((*ty)).element_type;
     if (el == nil || ((*el)).is_array)
     {
         /* return value captured before defers */
-        bool __ret_l195 = false;
-        return __ret_l195;
+        bool __ret_l191 = false;
+        return __ret_l191;
     }
     if (((*ty)).is_const != ((*el)).is_const)
     {
         /* return value captured before defers */
-        bool __ret_l198 = false;
-        return __ret_l198;
+        bool __ret_l194 = false;
+        return __ret_l194;
     }
     if (((*el)).is_opaque)
     {
         /* return value captured before defers */
-        bool __ret_l201 = true;
-        return __ret_l201;
+        bool __ret_l197 = true;
+        return __ret_l197;
     }
     if (((*el)).name != nil && ((*el)).name_len > 0)
     {
         /* return value captured before defers */
-        bool __ret_l204 = true;
-        return __ret_l204;
+        bool __ret_l200 = true;
+        return __ret_l200;
     }
     /* return value captured before defers */
-    bool __ret_l206 = false;
-    return __ret_l206;
+    bool __ret_l202 = false;
+    return __ret_l202;
 }
 
 static void mh_append_type_spec(tmodc__dynbuf__DynBuf* out, const tmodc__ttype__TType* t)
@@ -344,8 +342,8 @@ static void mh_append_signature(tmodc__dynbuf__DynBuf* out, const tmodc__node__T
     tmodc__dynbuf__dynbuf_append_char(out, ' ');
     tmodc__dynbuf__dynbuf_append_char(out, '(');
     {
-        const size_t __for_end_l295_c5 = (count);
-        for (i = 1; i <= __for_end_l295_c5; i++)
+        const size_t __for_end_l291_c5 = (count);
+        for (i = 1; i <= __for_end_l291_c5; i++)
         {
             {
                 p = (((*params_list)).param_list).params[i - 1];
@@ -399,8 +397,8 @@ static void mh_append_type_signature(tmodc__dynbuf__DynBuf* out, const tmodc__no
     tmodc__dynbuf__dynbuf_append_char(out, ' ');
     tmodc__dynbuf__dynbuf_append_char(out, '(');
     {
-        const size_t __for_end_l342_c5 = (count);
-        for (i = 1; i <= __for_end_l342_c5; i++)
+        const size_t __for_end_l338_c5 = (count);
+        for (i = 1; i <= __for_end_l338_c5; i++)
         {
             {
                 p = (((*pl)).param_list).params[i - 1];
@@ -449,8 +447,8 @@ static void mh_append_unit_signature(tmodc__dynbuf__DynBuf* out, const tmodc__no
     tmodc__dynbuf__dynbuf_append_char(out, ' ');
     tmodc__dynbuf__dynbuf_append_char(out, '(');
     {
-        const size_t __for_end_l390_c5 = (count);
-        for (i = 1; i <= __for_end_l390_c5; i++)
+        const size_t __for_end_l386_c5 = (count);
+        for (i = 1; i <= __for_end_l386_c5; i++)
         {
             {
                 p = (((*n)).program_decl).params[i - 1];
@@ -495,8 +493,8 @@ static void mh_append_field_items(tmodc__dynbuf__DynBuf* out, const tmodc__node_
                 return;
     }
     {
-        const size_t __for_end_l431_c5 = ((((*st)).struct_decl).field_count);
-        for (i = 1; i <= __for_end_l431_c5; i++)
+        const size_t __for_end_l427_c5 = ((((*st)).struct_decl).field_count);
+        for (i = 1; i <= __for_end_l427_c5; i++)
         {
             {
                 f = (((*st)).struct_decl).fields[i - 1];
@@ -637,8 +635,8 @@ static void mh_emit_export_enum_members(tmodc__dynbuf__DynBuf* out, const tmodc_
                 return;
     }
     {
-        const size_t __for_end_l557_c5 = ((((*en)).enum_type).count);
-        for (i = 1; i <= __for_end_l557_c5; i++)
+        const size_t __for_end_l553_c5 = ((((*en)).enum_type).count);
+        for (i = 1; i <= __for_end_l553_c5; i++)
         {
             {
                 item = (((*en)).enum_type).elements[i - 1];
@@ -705,8 +703,8 @@ static void mh_emit_export_binding(tmodc__dynbuf__DynBuf* out, const tmodc__node
         complete_word = "incomplete";
     }
     {
-        const size_t __for_end_l621_c5 = ((((*n)).var_decl).count);
-        for (i = 1; i <= __for_end_l621_c5; i++)
+        const size_t __for_end_l617_c5 = ((((*n)).var_decl).count);
+        for (i = 1; i <= __for_end_l617_c5; i++)
         {
             {
                 tmodc__node__pNode item = (((*n)).var_decl).items[i - 1];
@@ -807,12 +805,12 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
     if (root == nil || ((*root)).kind != tmodc__node__NODE_PROGRAM)
     {
         /* return value captured before defers */
-        bool __ret_l703 = false;
-        return __ret_l703;
+        bool __ret_l699 = false;
+        return __ret_l699;
     }
     {
-        const size_t __for_end_l706_c5 = ((((*root)).program_decl).count);
-        for (i = 1; i <= __for_end_l706_c5; i++)
+        const size_t __for_end_l702_c5 = ((((*root)).program_decl).count);
+        for (i = 1; i <= __for_end_l702_c5; i++)
         {
             {
                 tmodc__node__pNode d = (((*root)).program_decl).decls[i - 1];
@@ -821,8 +819,8 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).proc_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l710 = true;
-                        return __ret_l710;
+                        bool __ret_l706 = true;
+                        return __ret_l706;
                     }
                 }
                 else if (((*d)).kind == tmodc__node__NODE_TYPE_DECL)
@@ -830,8 +828,8 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).type_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l714 = true;
-                        return __ret_l714;
+                        bool __ret_l710 = true;
+                        return __ret_l710;
                     }
                 }
                 else if (((*d)).kind == tmodc__node__NODE_VAR_DECL)
@@ -839,8 +837,8 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).var_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l718 = true;
-                        return __ret_l718;
+                        bool __ret_l714 = true;
+                        return __ret_l714;
                     }
                 }
                 else if (((*d)).kind == tmodc__node__NODE_CONST_DECL)
@@ -848,8 +846,8 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).const_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l722 = true;
-                        return __ret_l722;
+                        bool __ret_l718 = true;
+                        return __ret_l718;
                     }
                 }
                 else if (((*d)).kind == tmodc__node__NODE_LET_DECL)
@@ -857,8 +855,8 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).let_decl).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l726 = true;
-                        return __ret_l726;
+                        bool __ret_l722 = true;
+                        return __ret_l722;
                     }
                 }
                 else if (((*d)).kind == tmodc__node__NODE_DEFINE)
@@ -866,16 +864,16 @@ bool tmodc__codegen__codegen_mh__codegen_mh_has_exports(const tmodc__node__TNode
                     if ((((*d)).define_stmt).is_exported)
                     {
                         /* return value captured before defers */
-                        bool __ret_l730 = true;
-                        return __ret_l730;
+                        bool __ret_l726 = true;
+                        return __ret_l726;
                     }
                 }
             }
         }
     }
     /* return value captured before defers */
-    bool __ret_l735 = false;
-    return __ret_l735;
+    bool __ret_l731 = false;
+    return __ret_l731;
 }
 
 
@@ -901,8 +899,8 @@ void tmodc__codegen__codegen_mh(tmodc__codegen__codegen_common__CodegenContext c
     tmodc__dynbuf__dynbuf_append_char(out, '\n');
     mh_emit_line(out, "@format 1");
     {
-        const size_t __for_end_l761_c5 = ((((*n)).program_decl).count);
-        for (i = 1; i <= __for_end_l761_c5; i++)
+        const size_t __for_end_l757_c5 = ((((*n)).program_decl).count);
+        for (i = 1; i <= __for_end_l757_c5; i++)
         {
             {
                 mh_emit_exported_decl(out, (((*n)).program_decl).decls[i - 1]);

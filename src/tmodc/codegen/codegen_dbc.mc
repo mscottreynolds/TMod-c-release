@@ -9,8 +9,8 @@ module tmodc.codegen.codegen_dbc()
  *)
 
 
-import size_t 
-	from "stddef.h"
+import size_t  
+	from System
 import pNode, TNode, NODE_BLOCK, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNTIL, NODE_LOOP 
 	from tmodc.node
 

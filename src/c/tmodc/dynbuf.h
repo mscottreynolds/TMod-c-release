@@ -27,16 +27,10 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "stdio.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
-
-/* === IMPORT === */
-#include "string.h"
 
 /**
  * Dynamic string buffer with exponential growth and null-termination.

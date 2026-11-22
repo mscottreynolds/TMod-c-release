@@ -15,12 +15,11 @@ void tmodc__parser__parser_common(void);
  * parser_common.mc - Common routines used by parser, declaration, expression, and statement
  * 22 August 2026 - Conversion to .mc
  */
+#include "../../System.h"
 #include "../lexer/Lexer.h"
 #include "../arena.h"
 #include "../dynbuf.h"
-#include "stddef.h"
 #include "stdio.h"
-#include "stdlib.h"
 /**
  * One user TYPE name registered for sizeof() disambiguation at parse time.
  * Points into the source buffer (case-sensitive spelling).
@@ -32,8 +31,8 @@ void tmodc__parser__parser_common(void);
 size_t tmodc__parser__parser_common__SIZE_PARSER_TYPE_NAME(void)
 {
     /* return value captured before defers */
-    size_t __ret_l45 = ((integer)sizeof(tmodc__parser__parser_common__TParserTypeName));
-    return __ret_l45;
+    size_t __ret_l44 = ((integer)sizeof(tmodc__parser__parser_common__TParserTypeName));
+    return __ret_l44;
 }
 
 /**
@@ -68,8 +67,8 @@ void tmodc__parser__parser_common__TParser__advance(tmodc__parser__parser_common
 bool tmodc__parser__parser_common__check(tmodc__parser__parser_common__pParser p, tmodc__lexer__Lexer__TokenKind kind)
 {
     /* return value captured before defers */
-    bool __ret_l104 = (((*p)).current).kind == kind;
-    return __ret_l104;
+    bool __ret_l103 = (((*p)).current).kind == kind;
+    return __ret_l103;
 }
 
 /**
@@ -78,8 +77,8 @@ bool tmodc__parser__parser_common__check(tmodc__parser__parser_common__pParser p
 bool tmodc__parser__parser_common__TParser__check(tmodc__parser__parser_common__TParser* p, tmodc__lexer__Lexer__TokenKind kind)
 {
     /* return value captured before defers */
-    bool __ret_l113 = (((*p)).current).kind == kind;
-    return __ret_l113;
+    bool __ret_l112 = (((*p)).current).kind == kind;
+    return __ret_l112;
 }
 
 /**
@@ -91,12 +90,12 @@ bool tmodc__parser__parser_common__match(tmodc__parser__parser_common__pParser p
     {
         tmodc__parser__parser_common__advance(p);
         /* return value captured before defers */
-        bool __ret_l124 = true;
-        return __ret_l124;
+        bool __ret_l123 = true;
+        return __ret_l123;
     }
     /* return value captured before defers */
-    bool __ret_l126 = false;
-    return __ret_l126;
+    bool __ret_l125 = false;
+    return __ret_l125;
 }
 
 /**
@@ -108,12 +107,12 @@ bool tmodc__parser__parser_common__TParser__match(tmodc__parser__parser_common__
     {
         tmodc__parser__parser_common__TParser__advance(&(*p));
         /* return value captured before defers */
-        bool __ret_l137 = true;
-        return __ret_l137;
+        bool __ret_l136 = true;
+        return __ret_l136;
     }
     /* return value captured before defers */
-    bool __ret_l139 = false;
-    return __ret_l139;
+    bool __ret_l138 = false;
+    return __ret_l138;
 }
 
 /**
@@ -125,12 +124,12 @@ bool tmodc__parser__parser_common__check_comment(tmodc__parser__parser_common__p
     if (tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_COMMENT_SINGLE) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_COMMENT_MULTI) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_COMMENT_PASCAL) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_COMMENT))
     {
         /* return value captured before defers */
-        bool __ret_l151 = true;
-        return __ret_l151;
+        bool __ret_l150 = true;
+        return __ret_l150;
     }
     /* return value captured before defers */
-    bool __ret_l153 = false;
-    return __ret_l153;
+    bool __ret_l152 = false;
+    return __ret_l152;
 }
 
 /**
@@ -142,12 +141,12 @@ bool tmodc__parser__parser_common__TParser__check_comment(tmodc__parser__parser_
     if (tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_COMMENT_SINGLE) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_COMMENT_MULTI) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_COMMENT_PASCAL) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_COMMENT))
     {
         /* return value captured before defers */
-        bool __ret_l165 = true;
-        return __ret_l165;
+        bool __ret_l164 = true;
+        return __ret_l164;
     }
     /* return value captured before defers */
-    bool __ret_l167 = false;
-    return __ret_l167;
+    bool __ret_l166 = false;
+    return __ret_l166;
 }
 
 /**
@@ -159,12 +158,12 @@ bool tmodc__parser__parser_common__match_comment(tmodc__parser__parser_common__p
     {
         tmodc__parser__parser_common__advance(p);
         /* return value captured before defers */
-        bool __ret_l178 = true;
-        return __ret_l178;
+        bool __ret_l177 = true;
+        return __ret_l177;
     }
     /* return value captured before defers */
-    bool __ret_l180 = false;
-    return __ret_l180;
+    bool __ret_l179 = false;
+    return __ret_l179;
 }
 
 /**
@@ -176,12 +175,12 @@ bool tmodc__parser__parser_common__TParser__match_comment(tmodc__parser__parser_
     {
         tmodc__parser__parser_common__TParser__advance(&(*p));
         /* return value captured before defers */
-        bool __ret_l191 = true;
-        return __ret_l191;
+        bool __ret_l190 = true;
+        return __ret_l190;
     }
     /* return value captured before defers */
-    bool __ret_l193 = false;
-    return __ret_l193;
+    bool __ret_l192 = false;
+    return __ret_l192;
 }
 
 /**
@@ -192,12 +191,12 @@ bool tmodc__parser__parser_common__checkEOS(tmodc__parser__parser_common__pParse
     if (tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_SEMICOLON) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_NEWLINE) || tmodc__parser__parser_common__check_comment(p))
     {
         /* return value captured before defers */
-        bool __ret_l204 = true;
-        return __ret_l204;
+        bool __ret_l203 = true;
+        return __ret_l203;
     }
     /* return value captured before defers */
-    bool __ret_l206 = false;
-    return __ret_l206;
+    bool __ret_l205 = false;
+    return __ret_l205;
 }
 
 /**
@@ -208,12 +207,12 @@ bool tmodc__parser__parser_common__TParser__checkEOS(tmodc__parser__parser_commo
     if (tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_SEMICOLON) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_NEWLINE) || tmodc__parser__parser_common__TParser__check_comment(&(*p)))
     {
         /* return value captured before defers */
-        bool __ret_l217 = true;
-        return __ret_l217;
+        bool __ret_l216 = true;
+        return __ret_l216;
     }
     /* return value captured before defers */
-    bool __ret_l219 = false;
-    return __ret_l219;
+    bool __ret_l218 = false;
+    return __ret_l218;
 }
 
 /**
@@ -240,8 +239,8 @@ bool tmodc__parser__parser_common__matchEOS(tmodc__parser__parser_common__pParse
         }
     }
     /* return value captured before defers */
-    bool __ret_l248 = consumed;
-    return __ret_l248;
+    bool __ret_l247 = consumed;
+    return __ret_l247;
 }
 
 /**
@@ -268,8 +267,8 @@ bool tmodc__parser__parser_common__TParser__matchEOS(tmodc__parser__parser_commo
         }
     }
     /* return value captured before defers */
-    bool __ret_l277 = consumed;
-    return __ret_l277;
+    bool __ret_l276 = consumed;
+    return __ret_l276;
 }
 
 /**
@@ -334,12 +333,12 @@ bool tmodc__parser__parser_common__check_assignment(tmodc__parser__parser_common
     if (tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_COLON_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_MUL_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_DIV_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_MOD_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_ADD_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_SUB_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_LSHIFT_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_RSHIFT_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_AND_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_OR_EQ) || tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_BITWISE_NOT_EQ))
     {
         /* return value captured before defers */
-        bool __ret_l345 = true;
-        return __ret_l345;
+        bool __ret_l344 = true;
+        return __ret_l344;
     }
     /* return value captured before defers */
-    bool __ret_l347 = false;
-    return __ret_l347;
+    bool __ret_l346 = false;
+    return __ret_l346;
 }
 
 /**
@@ -350,12 +349,12 @@ bool tmodc__parser__parser_common__TParser__check_assignment(tmodc__parser__pars
     if (tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_COLON_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_MUL_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_DIV_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_MOD_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_ADD_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_SUB_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_LSHIFT_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_RSHIFT_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_AND_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_OR_EQ) || tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_BITWISE_NOT_EQ))
     {
         /* return value captured before defers */
-        bool __ret_l367 = true;
-        return __ret_l367;
+        bool __ret_l366 = true;
+        return __ret_l366;
     }
     /* return value captured before defers */
-    bool __ret_l369 = false;
-    return __ret_l369;
+    bool __ret_l368 = false;
+    return __ret_l368;
 }
 
 /**
@@ -434,8 +433,8 @@ void tmodc__parser__parser_common__TParser__consume(tmodc__parser__parser_common
 bool tmodc__parser__parser_common__isEOF(tmodc__parser__parser_common__pParser p)
 {
     /* return value captured before defers */
-    bool __ret_l444 = tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_EOF);
-    return __ret_l444;
+    bool __ret_l443 = tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_EOF);
+    return __ret_l443;
 }
 
 /**
@@ -444,8 +443,8 @@ bool tmodc__parser__parser_common__isEOF(tmodc__parser__parser_common__pParser p
 bool tmodc__parser__parser_common__TParser__isEOF(tmodc__parser__parser_common__TParser* p)
 {
     /* return value captured before defers */
-    bool __ret_l453 = tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_EOF);
-    return __ret_l453;
+    bool __ret_l452 = tmodc__parser__parser_common__TParser__check(&(*p), tmodc__lexer__Lexer__TOK_EOF);
+    return __ret_l452;
 }
 
 

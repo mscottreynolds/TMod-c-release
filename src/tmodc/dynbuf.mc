@@ -9,10 +9,9 @@ module tmodc.dynbuf()
  *)
 
 
-import size_t from "stddef.h"
-import stderr, fprintf from "stdio.h"
-import malloc, realloc, free, exit from "stdlib.h"
-import memcpy, strlen from "string.h"
+import size_t, malloc, realloc, free, exit, memcpy, strlen, fprintf,
+    from System
+import stderr, from "stdio.h"
 
 
 (**

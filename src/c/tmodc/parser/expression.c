@@ -14,7 +14,7 @@ void tmodc__parser__expression(void);
  *
  * expression.mc - Expression parsing routines.
  */
-#include "stddef.h"
+#include "../../System.h"
 #include "../node.h"
 #include "parser_common.h"
 #include "parser_main.h"

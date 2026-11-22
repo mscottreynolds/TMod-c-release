@@ -33,12 +33,10 @@ import pNode, TNode, NODE_ASSERT, NODE_IF, NODE_WHILE, NODE_FOR, NODE_REPEAT_UNT
     NODE_SIZEOF, NODE_COUNTOF, NODE_BINARY, NODE_UNARY, NODE_TERNARY, NODE_CAST,
     NODE_LITERAL, NODE_IDENT, NODE_CALL, NODE_PAREN, TVarItem,
     from tmodc.node
-import size_t
-    from "stddef.h"
-import snprintf, fprintf, stderr,
+import size_t, snprintf, fprintf, exit,
+    from System
+import stderr,
     from "stdio.h"
-import exit 
-    from "stdlib.h"
 import VERSION_BASE 
     from "version.h"
 

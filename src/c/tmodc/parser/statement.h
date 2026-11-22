@@ -48,10 +48,7 @@ typedef float real;
 #include "../ttype.h"
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
+#include "../../System.h"
 
 /* === IMPORT === */
 #include "stdio.h"

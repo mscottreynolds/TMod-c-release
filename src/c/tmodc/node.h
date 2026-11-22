@@ -32,10 +32,7 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "stdio.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "arena.h"

@@ -11,12 +11,9 @@ module tmodc.utils()
 // Some cross platform alternates
 
 
-import size_t from "stddef.h"
-import malloc, exit from "stdlib.h"
-import memcpy, memchr from "string.h"
+import size_t, malloc, exit, isspace, isdigit, memcpy, memchr, fprintf, from System
 import LLONG_MAX, LLONG_MIN from "limits.h"
-import fprintf, stderr from "stdio.h"
-import isspace, isdigit from "ctype.h"
+import stderr from "stdio.h"
 
 
 export type LONG = long long

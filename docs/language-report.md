@@ -247,7 +247,7 @@ On 13 October 2026 the lock was two candidates, flat file then directory, flat w
   - `extern type FILE` — C already has that typedef; compiler emits nothing.  
   - `extern type termios = struct` — `typedef struct termios termios;` (C tag with no typedef).  
   - `extern type Foo = struct bar` — `typedef struct bar Foo;`.  
-  Not `type T = opaque` (`void *`). Not `type T FORWARD` (must complete in this unit). Layout and fields come from the `#include`. *Implemented (0.26.5.186).*  
+  Not `type T = opaque` (`void *`). Not `type T FORWARD` (must complete in this unit). Layout and fields come from the `#include`. *Implemented (0.26.5.186).* `export extern type Name` and `extern export type Name` are the same declaration (*0.27.9.261*). A bare name emits no typedef. The `.mh` line is `export type Name opaque`.  
 - **Calls (0.26.0):** unresolved free `name(...)` / `Type::name(...)` is an error. A declared type name `Ident(...)` is `Ident::Ident(...)` when that function is in scope (**0.26.12.212**, §8.3).  
 - **Types (0.26.1; bare `signed` / `unsigned` 0.27.8.252):** unknown **single-word** type is an error. Multi-word C spellings (`long long`, `unsigned int`) remain legal without import. Bare `signed` and bare `unsigned` are reserved C spellings. `unsigned` is not a modifier on `^T` or on a typedef name — see §5.3.  
 - **C preprocessor:** `#define` / `#if` lines are copied into generated C; they do **not** bind TMod-c names. A name the unit must see (e.g. `switch` `case`) is **`DEFINE`** (§4.1.1), not a pass-through line.
@@ -1507,6 +1507,8 @@ assert sizeof(w) == 4
 
 A type operand is legal (`countof(array[4] of integer)`). A type alias of a fixed array is legal (`type Buf = array[4] of integer`). Nested arrays report the outer bound only.
 
+An imported array type folds (*0.27.9.260*). `export type Quad complete integer[4]` makes `countof(Quad)` and `countof(fixtures.arralias.Quad)` the constant 4. `export type Alias complete Quad` follows `Quad` when that name is in scope, including a star scope, so `countof(Alias)`, `countof(a)` on `var a: Alias`, and `array[countof(Alias)]` fold. `import Alias` alone does not carry the bound, and that `countof` is an error.
+
 Rejected: pointers, scalars, `string`, and an open array that is not a slice formal. `array_size == 0` is an open array and is also how `array[0]` is spelled. This is not string length. No VLAs.
 
 **Slice formal (0.27.1.219):** `countof` of an open-array formal reads the hidden `integer` length inserted after the pointer (§5.4). That result is not a constant. `countof` of a fixed array is unchanged. `countof` of a flexible array member stays rejected.
@@ -1689,6 +1691,8 @@ Do not maintain a second full EBNF elsewhere.
 | 19 November 2026 | **§3.2 `IMPORT *` and the C spelling (0.27.9.257):** `import *` binds the package qualident and no bare name. The module entry is that qualident called. A dotted qualident is a type. `.` and `::` become `__` on an exported C name, including an enum constant and both the tag and the typedef. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. `import * as Alias` stays later. |
 | 20 November 2026 | **§3.2 `import * as Alias` (0.27.9.258):** `import * as st from Module` binds `st` and not the qualident. `st()` is the module entry. An export is `st.name`. Generated C stays the module spelling. `import * as integer` is a duplicate of the prelude name. |
 | 20 November 2026 | **§3.2 / §8.3 instance call (0.27.9.259):** `q.getX()` looks up `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. |
+| 20 November 2026 | **§10.2 `COUNTOF` of an imported array (0.27.9.260):** an imported fixed array folds. An alias follows its target when that type is in scope, including a star scope. `import Alias` alone stays an error. |
+| 20 November 2026 | **§3.2 `export extern type` (0.27.9.261):** `export extern type Name` and `extern export type Name` are the same declaration. A bare foreign type emits no typedef. The `.mh` line is `export type Name opaque`. |
 
 ---
 

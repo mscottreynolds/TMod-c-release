@@ -11,11 +11,9 @@ module tmodc.codegen.codegen_header(ctx: CodegenContext)
  * Only emits the exported surface of a program/module.
  *)
 
-import size_t 
-	from "stddef.h"
-import exit 
-	from "stdlib.h"
-import fprintf, stderr 
+import size_t, exit, fprintf,
+	from System
+import stderr 
 	from "stdio.h"
 import pNode, TNode, NODE_LET_DECL, NODE_VAR_DECL, NODE_CONST_DECL,
 	NODE_PROC_DECL, NODE_FUNC_DECL, NODE_TYPE_DECL,

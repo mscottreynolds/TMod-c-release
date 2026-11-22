@@ -5,16 +5,11 @@ module tmodc.mh.mh_reader()
  *)
 
 
-import size_t 
-	from "stddef.h"
-import memcpy, strlen, memcmp, strrchr, strchr 
-	from "string.h"
-import malloc, exit, free, realloc, atoi, strtol,
-	from "stdlib.h"
-import isalpha, isalnum, isdigit, 
-	from "ctype.h"
-import FILE, stderr, fclose, fopen, fprintf, snprintf, fread, fseek, ftell,
-	SEEK_END, SEEK_SET, 
+import size_t, isalpha, isalnum, isdigit, malloc, exit, free, realloc, atoi, strtol,
+	memcpy, strlen, memcmp, strrchr, strchr,
+	FILE, fclose, fopen, fprintf, snprintf, fread, fseek, ftell,
+	from System
+import stderr, SEEK_END, SEEK_SET, 
 	from "stdio.h"
 
 import MH_KIND_PROCEDURE, MH_KIND_FUNCTION, MH_KIND_TYPE, MH_KIND_ENUM, 

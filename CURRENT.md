@@ -2,16 +2,16 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.9 (build 259)  
+**Version:** 0.27.9 (build 261)  
 **Last updated:** 2026-11-20  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.9.259** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. `docs/project_bible.md` runs through **0.27.9.258**. This file is the live focus.
+History through **0.27.9.261** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. **259**–**261** are `docs/grok_report-20261120-2025.md`. `docs/project_bible.md` runs through **0.27.9.261**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **259**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote makes `q.getX()` find `Point__getX` when `q` is declared `fixtures.starpack.Point` (**0.27.9.259**). The call still needs `import Point::getX`. `import * as Alias` is **0.27.9.258**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **261**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is `header System` and `export extern type` (**0.27.9.261**). `countof` of an imported array alias is **0.27.9.260**. `import Alias` alone stays an error. `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point` (**0.27.9.259**). The call still needs `import Point::getX`. `import * as Alias` is **0.27.9.258**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
 **Next:** **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 
@@ -27,7 +27,6 @@ History through **0.27.9.259** is in `changelog.md`. The session archive for **2
 - **Focus 14.** Shebang / `-run` scripts. `tmodc -run` exists. The parser does not yet accept a leading `#!`. See [shebang](#future-plan-shebang--run-scripts).
 - **`DEFINE`, later.** Macro expansion, `#undef`, `#if` as TMod-c, and a feature-test macro before includes.
 - **`FORWARD`.** The keyword stays until the remaining `forward` lines are gone. Postfix `FORWARD` is already optional (**0.27.6.237**).
-- **`COUNTOF`.** An imported type name does not get the `SIZEOF` promotion from **0.27.8.250**.
 - **Strategic 0.** Rebrand cutover of the `modc` binary and the `modc-mh/1` format id. Multi-TU generated C does not yet `#include` `tmodc.h`.
 
 **Parked or closed by decision**
@@ -38,21 +37,20 @@ History through **0.27.9.259** is in `changelog.md`. The session archive for **2
 - **24.** Discard `_` is dropped (12 October 2026). `(f())` is the discard.
 - **26.** Drop unused keyword `IS`. Done (**0.27.8.255**). The lexer no longer reserves it. `IN` stays reserved. See [Drop `IS`](#drop-is-no-type-guards).
 - **7 remainder.** `IMPORT *` and the package C spelling. Done (**0.27.9.257**). `import * as Alias` is done (**0.27.9.258**). Language Report §3.2.
+- **`COUNTOF` of an imported array type.** Done (**0.27.9.260**). An alias follows its target when that type is in scope. `import Alias` alone stays an error. Language Report §10.2.
 - **DbC.** `REQUIRE` / `ENSURE` already resolve like `ASSERT`. A nil-check of a `REF T` is a separate check of `^T`. Side-effect-free contract lint and a `--pot` assertion quota are not planned.
 
-**Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked. Scratch questions are in `TODO-items-for-0.27.md`.
+**Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked.
 
-## Drop `IS` (no type guards)
+**Scratch, not scheduled.**
 
-**Status:** Done (**0.27.8.255**). `TOK_KEYWORD_IS` is commented out of the lexer enum, the keyword table, and the token-string case. `is` is an identifier. EBNF `relational-op` is `IN` only. Language Report §6.3: `IN` is planned set membership. `IS` is not a type guard. The user reported that the complete test suite passes on gcc, clang, and tcc.
-
-Oberon `IS` is a runtime type test (`p is T`) — needs RTTI or a tag. TMod-c: **no vtables / no `IS` on structs.**
-
-**`IN`:** still reserved; unused as an operator. Keep — v1 **`SET OF` enum** membership (not a type guard). See [Future plan: SET OF enum](#future-plan-set-of-enum-wirth-bitset).
+- `semantic_resolve_type_inner: unknown type` still prints the whole node under `tmodc -a`. A shorter message would help.
+- `WHILE`, `REPEAT`, and `LOOP` store both `bound_expr` and `has_bound`. The printer tests `bound_expr`. Codegen reads `has_bound`. Whether the flag is redundant is open.
+- `var n: const pNode` is illegal when `type pNode = ^TNode`. Write `var n: const ^TNode` or `var n: pNode`.
 
 ## Future plan: `SET OF` enum (Wirth bitset)
 
-**Status:** Design locked (2 September 2026). **Not implemented.** After the current higher-priority list. Do not slip into 0.26.x. Spec in `docs/syntax-ebnf.md` + Language Report §5 / §6.3 when the bump starts (productions already drafted as *Planned*).
+**Status:** Design locked (2 September 2026). **Not implemented.** After the current higher-priority list. Spec in `docs/syntax-ebnf.md` + Language Report §5 / §6.3 when the bump starts (productions already drafted as *Planned*).
 
 **Why:** `IN` is in the grammar for **set membership**, not type guards (`IS` is dropped). Compiler source wants named groups (`LOOP_KINDS`) and `kind in LOOP_KINDS` instead of `or` chains. This is Pascal/Modula-2 `SET OF`: a **bit vector** on a small ordinal, not Julia/Python `Set{T}` (hash table, heap, arbitrary `T`). Hash sets, if ever, are stdlib — not `IN`.
 
@@ -163,7 +161,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 - **Portable builtins (Option A — Phase A Done 0.24.18; widths Done 0.26.5; import-bind / `.mh` widths Done 0.26.5.174; alias RHS / packs Done 0.26.8.194)** — Only `integer`, `cardinal`, `real`, `string` may be **bound once per compilation unit** via top-level `TYPE` **or** a named `.mh` import of that name. Unbound → defaults `int` / `unsigned int` / `float` / `const char *` (`cint`). Width forms **`integer N` / `cardinal N` / `real N`** are exact, RHS-only constructors (closed *N*); `.mh` type-spec may carry the same tail; **alias RHS** `export type integer complete integer 64`. Packs: `tests/fixtures/lp64`, `ilp32`. **Parked indefinitely (12 October 2026):** build-time defaults, until another architecture can prove `TMODC_ARCH`. Not C rank. See Language Report §5.5 / §10.1.
 - **`RECURSIVE` (0.25.4)** — required on a **direct** self-call (same PROC/FUNC node as `enclosing_func`). Review/lint flag for JPL rule 1; mutual recursion not checked.
 - **`SIZEOF` (0.25.4)** — TMod-c type `integer`; C emit `((integer)sizeof(...))`. Not C `size_t`.
-- **`COUNTOF` (0.26.9.198)** — `countof(designator | type)`; outermost bound of a complete fixed array; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays that are not slice formals are errors. A slice formal's `countof` is the hidden length (**0.27.1.219**). Replaces interim **`LEN` (0.26.8.194)**. Not string length.
+- **`COUNTOF` (0.26.9.198)** — `countof(designator | type)`; outermost bound of a complete fixed array; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays that are not slice formals are errors. A slice formal's `countof` is the hidden length (**0.27.1.219**). An imported array type folds, and an alias follows its target when that type is in scope (**0.27.9.260**). `import Alias` alone stays an error. Replaces interim **`LEN` (0.26.8.194)**. Not string length.
 - **Generated C prelude (0.26.1 / 0.26.5)** — `<stdint.h>` `<stdbool.h>` `<assert.h>` only; `byte` = `uint8_t`; `#define nil ((void *)0)` / `#define NIL nil`. No automatic `<stddef.h>`. **0.26.5:** prelude and unit prototype live in the generated `.h`; `.c` includes `"Unit.h"`; `-C` writes a companion `.h`.
 - **Name soft-miss** — **closed.** Calls **0.26.0**; types **0.26.1**.
 - **Cyclic TMod-c `IMPORT` (later)** — known from parser split (0.26.3). Address after **item 15**. See Language Report §3.2.
@@ -172,7 +170,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work is [Current Focus](#current-focus). Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.259**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.9.258**.
+Open work and the scratch notes are [Current Focus](#current-focus). `TODO-items-for-0.27.md` is retired. Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.261**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.9.261**.
 
 ## Useful Commands
 

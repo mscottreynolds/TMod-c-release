@@ -7,7 +7,7 @@ module tmodc.parser.expression()
  * expression.mc - Expression parsing routines.
  *)
 
-import size_t from "stddef.h"
+import size_t from System
 
 import NODE_TERNARY, NODE_BINARY, NODE_SIZEOF, NODE_INC, NODE_DEC, NODE_UNARY,
 	NODE_CAST, NODE_FIELD_ACCESS, NODE_CALL, NODE_IDENT, NODE_LITERAL, NODE_PAREN,

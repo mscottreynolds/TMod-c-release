@@ -44,13 +44,7 @@ typedef float real;
 #include "../ttype.h"
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "string.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
+#include "../../System.h"
 
 /* === IMPORT === */
 #include "strings.h"
@@ -222,6 +216,7 @@ void tmodc__semantic__semantic__semantic_error_at(tmodc__node__pNode n, const ch
  * Element count of a COUNTOF operand. Outermost complete fixed array.
  * array_size 0 is an open array (array[0] shares that spelling) and is rejected.
  * Sets sizeof_expr.folded and sizeof_expr.count on success.
+ * An imported alias is followed to the array it names.
  */
 
 /**

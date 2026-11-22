@@ -14,7 +14,7 @@ void tmodc__codegen__codegen_dbc(void);
  *
  * codegen_dbc.c - Desing By Contract routines.	
  */
-#include "stddef.h"
+#include "../../System.h"
 #include "../node.h"
 #include "../dynbuf.h"
 #include "codegen_common.h"

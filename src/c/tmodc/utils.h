@@ -27,22 +27,13 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "stdlib.h"
-
-/* === IMPORT === */
-#include "string.h"
+#include "../System.h"
 
 /* === IMPORT === */
 #include "limits.h"
 
 /* === IMPORT === */
 #include "stdio.h"
-
-/* === IMPORT === */
-#include "ctype.h"
 
 /* == TYPE EXPORT == */
 typedef char* tmodc__utils__pchar;

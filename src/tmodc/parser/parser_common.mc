@@ -9,6 +9,8 @@ module tmodc.parser.parser_common()
  *)
 
 
+import size_t, fprintf, exit, 
+    from System
 import 
     TLexer, TToken, TokenKind, TLexer::next, TLexer::init, TOK_COMMENT_SINGLE, TOK_COMMENT_MULTI,
     TOK_COMMENT_PASCAL, TOK_COMMENT, TOK_DOC_COMMENT, TOK_SEMICOLON, TOK_NEWLINE, TOK_COLON_EQ,
@@ -22,12 +24,9 @@ import
     pDynBuf 
     from tmodc.dynbuf
     
-import size_t 
-    from "stddef.h"
-import stderr, fprintf 
+
+import stderr, 
     from "stdio.h"
-import exit 
-    from "stdlib.h"
 
 (**
  * One user TYPE name registered for sizeof() disambiguation at parse time.

@@ -17,8 +17,7 @@ void tmodc__codegen__codegen_header(tmodc__codegen__codegen_common__CodegenConte
  * Generation of C header files (.h) for the -H option.
  * Only emits the exported surface of a program/module.
  */
-#include "stddef.h"
-#include "stdlib.h"
+#include "../../System.h"
 #include "stdio.h"
 #include "../node.h"
 #include "version.h"
@@ -61,17 +60,17 @@ static void codegen_header_emit_exported(const tmodc__node__TNode* n, tmodc__cod
             size_t i = 0;
             bool emitted = false;
             {
-                const size_t __for_end_l78_c7 = ((((*n)).var_decl).count);
-                for (i = 1; i <= __for_end_l78_c7; i++)
+                const size_t __for_end_l76_c7 = ((((*n)).var_decl).count);
+                for (i = 1; i <= __for_end_l76_c7; i++)
                 {
                     {
-                        tmodc__node__pNode item_l79_c13 = (((*n)).var_decl).items[i - 1];
-                        if (item_l79_c13 == nil)
+                        tmodc__node__pNode item_l77_c13 = (((*n)).var_decl).items[i - 1];
+                        if (item_l77_c13 == nil)
                         {
                                                         /* INVARIANT (on loop exit) */
                             continue;
                         }
-                        if (((*n)).kind == tmodc__node__NODE_CONST_DECL && tmodc__codegen__codegen_common__codegen_const_is_value(item_l79_c13))
+                        if (((*n)).kind == tmodc__node__NODE_CONST_DECL && tmodc__codegen__codegen_common__codegen_const_is_value(item_l77_c13))
                         {
                                                         /* INVARIANT (on loop exit) */
                             continue;
@@ -94,13 +93,13 @@ static void codegen_header_emit_exported(const tmodc__node__TNode* n, tmodc__cod
                         {
                             tmodc__dynbuf__dynbuf_append((ctx).out, "const ");
                         }
-                        tmodc__codegen__codegen_common__codegen_emit_var_item((ctx).out, item_l79_c13, (((*item_l79_c13)).var_item).item_type);
+                        tmodc__codegen__codegen_common__codegen_emit_var_item((ctx).out, item_l77_c13, (((*item_l77_c13)).var_item).item_type);
                         if (!(((*n)).var_decl).is_extern)
                         {
-                            if ((((*item_l79_c13)).var_item).initializer != nil)
+                            if ((((*item_l77_c13)).var_item).initializer != nil)
                             {
                                 tmodc__dynbuf__dynbuf_append((ctx).out, " = ");
-                                tmodc__codegen__codegen_common__codegen_common_expr((((*item_l79_c13)).var_item).initializer, ctx);
+                                tmodc__codegen__codegen_common__codegen_common_expr((((*item_l77_c13)).var_item).initializer, ctx);
                             }
                             else
                             {
@@ -159,8 +158,8 @@ static void emit_header_guard_name(tmodc__dynbuf__pDynBuf out, const char* heade
     tmodc__dynbuf__dynbuf_append(out, header_type);
     tmodc__dynbuf__dynbuf_append_char(out, '_');
     {
-        const size_t __for_end_l165_c5 = (base_len);
-        for (i = 1; i <= __for_end_l165_c5; i++)
+        const size_t __for_end_l163_c5 = (base_len);
+        for (i = 1; i <= __for_end_l163_c5; i++)
         {
             {
                 c = base[i - 1];
@@ -250,19 +249,19 @@ static void codegen_header_program(const tmodc__node__TNode* n, tmodc__codegen__
         bool preamble_done = false;
         bool order_flags[1024] = {0};
         {
-            const size_t __for_end_l265_c6 = ((((*n)).program_decl).count);
-            for (i = 1; i <= __for_end_l265_c6; i++)
+            const size_t __for_end_l263_c6 = ((((*n)).program_decl).count);
+            for (i = 1; i <= __for_end_l263_c6; i++)
             {
                 {
-                    tmodc__node__pNode d_l266_c9 = (((*n)).program_decl).decls[i - 1];
-                    if (d_l266_c9 == nil)
+                    tmodc__node__pNode d_l264_c9 = (((*n)).program_decl).decls[i - 1];
+                    if (d_l264_c9 == nil)
                     {
                                                 /* INVARIANT (on loop exit) */
                         continue;
                     }
-                    if (!preamble_done && !tmodc__codegen__codegen_common__codegen_decl_opens_type_order(d_l266_c9))
+                    if (!preamble_done && !tmodc__codegen__codegen_common__codegen_decl_opens_type_order(d_l264_c9))
                     {
-                        codegen_header_emit_one(d_l266_c9, ctx);
+                        codegen_header_emit_one(d_l264_c9, ctx);
                                                 /* INVARIANT (on loop exit) */
                         continue;
                     }
@@ -271,13 +270,13 @@ static void codegen_header_program(const tmodc__node__TNode* n, tmodc__codegen__
                         tmodc__codegen__codegen_common__codegen_emit_type_preamble(n, ctx, true, &order_flags[0], cap);
                         preamble_done = true;
                     }
-                    if (tmodc__codegen__codegen_common__codegen_type_order_skip(n, d_l266_c9, true, &order_flags[0], cap, i - 1))
+                    if (tmodc__codegen__codegen_common__codegen_type_order_skip(n, d_l264_c9, true, &order_flags[0], cap, i - 1))
                     {
                                                 /* INVARIANT (on loop exit) */
                         continue;
                     }
-                    codegen_header_emit_one(d_l266_c9, ctx);
-                    if (((*d_l266_c9)).kind == tmodc__node__NODE_TYPE_DECL && tmodc__codegen__codegen_common__codegen_type_in_file(d_l266_c9, true))
+                    codegen_header_emit_one(d_l264_c9, ctx);
+                    if (((*d_l264_c9)).kind == tmodc__node__NODE_TYPE_DECL && tmodc__codegen__codegen_common__codegen_type_in_file(d_l264_c9, true))
                     {
                         tmodc__codegen__codegen_common__codegen_type_order_after_type(n, ctx, true, &order_flags[0], cap, i - 1);
                     }

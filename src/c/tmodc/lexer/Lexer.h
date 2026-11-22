@@ -28,19 +28,7 @@ typedef float real;
  */
 
 /* === IMPORT === */
-#include "stdio.h"
-
-/* === IMPORT === */
-#include "string.h"
-
-/* === IMPORT === */
-#include "stddef.h"
-
-/* === IMPORT === */
-#include "stdbool.h"
-
-/* === IMPORT === */
-#include "ctype.h"
+#include "../../System.h"
 
 /**
  * Token kinds recognized by the TMod-c lexer.

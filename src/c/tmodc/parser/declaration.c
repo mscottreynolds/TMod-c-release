@@ -14,10 +14,7 @@ void tmodc__parser__declaration(void);
  *
  * Declaration parsing routines.
  */
-#include "stddef.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include "../../System.h"
 #include "../node.h"
 #include "parser_common.h"
 #include "parser_main.h"
@@ -37,8 +34,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_item(tmodc__parser__parser_
     {
         tmodc__parser__parser_common__error_at(p, "parse_item: expected identifier", true);
     }
-    string name_start_l56_c19 = (item_token).start;
-    size_t name_len_l57_c17 = (item_token).length;
+    string name_start_l52_c19 = (item_token).start;
+    size_t name_len_l53_c17 = (item_token).length;
     tmodc__parser__parser_common__advance(p);
     if (tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_COLON))
     {
@@ -53,8 +50,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_item(tmodc__parser__parser_
             /* ENSURE (on return) */
     assert(item != nil); /* postcodition */
 /* return value captured before defers */
-            tmodc__node__pNode __ret_l69 = nil;
-            return __ret_l69;
+            tmodc__node__pNode __ret_l65 = nil;
+            return __ret_l65;
         }
     }
     else if (node_kind == tmodc__node__NODE_CONST_ITEM)
@@ -63,8 +60,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_item(tmodc__parser__parser_
         /* ENSURE (on return) */
     assert(item != nil); /* postcodition */
 /* return value captured before defers */
-        tmodc__node__pNode __ret_l73 = nil;
-        return __ret_l73;
+        tmodc__node__pNode __ret_l69 = nil;
+        return __ret_l69;
     }
     else if (node_kind == tmodc__node__NODE_LET_ITEM)
     {
@@ -72,19 +69,19 @@ tmodc__node__pNode tmodc__parser__declaration__parse_item(tmodc__parser__parser_
         /* ENSURE (on return) */
     assert(item != nil); /* postcodition */
 /* return value captured before defers */
-        tmodc__node__pNode __ret_l76 = nil;
-        return __ret_l76;
+        tmodc__node__pNode __ret_l72 = nil;
+        return __ret_l72;
     }
     item = tmodc__node__node_create(((*p)).arena, node_kind, item_token);
-    (((*item)).var_item).name = name_start_l56_c19;
-    (((*item)).var_item).name_len = name_len_l57_c17;
+    (((*item)).var_item).name = name_start_l52_c19;
+    (((*item)).var_item).name_len = name_len_l53_c17;
     (((*item)).var_item).item_type = item_type;
     (((*item)).var_item).initializer = initializer;
     /* ENSURE (on return) */
     assert(item != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l85 = item;
-    return __ret_l85;
+    tmodc__node__pNode __ret_l81 = item;
+    return __ret_l81;
 }
 
 /**
@@ -106,8 +103,8 @@ static void apply_grouped_trailing_types(tmodc__parser__parser_common__pParser p
     tmodc__ttype__pTType pending = nil;
     size_t i = {0};
     {
-        const size_t __for_end_l110_c8 = (1);
-        for (i = count; i >= __for_end_l110_c8; i--)
+        const size_t __for_end_l106_c8 = (1);
+        for (i = count; i >= __for_end_l106_c8; i--)
         {
             {
                 tmodc__node__pNode it = items[i - 1];
@@ -191,8 +188,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_var_decl(tmodc__parser__par
     /* ENSURE (on return) */
     assert(decl != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l195 = decl;
-    return __ret_l195;
+    tmodc__node__pNode __ret_l191 = decl;
+    return __ret_l191;
 }
 
 /**
@@ -238,8 +235,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_const_decl(tmodc__parser__p
     /* ENSURE (on return) */
     assert(decl != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l249 = decl;
-    return __ret_l249;
+    tmodc__node__pNode __ret_l245 = decl;
+    return __ret_l245;
 }
 
 tmodc__node__pNode tmodc__parser__declaration__parse_let_decl(tmodc__parser__parser_common__pParser p, bool exported)
@@ -275,8 +272,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_let_decl(tmodc__parser__par
     /* ENSURE (on return) */
     assert(decl != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l293 = decl;
-    return __ret_l293;
+    tmodc__node__pNode __ret_l289 = decl;
+    return __ret_l289;
 }
 
 /**
@@ -321,13 +318,13 @@ tmodc__node__pNode tmodc__parser__declaration__parse_type_decl(tmodc__parser__pa
             {
                 tmodc__parser__parser_common__consume(p, tmodc__lexer__Lexer__TOK_EQ, "parse_type_decl: Expected '=' after type name in TYPE declaration");
                 (((*decl)).type_decl).is_forward = false;
-                bool is_packed_l345_c26 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_PACKED);
+                bool is_packed_l341_c26 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_PACKED);
                 if (tmodc__parser__parser_common__check(p, tmodc__lexer__Lexer__TOK_KEYWORD_STRUCT))
                 {
                     tmodc__node__pNode struct_node = tmodc__parser__declaration__parse_struct_type(p);
                     (((*struct_node)).struct_decl).name = name_start;
                     (((*struct_node)).struct_decl).name_len = name_len;
-                    (((*struct_node)).struct_decl).is_packed = is_packed_l345_c26;
+                    (((*struct_node)).struct_decl).is_packed = is_packed_l341_c26;
                     (((*decl)).type_decl).struct_body = struct_node;
                     (((*decl)).type_decl).defined_type = nil;
                     (((*decl)).type_decl).method_type = nil;
@@ -386,8 +383,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_type_decl(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(decl != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l400 = decl;
-    return __ret_l400;
+    tmodc__node__pNode __ret_l396 = decl;
+    return __ret_l396;
 }
 
 /**
@@ -452,8 +449,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_extern_type_decl(tmodc__par
     /* ENSURE (on return) */
     assert(decl != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l466 = decl;
-    return __ret_l466;
+    tmodc__node__pNode __ret_l462 = decl;
+    return __ret_l462;
 }
 
 /**
@@ -467,10 +464,10 @@ tmodc__node__pNode tmodc__parser__declaration__parse_param(tmodc__parser__parser
     size_t name_len = {0};
     tmodc__ttype__pTType item_type = nil;
     tmodc__node__pNode param_node = nil;
-    bool is_const_l486_c17 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_CONST);
-    bool is_var_l487_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_VAR);
-    bool is_ref_l488_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_REF);
-    if (is_var_l487_c15 && (is_const_l486_c17 || is_ref_l488_c15))
+    bool is_const_l482_c17 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_CONST);
+    bool is_var_l483_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_VAR);
+    bool is_ref_l484_c15 = tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_KEYWORD_REF);
+    if (is_var_l483_c15 && (is_const_l482_c17 || is_ref_l484_c15))
     {
         tmodc__parser__parser_common__error_at(p, "parse_param: VAR cannot be combined with CONST or REF", true);
     }
@@ -487,14 +484,14 @@ tmodc__node__pNode tmodc__parser__declaration__parse_param(tmodc__parser__parser
     (((*param_node)).param).name = name_start;
     (((*param_node)).param).name_len = name_len;
     (((*param_node)).param).param_type = item_type;
-    (((*param_node)).param).is_ref = is_ref_l488_c15;
-    (((*param_node)).param).is_var = is_var_l487_c15;
-    (((*param_node)).param).is_const = is_const_l486_c17;
+    (((*param_node)).param).is_ref = is_ref_l484_c15;
+    (((*param_node)).param).is_var = is_var_l483_c15;
+    (((*param_node)).param).is_const = is_const_l482_c17;
     /* ENSURE (on return) */
     assert(param_node != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l516 = param_node;
-    return __ret_l516;
+    tmodc__node__pNode __ret_l512 = param_node;
+    return __ret_l512;
 }
 
 /**
@@ -509,8 +506,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_param_list(tmodc__parser__p
     if (!tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_LPAREN))
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l534 = nil;
-        return __ret_l534;
+        tmodc__node__pNode __ret_l530 = nil;
+        return __ret_l530;
     }
     list = tmodc__node__node_create(((*p)).arena, tmodc__node__NODE_PARAM_LIST, ((*p)).current);
     (((*list)).param_list).params = nil;
@@ -561,8 +558,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_param_list(tmodc__parser__p
     }
     tmodc__parser__parser_common__consume(p, tmodc__lexer__Lexer__TOK_RPAREN, "parse_param_list: expected ')' after parameter list");
     /* return value captured before defers */
-    tmodc__node__pNode __ret_l587 = list;
-    return __ret_l587;
+    tmodc__node__pNode __ret_l583 = list;
+    return __ret_l583;
 }
 
 /**
@@ -582,13 +579,13 @@ tmodc__node__pNode tmodc__parser__declaration__parse_proc_or_func_decl(tmodc__pa
 {
     assert(p != nil); /* precondition */
     tmodc__lexer__Lexer__TToken proc_token = ((*p)).current;
-    bool is_function_l609_c20 = ((proc_token).kind == tmodc__lexer__Lexer__TOK_KEYWORD_FUNCTION);
+    bool is_function_l605_c20 = ((proc_token).kind == tmodc__lexer__Lexer__TOK_KEYWORD_FUNCTION);
     bool is_forward = false;
     tmodc__node__pNode n = nil;
     tmodc__parser__parser_common__advance(p);
-    n = tmodc__node__node_create(((*p)).arena, (is_function_l609_c20 ? tmodc__node__NODE_FUNC_DECL : tmodc__node__NODE_PROC_DECL), proc_token);
+    n = tmodc__node__node_create(((*p)).arena, (is_function_l605_c20 ? tmodc__node__NODE_FUNC_DECL : tmodc__node__NODE_PROC_DECL), proc_token);
     (((*n)).proc_decl).is_exported = exported;
-    (((*n)).proc_decl).is_function = is_function_l609_c20;
+    (((*n)).proc_decl).is_function = is_function_l605_c20;
     (((*n)).proc_decl).is_recursive = is_recursive;
     (((*n)).proc_decl).is_forward = false;
     (((*n)).proc_decl).is_extern = is_extern;
@@ -621,7 +618,7 @@ tmodc__node__pNode tmodc__parser__declaration__parse_proc_or_func_decl(tmodc__pa
         }
     }
     (((*n)).proc_decl).params = tmodc__parser__declaration__parse_param_list(p);
-    if (is_function_l609_c20)
+    if (is_function_l605_c20)
     {
         if (tmodc__parser__parser_common__match(p, tmodc__lexer__Lexer__TOK_COLON))
         {
@@ -655,8 +652,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_proc_or_func_decl(tmodc__pa
     /* ENSURE (on return) */
     assert(n != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l683 = n;
-    return __ret_l683;
+    tmodc__node__pNode __ret_l679 = n;
+    return __ret_l679;
 }
 
 /**
@@ -755,8 +752,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_struct_type(tmodc__parser__
     /* ENSURE (on return) */
     assert(s != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l798 = s;
-    return __ret_l798;
+    tmodc__node__pNode __ret_l794 = s;
+    return __ret_l794;
 }
 
 /**
@@ -842,8 +839,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_union_type(tmodc__parser__p
     /* ENSURE (on return) */
     assert(u != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l900 = u;
-    return __ret_l900;
+    tmodc__node__pNode __ret_l896 = u;
+    return __ret_l896;
 }
 
 /**
@@ -882,8 +879,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_method_type(tmodc__parser__
     /* ENSURE (on return) */
     assert(n != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l943 = n;
-    return __ret_l943;
+    tmodc__node__pNode __ret_l939 = n;
+    return __ret_l939;
 }
 
 /**
@@ -899,8 +896,8 @@ static tmodc__node__pNode parse_enum_item(tmodc__parser__parser_common__pParser 
     if ((((*p)).current).kind != tmodc__lexer__Lexer__TOK_IDENT)
     {
         /* return value captured before defers */
-        tmodc__node__pNode __ret_l963 = nil;
-        return __ret_l963;
+        tmodc__node__pNode __ret_l959 = nil;
+        return __ret_l959;
     }
     item_tok = ((*p)).current;
     name = (((*p)).current).start;
@@ -915,8 +912,8 @@ static tmodc__node__pNode parse_enum_item(tmodc__parser__parser_common__pParser 
         (((*item)).enum_item).value = tmodc__parser__parser_main__TParser__parse_const_expression(&(*p));
     }
     /* return value captured before defers */
-    tmodc__node__pNode __ret_l981 = item;
-    return __ret_l981;
+    tmodc__node__pNode __ret_l977 = item;
+    return __ret_l977;
 }
 
 /**
@@ -976,8 +973,8 @@ tmodc__node__pNode tmodc__parser__declaration__parse_enum_type(tmodc__parser__pa
     /* ENSURE (on return) */
     assert(e != nil); /* postcodition */
 /* return value captured before defers */
-    tmodc__node__pNode __ret_l1048 = e;
-    return __ret_l1048;
+    tmodc__node__pNode __ret_l1044 = e;
+    return __ret_l1044;
 }
 
 

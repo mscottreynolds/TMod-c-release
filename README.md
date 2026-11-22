@@ -97,6 +97,8 @@ Features (Early Design Goals)
 - `IMPORT *` (0.27.9.257): `import * from tmodc.arena` binds that qualident and no bare name. An export is `tmodc.arena.arena_init`. The module entry is `tmodc.arena()`. Exported C names use the package spelling (`tmodc__arena__Point__print`)
 - `import * as Alias` (0.27.9.258): `import * as st from tmodc.lib.strings` binds `st`. `st()` is the module entry. `st.isString` is an export. Generated C stays the module spelling
 - Instance call on a qualified type (0.27.9.259): `q.getX()` finds `Point__getX` when `q` is `fixtures.starpack.Point`. The call still needs `import Point::getX`
+- `countof` of an imported array (0.27.9.260): `countof(Quad)` folds. `countof(Alias)` folds when `Alias` names `Quad` and `Quad` is in scope. `import Alias` alone stays an error
+- `header System` (0.27.9.261): the compiler imports its C types and functions from `System`. `export extern type` and `extern export type` are the same declaration
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -106,7 +108,9 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
-- **0.27.9.259** (20 November 2026): `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. No separate grok report.
+- **0.27.9.261** (20 November 2026): `header System` holds the C types and functions the compiler calls. `export extern type` and `extern export type` are the same declaration. Macros stay direct imports. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported a clean rebuild on gcc, clang, and tcc, with no warnings. Session archive: `docs/grok_report-20261120-2025.md`.
+- **0.27.9.260** (20 November 2026): `countof` of an imported array type folds. An alias follows its target when that type is in scope, including a star qualident. `import Alias` alone stays an error. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-2025.md`.
+- **0.27.9.259** (20 November 2026): `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-2025.md`.
 - **0.27.9.258** (20 November 2026): `import * as Alias`. `import * as st from Module` binds `st` and not the qualident. `st()` is the module entry. An export is `st.name`. Generated C stays the module spelling. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-0212.md`.
 - **0.27.9.257** (19 November 2026): `IMPORT *` and the package C spelling. `import * from Module` binds the qualident and no bare name. Exported C names replace `.` and `::` with `__`. A quoted path, a `.h` import, an `EXTERN`, and `DEFINE` keep their spelling. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-0212.md`.
 - **0.27.8.255** (18 November 2026): drop unused keyword `IS`. The lexer no longer reserves it. `is` is an identifier. `IN` stays reserved. Branch **`TMod-c_0.27`**. Stem **0.27.8**. Reported that the complete test suite passes on gcc, clang, and tcc.
@@ -177,7 +181,7 @@ make clean && make CC=clang       # clang
 make clean && make CC=tcc         # tcc
 make test-all
 
-./bin/modc.0.27.8 hello.mc -C hello.c
+./bin/tmodc hello.mc -C hello.c
 gcc -std=c11 -o hello hello.c     # or $(CC); generated C is C11
 ./hello
 ```

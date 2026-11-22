@@ -23,9 +23,8 @@ void tmodc__codegen__codegen(void);
  *  .target = TARGET_C/TARGET_HEADER    // REQUIRED: Output code target. 
  *                                      // Currently only TARGET_C and TARGET_HEADER supported.
  */
-#include "stddef.h"
+#include "../../System.h"
 #include "stdio.h"
-#include "stdlib.h"
 #include "../node.h"
 #include "../dynbuf.h"
 #include "codegen_c.h"

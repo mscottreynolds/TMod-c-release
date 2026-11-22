@@ -17,12 +17,10 @@ module tmodc.codegen.codegen()
  *)
 
 
-import size_t 
-    from "stddef.h"
-import stderr, fprintf 
+import size_t, fprintf, exit,  
+    from System
+import stderr, 
     from "stdio.h"
-import exit 
-    from "stdlib.h"
 import pNode, TNode,
     from tmodc.node
 

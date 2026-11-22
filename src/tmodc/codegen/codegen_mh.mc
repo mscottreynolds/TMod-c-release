@@ -4,14 +4,10 @@ module tmodc.codegen.codegen_mh(ctx: CodegenContext)
  * codegen_mh.mc - Emit modc-mh/1 symbol export files for EXPORT declarations.
  *)
 
-import size_t 
-	from "stddef.h"
-import stderr, fprintf, snprintf, 
+import size_t, fprintf, snprintf, exit, memcmp,
+	from System
+import stderr,  
 	from "stdio.h"
-import exit 
-	from "stdlib.h"
-import memcmp 
-	from "string.h"
 import VERSION_BASE 
 	from "version.h"
 import DynBuf, dynbuf_append, dynbuf_appendn, dynbuf_append_char 
