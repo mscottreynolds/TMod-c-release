@@ -1277,7 +1277,7 @@ end
 
 Avoid “returns void” as a type. C `void *` is `^opaque` (§5.2), not a type named `void`.
 
-**`RECURSIVE` (enforced 0.25.4):** required on a procedure/function that **directly** calls itself. The completing declaration (the one with the body) must carry the tag. Mutual recursion is not checked.
+**`RECURSIVE` (direct calls 0.25.4, same-unit cycles 0.27.10.264):** required on the completing declaration of a procedure or function that calls itself directly. It is also required on every procedure or function in a cycle of named calls in the same unit. The direct check reports the self-call at the call. The cycle check reports the first procedure on the cycle that lacks the tag, and names the procedure it calls. A call through a function pointer or a callable field is not an edge. A call into another unit is not an edge. The module `begin` block is in that graph. The module entry has no `RECURSIVE` tag. A module that calls only its own entry is not reported.
 
 **Examples:**
 
@@ -1693,6 +1693,7 @@ Do not maintain a second full EBNF elsewhere.
 | 20 November 2026 | **§3.2 / §8.3 instance call (0.27.9.259):** `q.getX()` looks up `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. |
 | 20 November 2026 | **§10.2 `COUNTOF` of an imported array (0.27.9.260):** an imported fixed array folds. An alias follows its target when that type is in scope, including a star scope. `import Alias` alone stays an error. |
 | 20 November 2026 | **§3.2 `export extern type` (0.27.9.261):** `export extern type Name` and `extern export type Name` are the same declaration. A bare foreign type emits no typedef. The `.mh` line is `export type Name opaque`. |
+| 24 November 2026 | **§8.1 same-unit `RECURSIVE` (0.27.10.264):** a cycle of named calls in one unit requires `RECURSIVE` on every procedure or function on the cycle. A direct self-call stays a separate diagnostic at the call. A function pointer, a callable field, and a call into another unit are not edges. The module `begin` block is in the graph. The module entry has no tag. |
 
 ---
 

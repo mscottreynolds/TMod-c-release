@@ -941,7 +941,7 @@ end codegen_args_needs_address
 (*
  * codegen_emit_call_arg_deref
  *)
-procedure codegen_emit_call_arg_deref(formal: const ^TNode, arg: const ^TNode,
+recursive procedure codegen_emit_call_arg_deref(formal: const ^TNode, arg: const ^TNode,
         auto_deref: bool, base_depth: size_t, ctx: CodegenContext)
 begin
     var need_addr: bool
@@ -2256,7 +2256,7 @@ end codegen_common_emit_literal
  * Emit array literal: { expr, expr, ... }
  * Special fast path for the extremly common {0} zero-initializer.
  *)
-export procedure codegen_common_array_literal(n: const ^TNode, ctx: CodegenContext)
+export recursive procedure codegen_common_array_literal(n: const ^TNode, ctx: CodegenContext)
 begin
     var i: size_t
 
@@ -2318,7 +2318,7 @@ end codegen_common_define
 (**
  * Emit field access: record.field
  *)
-export procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext)
+export recursive procedure codegen_common_field_access(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -2361,7 +2361,7 @@ end codegen_common_field_access
  * Emit COUNTOF. Semantic stores the outermost bound in count.
  * ((integer)N)
  *)
-export procedure codegen_common_countof_expr(n: const ^TNode, ctx: CodegenContext)
+export recursive procedure codegen_common_countof_expr(n: const ^TNode, ctx: CodegenContext)
 begin
     var buf: array[64] of char
 
@@ -2403,7 +2403,7 @@ end codegen_common_countof_expr
 (**
  * Emit SIZEOF (type or designator)
  *)
-export procedure codegen_common_sizeof_expr(n: const ^TNode, ctx: CodegenContext)
+export recursive procedure codegen_common_sizeof_expr(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_SIZEOF then
         dynbuf_append(ctx.out, "((integer)sizeof(0))")      // safe fallback
@@ -2433,7 +2433,7 @@ end codegen_common_sizeof_expr
  * Expression context:  INC(x)      => x++
  *                      INC(x, 5)   => (x += 5)     <<-- parentheses added here
  *)
-export procedure codegen_common_inc_dec(n: const ^TNode, ctx: CodegenContext, as_statement: bool)
+export recursive procedure codegen_common_inc_dec(n: const ^TNode, ctx: CodegenContext, as_statement: bool)
 begin
     if n == nil then
         return

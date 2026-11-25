@@ -73,7 +73,7 @@ Features (Early Design Goals)
 - `=` for immutable assignments, `:=` for mutable assignments
 - Optional type inference with required annotations when ambiguous
 - Pascal/Modula-style `PROCEDURE` / `FUNCTION`, `BEGIN` / `END` blocks
-- `RECURSIVE` keyword required on a procedure/function that directly calls itself (0.25.4)
+- `RECURSIVE` required on a direct self-call (0.25.4) and on every procedure or function in a cycle of named calls in the same unit (0.27.10.264). A function pointer, a callable field, and a call into another unit are outside that check
 - Optional postfix `FORWARD` (0.27.6.237): a top-level procedure or function may call one defined later in the same file. The keyword stays legal
 - Free calls must resolve: every `name(...)` / `Type::name(...)` is a declaration, `IMPORT`, or `EXTERN` (0.26.0)
 - Type names must resolve: every non-builtin type is a declaration, `IMPORT`, or `EXTERN` (0.26.1)
@@ -99,6 +99,7 @@ Features (Early Design Goals)
 - Instance call on a qualified type (0.27.9.259): `q.getX()` finds `Point__getX` when `q` is `fixtures.starpack.Point`. The call still needs `import Point::getX`
 - `countof` of an imported array (0.27.9.260): `countof(Quad)` folds. `countof(Alias)` folds when `Alias` names `Quad` and `Quad` is in scope. `import Alias` alone stays an error
 - `header System` (0.27.9.261): the compiler imports its C types and functions from `System`. `export extern type` and `extern export type` are the same declaration
+- Same-unit mutual recursion (0.27.10.264): a cycle of named calls requires `RECURSIVE` on every procedure or function on the cycle. The module entry has no tag
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -108,6 +109,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.10.264** (24 November 2026): a cycle of named calls in one unit requires `RECURSIVE` on every procedure or function on the cycle. Direct self-calls stay a separate diagnostic. A function pointer, a callable field, and a call into another unit are outside the check. Branch **`TMod-c_0.27`**. Stem **0.27.10**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261124-1947.md`.
 - **0.27.9.261** (20 November 2026): `header System` holds the C types and functions the compiler calls. `export extern type` and `extern export type` are the same declaration. Macros stay direct imports. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported a clean rebuild on gcc, clang, and tcc, with no warnings. Session archive: `docs/grok_report-20261120-2025.md`.
 - **0.27.9.260** (20 November 2026): `countof` of an imported array type folds. An alias follows its target when that type is in scope, including a star qualident. `import Alias` alone stays an error. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-2025.md`.
 - **0.27.9.259** (20 November 2026): `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point`. The call still needs a selective `import Point::getX`. Branch **`TMod-c_0.27`**. Stem **0.27.9**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261120-2025.md`.

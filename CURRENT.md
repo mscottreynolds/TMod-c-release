@@ -2,22 +2,21 @@
 
 > **Rebrand (July 2026):** Public project and language name is **TMod-c** (TYPE compiler). Development tree is **TMod-c-dev** (the old **Mod-c** directory and the **TMod-c** symlink are gone). **Mod-c** remains the legacy name for the `modc` binary and the `modc-mh/1` format id until that cutover. Target compiler binary: **`tmodc`**; system ABI module: **`tmodc.mc`** / **`tmodc.h`**. Domains: tmodc.com, tmodc.org, tmodc.net.
 
-**Version:** 0.27.9 (build 261)  
-**Last updated:** 2026-11-20  
+**Version:** 0.27.10 (build 264)  
+**Last updated:** 2026-11-24  
 **Active branch:** `TMod-c_0.27`  
 **Public source drop:** [TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) — contents of `make tar` only (`build/tmod-c-VERSION.BUILD/`). Development tree is **TMod-c-dev** (this clone). Do not push development branches or tags to GitHub.
 
-History through **0.27.9.261** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. **259**–**261** are `docs/grok_report-20261120-2025.md`. `docs/project_bible.md` runs through **0.27.9.261**. This file is the live focus.
+History through **0.27.10.264** is in `changelog.md`. The session archive for **255**–**258** is `docs/grok_report-20261120-0212.md`. **259**–**261** are `docs/grok_report-20261120-2025.md`. **264** is `docs/grok_report-20261124-1947.md`. `docs/project_bible.md` runs through **0.27.10.264**. This file is the live focus.
 
 ## Current Focus
 
-**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.9**, build **261**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is `header System` and `export extern type` (**0.27.9.261**). `countof` of an imported array alias is **0.27.9.260**. `import Alias` alone stays an error. `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point` (**0.27.9.259**). The call still needs `import Point::getX`. `import * as Alias` is **0.27.9.258**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
+**Where we are.** Branch **`TMod-c_0.27`**, stem **0.27.10**, build **264**. **`mod-c_0.26`** closed at **0.26.12.213**. Self-host is complete (**0.27.8.250**). No hand-written compiler C remains. The last promote is same-unit mutual recursion (**0.27.10.264**). A cycle of named calls requires `RECURSIVE` on every procedure on the cycle. `header System` and `export extern type` are **0.27.9.261**. `countof` of an imported array alias is **0.27.9.260**. `import Alias` alone stays an error. `q.getX()` finds `Point__getX` when `q` is declared `fixtures.starpack.Point` (**0.27.9.259**). The call still needs `import Point::getX`. `import * as Alias` is **0.27.9.258**. `import *` and the package C spelling are **0.27.9.257**. The unused keyword `IS` was dropped in **0.27.8.255**. Brace-list inference is **0.27.8.254**. `IMPORT … AS` is **0.27.8.253**.
 
-**Next:** **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
+**Next:** **10c hole.** A call through a function pointer or a callable field does not insert the hidden slice length.
 
 **Still open**
 
-- **10b remainder.** Mutual-recursion checking. Direct `RECURSIVE` is done (**0.25.4**).
 - **10c hole.** A call through a function pointer or a callable field does not insert the hidden slice length.
 - **15a.** Cyclic `IMPORT`. Package directories landed in **0.26.12.213**. The language rule has not. Candidates: extract-common (what `parser_common` does today), an interface/implementation split, a cycle ban, or an interface-only first pass. `parser_main` still meets `declaration`, `expression`, and `statement` through generated C headers and a previously emitted `.mh`.
 - **19 remainder.** A character literal `CONST` still lowers to a C object. A folded integer emits no C object (**0.27.7.243**).
@@ -38,6 +37,7 @@ History through **0.27.9.261** is in `changelog.md`. The session archive for **2
 - **26.** Drop unused keyword `IS`. Done (**0.27.8.255**). The lexer no longer reserves it. `IN` stays reserved. See [Drop `IS`](#drop-is-no-type-guards).
 - **7 remainder.** `IMPORT *` and the package C spelling. Done (**0.27.9.257**). `import * as Alias` is done (**0.27.9.258**). Language Report §3.2.
 - **`COUNTOF` of an imported array type.** Done (**0.27.9.260**). An alias follows its target when that type is in scope. `import Alias` alone stays an error. Language Report §10.2.
+- **10b remainder.** Mutual recursion of named calls in one unit. Done (**0.27.10.264**). A function pointer, a callable field, and a call into another unit are not edges. The module entry has no tag. Language Report §8.1.
 - **DbC.** `REQUIRE` / `ENSURE` already resolve like `ASSERT`. A nil-check of a `REF T` is a separate check of `^T`. Side-effect-free contract lint and a `--pot` assertion quota are not planned.
 
 **Ongoing.** Expand the test suite as features land. `test_*` compiles and runs. `test2_*` is a semantic or `-a` success. `test3_*` is any non-zero exit. Message text is not locked.
@@ -159,7 +159,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 - **Bare `UNION`** — C overlapping members; `codegen_common_union_decl`; no EXTENDS; not language-level tagged unions. A nested struct is a named type used as a field type. An anonymous `union` … `end` promotes its members into the enclosing struct or union (**0.27.4.228**).
 - **Arena** — linked chunks (pointer-stable); no whole-buffer `realloc` of live AST/symtab storage.
 - **Portable builtins (Option A — Phase A Done 0.24.18; widths Done 0.26.5; import-bind / `.mh` widths Done 0.26.5.174; alias RHS / packs Done 0.26.8.194)** — Only `integer`, `cardinal`, `real`, `string` may be **bound once per compilation unit** via top-level `TYPE` **or** a named `.mh` import of that name. Unbound → defaults `int` / `unsigned int` / `float` / `const char *` (`cint`). Width forms **`integer N` / `cardinal N` / `real N`** are exact, RHS-only constructors (closed *N*); `.mh` type-spec may carry the same tail; **alias RHS** `export type integer complete integer 64`. Packs: `tests/fixtures/lp64`, `ilp32`. **Parked indefinitely (12 October 2026):** build-time defaults, until another architecture can prove `TMODC_ARCH`. Not C rank. See Language Report §5.5 / §10.1.
-- **`RECURSIVE` (0.25.4)** — required on a **direct** self-call (same PROC/FUNC node as `enclosing_func`). Review/lint flag for JPL rule 1; mutual recursion not checked.
+- **`RECURSIVE` (0.25.4 / 0.27.10.264)** — required on a **direct** self-call (same PROC/FUNC node as `enclosing_func`), and on every procedure or function in a cycle of named calls in the same unit. A function pointer, a callable field, and a call into another unit are not edges. The module entry has no tag. Review/lint flag for JPL rule 1.
 - **`SIZEOF` (0.25.4)** — TMod-c type `integer`; C emit `((integer)sizeof(...))`. Not C `size_t`.
 - **`COUNTOF` (0.26.9.198)** — `countof(designator | type)`; outermost bound of a complete fixed array; type `integer`; folded `((integer)N)`. `len` is an identifier. Pointers, scalars, `string`, and open arrays that are not slice formals are errors. A slice formal's `countof` is the hidden length (**0.27.1.219**). An imported array type folds, and an alias follows its target when that type is in scope (**0.27.9.260**). `import Alias` alone stays an error. Replaces interim **`LEN` (0.26.8.194)**. Not string length.
 - **Generated C prelude (0.26.1 / 0.26.5)** — `<stdint.h>` `<stdbool.h>` `<assert.h>` only; `byte` = `uint8_t`; `#define nil ((void *)0)` / `#define NIL nil`. No automatic `<stddef.h>`. **0.26.5:** prelude and unit prototype live in the generated `.h`; `.c` includes `"Unit.h"`; `-C` writes a companion `.h`.
@@ -170,7 +170,7 @@ See **`docs/language-report.md`** (prose) and **`docs/syntax-ebnf.md`** (full EB
 
 ## TODO / Next Actions
 
-Open work and the scratch notes are [Current Focus](#current-focus). `TODO-items-for-0.27.md` is retired. Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.9.261**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.9.261**.
+Open work and the scratch notes are [Current Focus](#current-focus). `TODO-items-for-0.27.md` is retired. Finished items from **0.26** and earlier, and the **0.27** promotes through **0.27.10.264**, are in `changelog.md`. `docs/project_bible.md` runs through **0.27.10.264**.
 
 ## Useful Commands
 
@@ -191,12 +191,12 @@ make selfhost
 make bootstrap
 make promote
 
-./bin/modc.0.27.9 --help
-./bin/modc.0.27.9 -C input.mc
-./bin/modc.0.27.9 -C -d dir *.mc
-./bin/modc.0.27.9 -H input.mc
-./bin/modc.0.27.9 -M [file.mh]
-./bin/modc.0.27.9 -a input.mc
+./bin/tmodc --help
+./bin/tmodc -C input.mc
+./bin/tmodc -C -d dir *.mc
+./bin/tmodc -H input.mc
+./bin/tmodc -M [file.mh]
+./bin/tmodc -a input.mc
 ```
 
 ## Archive

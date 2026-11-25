@@ -18,14 +18,14 @@ begin
 	return b
 end
 
-procedure Pong(n: integer)
+recursive procedure Pong(n: integer)
 begin
 	if n > 0 then
 		Ping(n - 1)
 	end
 end
 
-procedure Ping(n: integer)
+recursive procedure Ping(n: integer)
 begin
 	if n > 0 then
 		Pong(n - 1)

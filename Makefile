@@ -1,6 +1,6 @@
 # Makefile for Mod-c, a C, Pascal, Modula-2, Oberon inspired compiler.
 
-VERSION 	:= 0.27.9
+VERSION 	:= 0.27.10
 
 BIN_DIR   	= bin
 SRC_DIR   	= src
@@ -155,6 +155,12 @@ version:
 		> $(SRC_DIR)/version.mc
 	@echo VERSION=$(VERSION)
 	@echo BUILD_NUMBER=$$(cat $(BUILD_FILE) 2>/dev/null || echo 0)
+	@if [ ! -f $(TARGET) ]; then								\
+		echo "=== Run 'tmodc $(SRC_DIR)/version.mc -H $(SRC_DIR)/c/version.h'";	\
+		echo "=== to update version.h";			\
+	else 														\
+		$(TARGET) $(SRC_DIR)/version.mc -H $(SRC_DIR)/c/version.h;	\
+	fi;
 
 info:
 	@echo VERSION=$(VERSION)

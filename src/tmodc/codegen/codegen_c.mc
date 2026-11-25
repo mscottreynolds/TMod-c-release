@@ -98,7 +98,7 @@ import codegen_dbc_emit_invariants, codegen_dbc_emit_ensures_to_func,
  * Body is emitted as a block.
  * If no body is defined, treat it as a prototype.
  *)
-procedure codegen_c_proc_or_func(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_proc_or_func(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -137,7 +137,7 @@ end codegen_c_defer_stmt
 (**
  * Emit DEBUG statements if debug flag has been set in the context.
  *)
-procedure codegen_c_debug_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_debug_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -178,7 +178,7 @@ end codegen_c_assert_stmt
  * Emit IF / ELSIF / ELSE chain.
  * Handles the full TMod-c if-then-elsif-else-end structure.
  *)
-procedure codegen_c_if_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_if_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var else_: const ^TNode
     var elsif_: const ^TNode
@@ -280,7 +280,7 @@ end codegen_c_emit_bound_check
 (**
  * Emit WHILE ... DO ... END
  *)
-procedure codegen_c_while_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_while_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -329,7 +329,7 @@ end codegen_c_while_stmt
 (**
  * Emit FOR ... TO/DOWNTO ... BY ... DO ... END
  *)
-procedure codegen_c_for_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_for_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var buf: array[32] of char
 
@@ -428,7 +428,7 @@ end codegen_c_for_stmt
 (**
  * Emit REPEAT ... UNTIL ...
  *)
-procedure codegen_c_repeat_until_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_repeat_until_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -478,7 +478,7 @@ end codegen_c_repeat_until_stmt
 (**
  * Emit LOOP ... END (infinite loop)
  *)
-procedure codegen_c_loop_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_loop_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     var active: bool = false
 
@@ -528,7 +528,7 @@ end codegen_c_loop_stmt
  * labels before that default, so default stays last. A break; is emitted after
  * the defualt arm for symetry.
  *)
-procedure codegen_c_switch_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_switch_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_SWITCH then
         dynbuf_append(ctx.out, "/* TODO: codegen_c_switch_stmt: invalid switch node */\n")
@@ -675,7 +675,7 @@ end codegen_c_block_has_reached_defer
  * DEFER stateent. ctx.stmt_index is the cutoff in this block (see
  * CodegenContext.stmt_index); LIFO amongh those that qualify.
  *)
-procedure codegen_c_emit_defers(block_node: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_emit_defers(block_node: const ^TNode, ctx: CodegenContext)
 begin
     var cutoff: size_t
     var i: size_t
@@ -710,7 +710,7 @@ end codegen_c_emit_defers
  * Emit defers by walking up the context chain until we reach the
  * enclosing function. Used by RETURN statements.
  *)
-procedure codegen_c_emit_defers_to_func(ctx: CodegenContext)
+recursive procedure codegen_c_emit_defers_to_func(ctx: CodegenContext)
 begin
     var current: CodegenContext = ctx
     var target_func: const ^TNode = ctx.enclosing_func
@@ -738,7 +738,7 @@ end codegen_c_emit_defers_to_func
  * Emit defers by walking up the context chain until we reach the
  * enclosing loop. Used by BREAK and CONTINUE statements.
  *)
-procedure codegen_c_emit_defers_to_loop(ctx: CodegenContext)
+recursive procedure codegen_c_emit_defers_to_loop(ctx: CodegenContext)
 begin
     var current: CodegenContext = ctx
     var target_loop: const ^TNode = ctx.enclosing_loop
@@ -765,7 +765,7 @@ end codegen_c_emit_defers_to_loop
  * Emit RETURN statement with proper DEFER cleanup.
  * Grammar: "RETURN" [ expression ]
  *)
-procedure codegen_c_return_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_return_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_RETURN then
         return
@@ -825,7 +825,7 @@ end codegen_c_return_stmt
  * Emit BREAK statement with proper DEFER cleaup
  * Grammar "BREAK"
  *)
-procedure codegen_c_break_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_break_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_BREAK then
         return
@@ -846,7 +846,7 @@ end codegen_c_break_stmt
  * Emit CONTINUE statement wiht proper DEFER cleanup.
  * Grammar: "CONTINUE"
  *)
-procedure codegen_c_continue_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_continue_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil or n.kind <> NODE_CONTINUE then
         return
@@ -975,7 +975,7 @@ end codegen_c_emit_array_copy
 (**
  * Emit a single statement
  *)
-procedure codegen_c_stmt(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_stmt(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return
@@ -1157,7 +1157,7 @@ end codegen_c_stmt
 (**
  * Emit BEGIN ... END block (statement sequence)
  *)
-procedure codegen_c_block(n: const ^TNode, ctx: CodegenContext)
+recursive procedure codegen_c_block(n: const ^TNode, ctx: CodegenContext)
 begin
     if n == nil then
         return

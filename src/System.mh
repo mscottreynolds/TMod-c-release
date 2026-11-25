@@ -7,6 +7,7 @@ export type pvoid complete ^void
 export type ppvoid complete ^pvoid
 export type size_t opaque
 export type FILE opaque
+export type va_list opaque
 export extern procedure exit complete (int)
 export extern function malloc complete (size_t) : ^opaque
 export extern procedure free complete (^opaque)
@@ -32,6 +33,7 @@ export extern function strncmp complete (const ^char, const ^char, size_t) : int
 export extern function fprintf complete (^FILE, const ^char, ...) : int
 export extern function printf complete (const ^char, ...) : int
 export extern function snprintf complete (^char, size_t, const ^char, ...) : int
+export extern function vsnprintf complete (^char, size_t, const ^char, va_list) : int
 export extern function fopen complete (const ^char, const ^char) : ^FILE
 export extern function fclose complete (^FILE) : int
 export extern function fread complete (^opaque, size_t, size_t, ^FILE) : size_t

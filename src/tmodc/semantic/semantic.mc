@@ -52,6 +52,8 @@ import
 
 import size_t, memcmp, memcpy, strlen, strtol, exit, fprintf, snprintf,
 	from System
+import write_to 
+	from tmodc.lib.Strings
 import strncasecmp from "strings.h"
 import stderr from "stdio.h"
 
@@ -116,6 +118,31 @@ type SwitchSeen = struct
 	text:		const ^char
 	text_len:	size_t
 end
+
+
+(* One slot per procedure body, plus the module entry. *)
+type TRecFrame = struct
+	node: 		size_t
+	next_edge: 	size_t
+end
+
+const MAX_REC_GRAPH = 256
+
+type TRecGraph = struct
+	decl: 			array[MAX_REC_GRAPH] of pNode
+	count: 			size_t
+	entry: 			pNode
+	filling: 		bool
+	edge_to: 		^size_t
+	edge_at:		^pNode
+	edge_start: 	array[MAX_REC_GRAPH] of size_t
+	edge_count:		array[MAX_REC_GRAPH] of size_t
+	edge_n:			size_t
+	color:			array[MAX_REC_GRAPH] of integer
+	frame:			array[MAX_REC_GRAPH] of TRecFrame
+	frame_n: 		size_t
+end
+
 
 type pcchar = const ^char
 
@@ -392,7 +419,7 @@ end semantic_stamp_c_name
 (**
  * Resolve ty in place; sets ty^.resolved_type (idempotent).
  *)
-procedure semantic_resolve_type(ctx: pTSemanticContext, ty: pTType, at: pNode)
+recursive procedure semantic_resolve_type(ctx: pTSemanticContext, ty: pTType, at: pNode)
 begin
 	if ty == nil then
 		return
@@ -719,7 +746,7 @@ end semantic_bare_slice_param
  * ^DynBuf and any name this unit does not import stay unresolved.
  * Resolving them reports an unknown type, and they are not slices.
  *)
-procedure semantic_resolve_formal_for_slice(ctx: pTSemanticContext, formal: pNode)
+recursive procedure semantic_resolve_formal_for_slice(ctx: pTSemanticContext, formal: pNode)
 begin
 	var ty: pTType = nil
 	var sym: pTSymbol = nil
@@ -1468,7 +1495,7 @@ end semantic_parse_integer_literal
  * Evaluate a compile-time integer expression.
  * Implementation lives in semantic_try_eval_const_expr
  *)
-function semantic_eval_const_expr(ctx: pTSemanticContext, n: pNode): integer
+recursive function semantic_eval_const_expr(ctx: pTSemanticContext, n: pNode): integer
 begin
 	var val: integer = 0
 	var msg: pcchar = nil
@@ -1542,7 +1569,7 @@ end semantic_countof_array_type
  * Sets sizeof_expr.folded and sizeof_expr.count on success.
  * An imported alias is followed to the array it names.
  *)
-function semantic_countof_value(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool
+recursive function semantic_countof_value(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool
 begin
 	var ty: pTType = nil
 	var d: pNode = nil
@@ -3387,7 +3414,7 @@ begin
 				exp := mh_module_find(@m, lookup_name, lookup_len)
 				if exp == nil then
 					var buf: array[256] of char
-					snprintf(@buf[0], 256,
+					snprintf(@buf[0], sizeof(buf),
 						"semantic_register_import: name not exported in .mh: %.*s",
 						lookup_len as int, lookup_name)
 					semantic_error_at(item, @buf[0])
@@ -4350,7 +4377,7 @@ end semantic_resolve_call
 (**
  * Resolve SIZEOF operand: validate type names; designators must not be types.
  *)
-procedure semantic_resolve_sizeof(ctx: pTSemanticContext, n: pNode)
+recursive procedure semantic_resolve_sizeof(ctx: pTSemanticContext, n: pNode)
 begin
 	var sym: pTSymbol = nil
 	var ty: pTType = nil
@@ -4431,7 +4458,7 @@ end semantic_resolve_sizeof
 (**
  * COUNTOF (type | designaor): complete fixed array, outermost bound.
  *)
-procedure semantic_resolve_countof(ctx: pTSemanticContext, n: pNode)
+recursive procedure semantic_resolve_countof(ctx: pTSemanticContext, n: pNode)
 begin
 	var val: integer = 0
 	var msg: pcchar = nil
@@ -4863,7 +4890,7 @@ end semantic_switch_note
 (**
  * Resolve uses in one statement (no declaration registration).
  *)
-procedure semantic_resolve_stmt(ctx: pTSemanticContext, n: pNode)
+recursive procedure semantic_resolve_stmt(ctx: pTSemanticContext, n: pNode)
 begin
 	var i: size_t = 0
 	var j: size_t = 0
@@ -5108,7 +5135,7 @@ end
 (**
  * Analyze a statement body that may be a BLOCK or a single statement
  *)
-export procedure semantic_analyze_stmt_or_block(ctx: pTSemanticContext, n: pNode)
+export recursive procedure semantic_analyze_stmt_or_block(ctx: pTSemanticContext, n: pNode)
 begin
 	var saved: pTSymbolTable = nil
 	var inner: pTSymbolTable = nil
@@ -5130,7 +5157,7 @@ end semantic_analyze_stmt_or_block
 (**
  * Walk ELSIF chain o an IF node.
  *)
-export procedure semantic_resolve_elsif_chain(ctx: pTSemanticContext, elsif_node: pNode)
+export recursive procedure semantic_resolve_elsif_chain(ctx: pTSemanticContext, elsif_node: pNode)
 begin
 	var last: pNode = nil
 	var elsif_: pNode = elsif_node
@@ -5327,6 +5354,486 @@ begin
 end semantic_rebind_decl_initializers
 
 
+(*
+ * Index of a same-unit procedure body. count means "not in this graph".
+ *)
+function semantic_rec_index(g: ^TRecGraph, decl: pNode): size_t
+begin
+	var i: size_t = 0
+
+	if decl == nil then
+		return g^.count
+	end
+	for i := 1 to g^.count do
+		if g^.decl[i - 1] == decl then
+			return i - 1
+		end
+	end
+	return g^.count
+end semantic_rec_index
+
+
+(*
+ * Record a call from caller to another body in this unit.
+ * A self-call is left to the direct check. A nil symbol is not an edge.
+ *)
+procedure semantic_rec_note(g: ^TRecGraph, caller: size_t, call: pNode)
+begin
+	var sym: pTSymbol = nil
+ 	var idx: size_t = 0
+ 	var slot: size_t = 0
+
+ 	if call == nil or call^.kind <> NODE_CALL then
+ 		return
+ 	end
+ 	sym := call^.resolved_sym
+ 	if sym == nil or sym^.decl == nil then
+ 		return
+ 	end
+ 	idx := semantic_rec_index(g, sym^.decl)
+ 	if idx >= g^.count or idx == caller then
+ 		return
+ 	end
+ 	if not g^.filling then
+ 		g.edge_count[caller] := g^.edge_count[caller] + 1
+ 		g^.edge_n := g^.edge_n + 1
+ 		return
+ 	end
+ 	slot := g^.edge_start[caller] + g^.edge_count[caller]
+ 	if g^.edge_to == nil or g^.edge_at == nil or slot >= g^.edge_n then
+ 		semantic_error_at(call, "semantic_rec_note: edge table exceeded")
+ 	end
+ 	g^.edge_to[slot] := idx
+ 	g^.edge_at[slot] := call
+	g^.edge_count[caller] := g^.edge_count[caller] + 1
+end semantic_rec_note
+
+
+(*
+ * Walk one procedure body. Calls in arguments, contracts, and defer are edges.
+ *)
+recursive procedure semantic_rec_walk(g: ^TRecGraph, caller: size_t, n: pNode)
+begin
+	var i: size_t = 0
+	var sc: ^TSwitchCase = nil
+
+	if n == nil then
+		return
+	end
+
+	switch n^.kind of
+		case NODE_CALL:
+			semantic_rec_walk(g, caller, n^.call.receiver_expr)
+			semantic_rec_walk(g, caller, n^.call.callee_expr)
+			for i := 1 to n^.call.argc do
+				semantic_rec_walk(g, caller, n^.call.args[i - 1])
+			end
+			semantic_rec_note(g, caller, n)
+
+		case NODE_BLOCK:
+			for i := 1 to n^.block.require_count do
+				semantic_rec_walk(g, caller, n^.block.requires[i - 1])
+			end
+			for i := 1 to n^.block.count do
+				semantic_rec_walk(g, caller, n^.block.stmts[i - 1])
+			end
+			for i := 1 to n^.block.defer_count do
+				semantic_rec_walk(g, caller, n^.block.defers[i - 1])
+			end
+			for i := 1 to n^.block.ensure_count do
+				semantic_rec_walk(g, caller, n^.block.ensures[i - 1])
+			end
+
+		case NODE_VAR_DECL, NODE_CONST_DECL, NODE_LET_DECL:
+			for i := 1 to n^.var_decl.count do
+				if n^.var_decl.items[i - 1] <> nil then
+					semantic_rec_walk(g, caller, n^.var_decl.items[i - 1]^.var_item.initializer)
+				end
+			end
+
+		case NODE_EXPR_STMT:
+			semantic_rec_walk(g, caller, n^.expr_stmt.expr)
+
+		case NODE_ASSIGN, NODE_INC, NODE_DEC:
+			semantic_rec_walk(g, caller, n^.binary.left)
+			semantic_rec_walk(g, caller, n^.binary.right)
+
+		case NODE_IF, NODE_ELSIF:
+			semantic_rec_walk(g, caller, n^.if_stmt.cond)
+			semantic_rec_walk(g, caller, n^.if_stmt.then_)
+			semantic_rec_walk(g, caller, n^.if_stmt.elsif_)
+			semantic_rec_walk(g, caller, n^.if_stmt.else_)
+
+		case NODE_ELSE:
+			semantic_rec_walk(g, caller, n^.if_stmt.else_)
+
+		case NODE_FOR:
+			semantic_rec_walk(g, caller, n^.for_stmt.start_)
+			semantic_rec_walk(g, caller, n^.for_stmt.end_)
+			for i := 1 to n^.for_stmt.invariant_count do
+				semantic_rec_walk(g, caller, n^.for_stmt.invariants[i - 1])
+			end
+			semantic_rec_walk(g, caller, n^.for_stmt.body)
+
+		case NODE_WHILE:
+			semantic_rec_walk(g, caller, n^.while_stmt.cond)
+			semantic_rec_walk(g, caller, n^.while_stmt.bound_expr)
+			for i := 1 to n^.while_stmt.invariant_count do
+				semantic_rec_walk(g, caller, n^.while_stmt.invariants[i - 1])
+			end
+			semantic_rec_walk(g, caller, n^.while_stmt.body)
+
+		case NODE_REPEAT_UNTIL:
+			semantic_rec_walk(g, caller, n^.repeat_until.body)
+			semantic_rec_walk(g, caller, n^.repeat_until.cond)
+			semantic_rec_walk(g, caller, n^.repeat_until.bound_expr)
+			for i := 1 to n^.repeat_until.invariant_count do
+				semantic_rec_walk(g, caller, n^.repeat_until.invariants[i - 1])
+			end
+
+		case NODE_LOOP:
+			semantic_rec_walk(g, caller, n^.loop_stmt.bound_expr)
+			for i := 1 to n^.loop_stmt.invariant_count do
+				semantic_rec_walk(g, caller, n^.loop_stmt.invariants[i - 1])
+			end
+			semantic_rec_walk(g, caller, n^.loop_stmt.body)
+
+		case NODE_RETURN:
+			semantic_rec_walk(g, caller, n^.ret.expr)
+
+		case NODE_ASSERT:
+			semantic_rec_walk(g, caller, n^.assert_stmt.condition)
+			semantic_rec_walk(g, caller, n^.assert_stmt.const_expr)
+
+		case NODE_SWITCH:
+			semantic_rec_walk(g, caller, n^.switch_stmt.expr)
+			for i := 1 to n^.switch_stmt.case_count do
+				sc := n^.switch_stmt.cases[i - 1]
+				if sc <> nil then
+					var j: size_t = 0
+
+					for j := 1 to sc^.label_count do
+						semantic_rec_walk(g, caller, sc^.labels[j - 1])
+					end
+					semantic_rec_walk(g, caller, sc^.body)
+				end
+			end
+			for i := 1 to n^.switch_stmt.else_label_count do
+				semantic_rec_walk(g, caller, n^.switch_stmt.else_labels[i - 1])
+			end
+			semantic_rec_walk(g, caller, n^.switch_stmt.else_body)
+
+		case NODE_BINARY:
+			semantic_rec_walk(g, caller, n^.binary.left)
+			semantic_rec_walk(g, caller, n^.binary.right)
+
+		case NODE_UNARY:
+			semantic_rec_walk(g, caller, n^.unary.operand)
+
+		case NODE_PAREN:
+			semantic_rec_walk(g, caller, n^.paren.expr)
+
+		case NODE_CAST:
+			semantic_rec_walk(g, caller, n^.cast_expr.expr)
+
+		case NODE_TERNARY:
+			semantic_rec_walk(g, caller, n^.ternary.cond)
+			semantic_rec_walk(g, caller, n^.ternary.then_expr)
+			semantic_rec_walk(g, caller, n^.ternary.else_expr)
+
+		case NODE_ARRAY_INDEX:
+			semantic_rec_walk(g, caller, n^.array_index.array_)
+			semantic_rec_walk(g, caller, n^.array_index.index)
+
+		case NODE_FIELD_ACCESS:
+			semantic_rec_walk(g, caller, n^.field_access.record_)
+
+		case NODE_ARRAY_LITERAL:
+			for i := 1 to n^.array_literal.count do
+				semantic_rec_walk(g, caller, n^.array_literal.elements[i - 1])
+			end
+
+		case NODE_SIZEOF, NODE_COUNTOF:
+			if not n^.sizeof_expr.is_type then
+				semantic_rec_walk(g, caller, n^.sizeof_expr.target.designator)
+			end
+
+		else:
+			// ident, literal, break, type, and nested declarations have no call
+	end
+end semantic_rec_walk
+
+
+procedure semantic_rec_bodies(g: ^TRecGraph, root: pNode)
+begin
+	var i: size_t = 0
+	var body: pNode = nil
+
+	for i := 1 to g^.count do
+		if g^.decl[i - 1] == g^.entry then
+			body := nil
+			if root <> nil then
+				body := root^.program_decl.block
+			end
+		else
+			body := g^.decl[i - 1]^.proc_decl.body
+		end
+		semantic_rec_walk(g, i - 1, body)
+	end
+end semantic_rec_bodies
+
+
+(*
+ * A back edge into a gray procedure. A fully marked cycle returns.
+ *)
+procedure semantic_rec_fail(g: ^TRecGraph, callee: size_t, at: pNode)
+begin
+	var origin: size_t = 0
+	var i: size_t = 0
+	var k: size_t = 0
+	var bad: size_t = 0
+	var found: bool = false
+	var e: size_t = 0
+	var slot: size_t = 0
+	var dest: size_t = 0
+	var site: pNode = nil
+
+	if g^.frame_n == 0 then
+		return
+	end
+
+	origin := g^.frame_n
+	for i := 1 to g^.frame_n do
+		if g^.frame[i - 1].node == callee then
+			origin := i - 1
+			break
+		end
+	end
+	if origin >= g^.frame_n then
+		origin := g^.frame_n - 1
+	end
+
+	for i := origin + 1 to g^.frame_n do
+		k := g^.frame[i - 1].node
+		if semantic_rec_needs_mark(g, k) then
+			bad := k
+			found := true
+			break
+		end
+	end
+	if not found then
+		return
+	end
+
+	dest := callee
+	for e := 1 to g^.edge_count[bad] do
+		slot := g^.edge_start[bad] + (e - 1)
+		if semantic_rec_on_stack(g, origin, g^.edge_to[slot]) then
+			dest := g^.edge_to[slot]
+			site := g^.edge_at[slot]
+			break
+		end
+	end
+	if site == nil then
+		site := at
+	end
+	if site == nil then
+		site := g^.decl[bad]
+	end
+	semantic_rec_error(site, g^.decl[dest])
+end semantic_rec_fail
+
+
+(*
+ * Explicit stack. color 0 is unseen, 1 is on the stack, 2 is finished.
+ *)
+procedure semantic_rec_dfs(g: ^TRecGraph, start: size_t)
+begin
+	var top: size_t = 0
+	var node: size_t = 0
+	var ei: size_t = 0
+	var slot: size_t = 0
+	var callee: size_t = 0
+
+	g^.color[start] := 1
+	g^.frame[0].node := start
+	g^.frame[0].next_edge := 0
+	g^.frame_n := 1
+
+	while g^.frame_n > 0 do
+		top := g^.frame_n - 1
+		node := g^.frame[top].node
+		ei := g^.frame[top].next_edge
+		if ei >= g^.edge_count[node] then
+			g^.color[node] := 2
+			g^.frame_n := top
+		else
+			slot := g^.edge_start[node] + ei
+			callee := g^.edge_to[slot]
+			g^.frame[top].next_edge := ei + 1
+			if g^.color[callee] == 1 then
+				semantic_rec_fail(g, callee, g^.edge_at[slot])
+			elsif g^.color[callee] == 0 then
+				if g^.frame_n >= MAX_REC_GRAPH then
+					semantic_error_at(g^.decl[callee],
+						"semantic_rec_dfs: call-graph stack exceeded")
+				end
+				g^.color[callee] := 1
+				g^.frame[g^.frame_n].node := callee
+				g^.frame[g^.frame_n].next_edge := 0
+				g^.frame_n := g^.frame_n + 1
+			end
+		end
+	end
+end semantic_rec_dfs
+
+
+(*
+ * After bodies are resolved. Direct self-calls are already diagnosed.
+ *)
+procedure semantic_check_mutual(ctx: pTSemanticContext, root: pNode, unit_entry: pNode)
+begin
+	var g: TRecGraph
+	var i: size_t = 0
+	var pos: size_t = 0
+	var nedges: size_t = 0
+	var d: pNode = nil
+
+	if ctx == nil or root == nil or root^.kind <> NODE_PROGRAM then
+		return
+	end
+
+	g.count := 0
+	g.entry := unit_entry
+	g.filling := false
+	g.edge_to := nil
+	g.edge_at := nil
+	g.edge_n := 0
+	g.frame_n := 0
+	for i := 1 to MAX_REC_GRAPH do
+		g.decl[i - 1] := nil
+		g.edge_start[i - 1] := 0
+		g.edge_count[i - 1] := 0
+		g.color[i - 1] := 0
+	end
+
+	for i := 1 to root^.program_decl.count do
+		d := root^.program_decl.decls[i - 1]
+		if d <> nil and
+				(d^.kind == NODE_PROC_DECL or d^.kind == NODE_FUNC_DECL) and
+				d^.proc_decl.body <> nil then
+			if g.count >= MAX_REC_GRAPH then
+				semantic_error_at(d, "semantic_check_mutual: too many procedures in one unit")
+			end
+			g.decl[g.count] := d
+			g.count := g.count + 1
+		end
+	end
+	if unit_entry <> nil then
+		if g.count >= MAX_REC_GRAPH then
+			semantic_error_at(unit_entry, "semantic_check_mutual: too many procedures in one unit")
+		end
+		g.decl[g.count] := unit_entry
+		g.count := g.count + 1
+	end
+	if g.count == 0 then
+		return
+	end
+
+	semantic_rec_bodies(@g, root)
+	nedges := g.edge_n
+	for i := 1 to g.count do
+		g.edge_start[i - 1] := pos
+		pos := pos + g.edge_count[i - 1]
+		g.edge_count[i - 1] := 0
+	end
+	if nedges > 0 then
+		g.edge_to := arena_alloc(ctx^.arena, nedges * sizeof(size_t)) as ^size_t
+		g.edge_at := arena_alloc(ctx^.arena, nedges * sizeof(pNode)) as ^pNode
+	end
+	g.filling := true
+	semantic_rec_bodies(@g, root)
+
+	for i := 1 to g.count do
+		if g.color[i - 1] == 0 then
+			semantic_rec_dfs(@g, i - 1)
+		end
+	end
+end semantic_check_mutual
+
+
+(*
+ * True when this graph node is a procedure that must carry RECURSIVE.
+ *)
+function semantic_rec_needs_mark(g: ^TRecGraph, index: size_t): bool
+begin
+	var decl: pNode = nil
+
+	if index >= g^.count then
+		return false
+	end
+	decl := g^.decl[index]
+	if decl == nil or decl == g^.entry then
+		return false
+	end
+	return not decl^.proc_decl.is_recursive
+end semantic_rec_needs_mark
+
+
+(*
+ * True when node is on the gray stack from origin through the top.
+ *)
+function semantic_rec_on_stack(g: ^TRecGraph, origin: size_t, node: size_t): bool
+begin
+	var i: size_t = 0
+
+	for i := origin + 1 to g^.frame_n do
+		if g^.frame[i - 1].node == node then
+			return true
+		end
+	end
+	return false
+end semantic_rec_on_stack
+
+
+(*
+ * Report one missing tag. callee names the other procedure on the cycle.
+ *)
+procedure semantic_rec_error(at: pNode, callee: pNode)
+begin
+	var who: array[128] of char
+	var msg: array[256] of char
+	var name: const ^char = nil
+	var name_len: size_t = 0
+	var owner: const ^char = nil
+	var owner_len: size_t = 0
+
+	if callee <> nil and
+			(callee^.kind == NODE_PROC_DECL or callee^.kind == NODE_FUNC_DECL) then
+		name := callee^.proc_decl.name
+		name_len := callee^.proc_decl.name_len
+		owner := callee^.proc_decl.method_owner
+		owner_len := callee^.proc_decl.method_owner_len
+	end
+	if name == nil then
+		//snprintf(@who[0], sizeof(who), "?")
+		write_to(who, "?")
+	elsif owner <> nil and owner_len > 0 then
+		// snprintf(@who[0], sizeof(who), "%.*s::%.*s",
+		// 	owner_len as int, owner, name_len as int, name)
+		write_to(who, "%.*s::%.*s", owner_len as int, owner, name_len as int, name)
+	else
+		// snprintf(@who[0], sizeof(who), "%.*s", name_len as int, name)
+		write_to(who, "%.*s", name_len as int, name)
+	end
+	// snprintf(@msg[0], sizeof(msg),
+	// 	"semantic_check_mutual: inderect recursion requires RECURSIVE (calls %s)",
+	// 	@who[0])
+	write_to(msg, "semantic_rec_error: indirect recursion requires RECURSIVE (calls %s)", @who[0])
+	semantic_error_at(at, @msg[0])
+end semantic_rec_error
+
+
 (**
  * Analyze PROGRAM / MODULE unit
  *)
@@ -5428,6 +5935,7 @@ begin
 		ctx^.enclosing_func := nil
 		ctx^.scope := saved
 	end
+	semantic_check_mutual(ctx, root, unit_entry)
 end
 
 

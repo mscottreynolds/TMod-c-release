@@ -2,6 +2,7 @@ header System
 
 import void from "stddef.h"
 import from "stdio.h"
+import va_list from "stdarg.h"
 
 export type pchar = ^char
 export type pvoid = ^void
@@ -10,6 +11,7 @@ export type ppvoid = ^pvoid
 (** Types *)
 export extern type size_t
 export extern type FILE
+export extern type va_list
 
 (** stdlib functions *)
 export extern procedure exit(status: int)
@@ -43,6 +45,7 @@ export extern function strncmp(s1: const ^char, s2: const ^char, n: size_t): int
 export extern function fprintf(stream: ^FILE, format: const ^char, ...): int
 export extern function printf(format: const ^char, ...): int
 export extern function snprintf(dest: ^char, size: size_t, format: const ^char, ...): int
+export extern function vsnprintf(dest: ^char, size: size_t, format: const ^char, ap: va_list): int
 export extern function fopen(pathname: const ^char, mode: const ^char): ^FILE
 export extern function fclose(stream: ^FILE): int
 export extern function fread(ptr: ^opaque, size: size_t, nmemb: size_t, stream: ^FILE): size_t

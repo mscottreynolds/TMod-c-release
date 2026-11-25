@@ -1181,7 +1181,7 @@ end TParser::parse_designator
  * @param p     Parser state (current token should be BEGIN)
  * @return      BLOCK node with parsed statements.
  *)
-export function TParser::parse_block(ref p: TParser): pNode
+export recursive function TParser::parse_block(ref p: TParser): pNode
 begin
     var begin_token: TToken = p.current
     var block: pNode = nil
@@ -1460,7 +1460,7 @@ end TParser::parse_statement_sequence
  *
  * Returns statement node or nil for empty / skiped lines.
  *)
-export function TParser::parse_stmt(ref p: TParser): pNode
+export recursive function TParser::parse_stmt(ref p: TParser): pNode
 begin
     if p.check(TOK_PREPROCESSOR) then
         return p.parse_preprocessor()
