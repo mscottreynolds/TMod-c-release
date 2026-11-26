@@ -224,7 +224,8 @@ void tmodc__semantic__semantic__semantic_error_at(tmodc__node__pNode n, const ch
 
 /**
  * Try integer const-fold. true + out_val^ on success.
- * Non-integer CONST (strings, pointers, ...) return false -- not an error.
+ * A character literal folds to the host int. A string, a real, or any
+ * other non-integer returns false and is not an error.
  */
 
 /**
@@ -397,6 +398,7 @@ void tmodc__semantic__semantic__semantic_error_at(tmodc__node__pNode n, const ch
  * obj.field: method-typed field call-through (Oberon: no auto-self); callee_expr
  * Ambiguity if both instance method and method-typed field share the name
  * Free name: PROC/FUNC/IMPORT, or VAR/PARAM/LET/CONST of method type.
+ * A method-typed call stamps slice lengths from that type's formals.
  * Type name Ident(): Ident::Ident when that function is in scope.
  * Unresolved free names and Type::name are errors (0.26).
  */

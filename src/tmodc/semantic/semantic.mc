@@ -1491,6 +1491,147 @@ begin
 end semantic_parse_integer_literal
 
 
+(*
+ * Source byte as 0..255. A signed char is widened before the range test.
+ *)
+function semantic_char_byte(c: char): integer
+begin
+	var v: integer = c as integer
+
+	if v < 0 then
+		v := v + 256
+	end
+	return v
+end semantic_char_byte
+
+
+(*
+ * Hex digit, or -1.
+ *)
+function semantic_hex_digit(c: char): integer
+begin
+	if c >= '0' and c <= '9' then
+		return (c - '0') as integer
+	elsif c >= 'a' and c <= 'f' then
+		return ((c - 'a') as integer) + 10
+	elsif c >= 'A' and c <= 'F' then
+		return ((c - 'A') as integer) + 10
+	else
+		return -1
+	end
+end semantic_hex_digit
+
+
+(*
+ * Host int for one character. 128...255 becomes negative, so '\xff' is -1.
+ *)
+function semantic_sign_char(v: integer): integer
+begin
+	var b: integer = v mod 256
+
+	if b < 0 then
+		b := b + 256
+	end
+	if b >= 128 then
+		b := b - 256
+	end
+	return b
+end semantic_sign_char
+
+
+(*
+ * C simple escape. Any other character is itself: '\q' is q.
+ *)
+function semantic_simple_escape(c: char): integer
+begin
+	if c == 'a' then
+		return 7
+	elsif c == 'b' then
+		return 8
+	elsif c == 't' then
+		return 9
+	elsif c == 'n' then
+		return 10
+	elsif c == 'v' then
+		return 11
+	elsif c == 'f' then
+		return 12
+	elsif c == 'r' then
+		return 13
+	elsif c == '\\' then
+		return 92
+	elsif c == '"' then
+		return 34
+	elsif c == '?' then
+		return 63
+	else
+		return semantic_char_byte(c)
+	end
+end semantic_simple_escape
+
+
+(*
+ * Character literal as a host int. Hex is \x and two digits.
+ * Octal is 1..3 digits, masked to 8 bits, then sign-extended.
+ *)
+function semantic_parse_char_literal(n: pNode): integer
+begin
+	var s: const ^char = nil
+	var len: size_t = 0
+	var last: size_t = 0
+	var i: size_t = 0
+	var nd: size_t = 0
+	var v: integer = 0
+	var hi: integer = 0
+	var lo: integer = 0
+
+	if n == nil or n^.kind <> NODE_LITERAL or n^.token.kind <> TOK_CHAR or
+			n^.token.start == nil or n^.token.length < 3 then
+		semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+	end
+	s := n^.token.start
+	len := n^.token.length
+	last := len - 1
+	if s[0] <> '\'' or s[last] <> '\'' then
+		semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+	end
+
+	if s[1] <> '\\' then
+		if len <> 3 then
+			semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+		end
+		v := semantic_char_byte(s[1])
+	elsif len < 4 then
+		semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+	elsif s[2] == 'x' or s[2] == 'X' then
+		if len <> 6 then
+			semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+		end
+		hi := semantic_hex_digit(s[3])
+		lo := semantic_hex_digit(s[4])
+		if hi < 0 or lo < 0 then
+			semantic_error_at(n, "semantic_parse_char_literal: invalid chaacter literal")
+		end
+		v := (hi * 16) + lo
+	elsif s[2] >= '0' and s[2] <= '7' then
+		i := 2
+		while i + 1 < len do
+			if nd == 3 or s[i] < '0' or s[i] > '7' then
+				semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+			end
+			v := (v * 8) + ((s[i] - '0') as integer)
+			inc(i)
+		end
+	else
+		if len <> 4 then
+			semantic_error_at(n, "semantic_parse_char_literal: invalid character literal")
+		end
+		v := semantic_simple_escape(s[2])
+	end
+	return semantic_sign_char(v)
+end semantic_parse_char_literal
+
+
 (**
  * Evaluate a compile-time integer expression.
  * Implementation lives in semantic_try_eval_const_expr
@@ -1633,7 +1774,8 @@ end semantic_countof_value
 
 (**
  * Try integer const-fold. true + out_val^ on success.
- * Non-integer CONST (strings, pointers, ...) return false -- not an error.
+ * A character literal folds to the host int. A string, a real, or any
+ * other non-integer returns false and is not an error.
  *)
 recursive function semantic_try_eval_const_expr(ctx: pTSemanticContext, n: pNode, out_val: ^integer, msg: ^pcchar): bool
 begin
@@ -1650,14 +1792,18 @@ begin
 
 	switch n^.kind of
 		case NODE_LITERAL:
-			if n^.token.kind <> TOK_NUMBER then
-				if msg <> nil then
-					msg^ := "semantic_eval_const_expr: not an integer constant expression"
-				end
-				return false
+			if n^.token.kind == TOK_NUMBER then
+				out_val^ := semantic_parse_integer_literal(n)
+				return true
 			end
-			out_val^ := semantic_parse_integer_literal(n)
-			return true
+			if n^.token.kind == TOK_CHAR then
+				out_val^ := semantic_parse_char_literal(n)
+				return true
+			end
+			if msg <> nil then
+				msg ^ := "semantic_eval_const_expr: not an integer constant expression"
+			end
+			return false
 
 		case NODE_IDENT:
 			sym := symtab_lookup(ctx^.scope, n^.token.start, n^.token.length)
@@ -4072,6 +4218,7 @@ end semantic_check_byref_actual
  * obj.field: method-typed field call-through (Oberon: no auto-self); callee_expr
  * Ambiguity if both instance method and method-typed field share the name
  * Free name: PROC/FUNC/IMPORT, or VAR/PARAM/LET/CONST of method type.
+ * A method-typed call stamps slice lengths from that type's formals.
  * Type name Ident(): Ident::Ident when that function is in scope.
  * Unresolved free names and Type::name are errors (0.26).
  *)
@@ -4306,13 +4453,28 @@ begin
 			"semantic_resolve_call: direct recursion requires RECURSIVE")
 	end
 
-	// EXTENDS auto-upcast: by-value formals of same-unit PROC/FUNC decls
+	// Named procedure: its declaration. Method-typed variables or callable
+	// field: that method type's formals. The field path left the node in mt.
+	pl := nil
 	if sym <> nil and sym^.decl <> nil and
-			(sym^.decl^.kind == NODE_PROC_DECL or sym^.decl^.kind == NODE_FUNC_DECL) then
+			(sym^.decl^.kind == NODE_PROC_DECL or
+				sym^.decl^.kind == NODE_FUNC_DECL) then
 		pl := sym^.decl^.proc_decl.params
+	elsif semantic_sym_is_method_value(ctx, sym) then
+		mt := semantic_method_type_node(ctx, sym^.symbol_type)
+		if mt <> nil then
+			pl := mt^.method_type.params
+		end
+	elsif sym == nil and mt <> nil then
+		pl := mt^.method_type.params
+	end
+
+	// Slice length, by-ref check, and EXTENDS upcast. Source arg i is
+	// formal i. An instance call skips formal 0 (the receiver).
+	if pl <> nil then
 		formals := nil
 		fcount := 0
-		if pl <> nil and pl^.kind == NODE_PARAM_LIST then
+		if pl^.kind == NODE_PARAM_LIST then
 			formals := pl^.param_list.params
 			fcount := pl^.param_list.count
 		end

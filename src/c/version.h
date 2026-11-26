@@ -19,12 +19,12 @@ typedef unsigned int cardinal;
 typedef float real;
 
 /* === DEFINE EXPORT === */
-#define VERSION "0.27.10.264"
+#define VERSION "0.27.10.267"
 
 /* === DEFINE EXPORT === */
 #define VERSION_BASE "0.27.10"
 
 /* === DEFINE EXPORT === */
-#define BUILD_NUMBER 264
+#define BUILD_NUMBER 267
 
 #endif /* MODC_HEADER_version_H */

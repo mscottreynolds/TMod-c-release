@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.9** (see `CURRENT.md` for implementation status).  
-**Last updated:** 20 November 2026  
+**Version alignment:** Compiler **0.27.10** (see `CURRENT.md` for implementation status).  
+**Last updated:** 25 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -314,7 +314,19 @@ A selective import emits that same C spelling. `AS` does not change it. An expor
 
 `Point::print` and a procedure named `Point__print` are one C symbol. `tmodc.arena.Point::print` and `tmodc.arena.Point.print` are the same pair. That clash is the programmer's to avoid.
 
-**Mutual TMod-c `IMPORT`:** later. Makefile subdirectory compilation landed in **0.26.12.213** (`src/codegen/` is package `codegen`). Today cycles can compile because C headers include each other and `.mh` comes from a previous emit.
+**Mutual TMod-c `IMPORT`:** *Planned (25 November 2026). Not implemented.* Makefile subdirectory compilation landed in **0.26.12.213**. Today a cycle can compile because C headers include each other and each `.mh` comes from a previous emit. The compiler still analyzes one unit at a time. An import reads an export table and runs no module body.
+
+A `.mt` file is that export table in the same text as an `.mh` (`# modc-mh/1`). It is the temporary interface. `-M` still writes the `.mh`, and only after semantic analysis.
+
+`-T` parses a skeleton `.mc` and writes `Unit.mt` beside it. It does not run semantic analysis. It is refused together with `-a`, `-C`, `-H`, or `-M`. A local literal such as `const LIM = 4` is folded. A `CONST` whose value names another module is written without an integer. A type is copied from the source spelling.
+
+`--check-mt` analyzes the `.mc` and compares the exports `-M` would write with the `.mt`. It writes nothing. The generated-by line is ignored. `-t` stays token tracing. The comparison is the export surface. A private procedure may exist in the `.mc`. A missing export, an extra export, or a different signature fails. A passing check means the body matches that interface.
+
+A unit with no `.mt` is unchanged. When `Unit.mt` is present, `-C`, `-H`, and `-M` run that comparison and write nothing if it fails. `--require-mt` makes a missing `.mt` a failure, so deleting the template cannot skip the check.
+
+Lookup opens `Unit.mh` when that file exists, and `Unit.mt` only when it does not. Importing a template is reported. A quoted `"foo.mh"` does not open `foo.mt`. `-C`, `-H`, `-M`, and `--check-mt` use that lookup, so one side of a cycle can be checked while the other side is still a template. After both `.mh` files exist, the lookup stops opening the `.mt` files.
+
+A name can be copied onto a `.mt` without the other module. An imported array bound, an imported width, and a `CONST` taken from another unit stay without a number. A struct that `EXTENDS` another can name the parent. Two structs that embed each other by value stay illegal.
 
 ### 3.3 `.mh` completeness vs source `OPAQUE`
 
@@ -431,7 +443,7 @@ let msg: string = "done"
 i := 0                (* VAR *)
 ```
 
-`(* C: A folded integer CONST emits the integer and has no C object. A negative value is parenthesized. A string, an array, a record, or a brace list stays static const. An enumeration constant stays its C name. A character literal still lowers to an object. DEFINE (0.26.5.188) is the macro. LET / VAR are ordinary locals (0.26.5.183). *)`
+`(* C: A folded integer CONST emits the integer and has no C object. A negative value is parenthesized. A character literal folds to that integer (0.27.10.267). '\xff' is -1. A string, an array, a record, or a brace list stays static const. An enumeration constant stays its C name. DEFINE (0.26.5.188) is the macro. LET / VAR are ordinary locals (0.26.5.183). *)`
 
 **ISO C constant expressions (C11 §6.6).** A constant expression is evaluated at translation time. An integer constant expression has integer type. Its operands are integer constants, enumeration constants, character constants, `sizeof` and `_Alignof` expressions whose results are integer constants, and floating constants that are the immediate operands of casts. A cast in an integer constant expression converts an arithmetic type to an integer type. In an initializer, a constant expression may also be an arithmetic constant expression, a null pointer constant, or an address constant. An address constant is a pointer to a function, or to an object of static storage duration, written with `&`, with a cast of an integer constant to a pointer type, or with an array or function designator. Forming it does not read an object's value. A static initializer is a constant expression or a string literal (C11 §6.7.9). An implementation may accept further forms (C11 §6.6 paragraph 10).
 
@@ -464,7 +476,7 @@ n + 1                            /* n names an object */
 f()                              /* function call */
 ```
 
-A declaration `CONST` whose value folds to an integer is that integer. It is in the first group. Naming it does not read an object, and generated C emits no declaration for it. An exported folded integer is an optional integer after `complete` on the `.mh` line (`export const Limit complete 256`). A line with no integer still parses. The `.h` does not declare a C object. A client folds the imported integer the same way. A value that does not fold still lowers to a `static const` object, which is the second group. A folded integer named in a brace list is the integer when that name is already in scope. A bare name that is not yet in scope keeps its source spelling. An enumeration constant stays its C name. A character literal is a `const-expression` in the grammar. The folder accepts an integer literal, so `const C = 'a'` still lowers to an object. A `DEFINE` (§4.1.1) whose replacement list is an integer constant is in the first group after preprocessing.
+A declaration `CONST` whose value folds to an integer is that integer. It is in the first group. Naming it does not read an object, and generated C emits no declaration for it. An exported folded integer is an optional integer after `complete` on the `.mh` line (`export const Limit complete 256`). A line with no integer still parses. The `.h` does not declare a C object. A client folds the imported integer the same way. A value that does not fold still lowers to a `static const` object, which is the second group. A folded integer named in a brace list is the integer when that name is already in scope. A bare name that is not yet in scope keeps its source spelling. An enumeration constant stays its C name. A character literal folds to the host int (**0.27.10.267**). `const C = 'a'` emits `97` and has no C object. `'\n'` is 10. `'\x41'` and `'\101'` are 65. A byte in 128..255 is sign-extended, so `'\xff'` is -1. An octal value above 255 is masked to eight bits, so `'\400'` is 0. Named escapes are the C set. Any other `\q` is `q`. Hex is `\x` and two digits. `'a' + 1` folds when the declaration writes `integer`. That initializer has no inferred type. Unary minus keeps `char`, so `const NEG = -'a'` infers `char` and folds to -97. An export is the integer after `complete`. A `DEFINE` (§4.1.1) whose replacement list is an integer constant is in the first group after preprocessing.
 
 ### 4.3 Grouped trailing types
 
@@ -684,7 +696,7 @@ Hosted `main` stays `int main(int argc, char **argv)`, or `(void)` when the prog
 
 A module `function main` is emitted as written. `argv: ^char[]` there grows `argv_length`, and the operating system does not pass it. Write `argv: ^pchar`. Do not use `countof` on that formal.
 
-Same-unit calls do not need `.mh`. An exported slice spells `[]` (**0.27.1.217**). Both sides insert the length from the type. There is no new export flag. A call through a function pointer or a callable field does not insert the length yet. Parser unchanged. See `CURRENT.md` (slice formals).
+Same-unit calls do not need `.mh`. An exported slice spells `[]` (**0.27.1.217**). Both sides insert the length from the type. There is no new export flag. A call through a procedure variable or a callable field uses that method type's formals and inserts the same count (**0.27.10.265**). `fp(buf)` and `box.h(buf)` pass the folded bound. A slice formal passes its hidden integer. An actual with no element count is the same error. A non-slice `VAR` or `REF` formal on a method type does not gain `&`. Parser unchanged.
 
 #### Enumerations *Implemented (0.24.6–0.24.7)*
 
@@ -1048,7 +1060,7 @@ end
 
 `else:` is the residual alone. `else default:` is that same arm. A list that names a constant ends with `default`, and `default` is the last item. `else Node_Paren, Node_Call:` and `else default, Node_Paren:` are errors.
 
-Those constants and every unnamed value select that one arm. A folded integer value appears once among the `CASE` labels and these labels. A character literal matches another character literal with the same token text. The error is `semantic_switch_note: duplicate switch label`. A label that does not fold is left to the C compiler. `default` is a keyword (`default`, `Default`, and `DEFAULT`) and is not looked up as a constant. Generated C lists the names and ends the arm with `default:`, so the default label is last in the switch (MISRA C:2012 Rule 16.5; MISRA C:2004 Rule 15.3):
+Those constants and every unnamed value select that one arm. A folded integer value appears once among the `CASE` labels and these labels. A character literal matches another character literal with the same token text. `case 'a'` and `case 97` stay separate in that check. A folded `const C = 'a'` is the integer 97 (**0.27.10.267**), so `case C` shares that integer. The error is `semantic_switch_note: duplicate switch label`. A label that does not fold is left to the C compiler. `default` is a keyword (`default`, `Default`, and `DEFAULT`) and is not looked up as a constant. Generated C lists the names and ends the arm with `default:`, so the default label is last in the switch (MISRA C:2012 Rule 16.5; MISRA C:2004 Rule 15.3):
 
 ```c
 case Node_Paren:
@@ -1694,6 +1706,9 @@ Do not maintain a second full EBNF elsewhere.
 | 20 November 2026 | **§10.2 `COUNTOF` of an imported array (0.27.9.260):** an imported fixed array folds. An alias follows its target when that type is in scope, including a star scope. `import Alias` alone stays an error. |
 | 20 November 2026 | **§3.2 `export extern type` (0.27.9.261):** `export extern type Name` and `extern export type Name` are the same declaration. A bare foreign type emits no typedef. The `.mh` line is `export type Name opaque`. |
 | 24 November 2026 | **§8.1 same-unit `RECURSIVE` (0.27.10.264):** a cycle of named calls in one unit requires `RECURSIVE` on every procedure or function on the cycle. A direct self-call stays a separate diagnostic at the call. A function pointer, a callable field, and a call into another unit are not edges. The module `begin` block is in the graph. The module entry has no tag. |
+| 25 November 2026 | **§5.4 method-type slice call (0.27.10.265):** a call through a procedure variable or a callable field inserts the hidden `integer` length from that method type. A slice formal passes its hidden integer. An actual with no element count is an error. A non-slice `VAR` or `REF` formal on a method type does not gain `&`. |
+| 25 November 2026 | **§4.2 / §7.1 character `CONST` (0.27.10.267):** a character literal folds to the host int and emits no C object. `'\xff'` is -1. An octal value above 255 is masked to eight bits. `'a' + 1` needs a written `integer` type. A folded `const C = 'a'` is the integer 97 in a `case` label. A character literal still matches another character literal by token text. |
+| 25 November 2026 | **§3.2 `.mt` template (planned, not implemented):** a `.mt` is an export table in the same text as an `.mh`. `-T` writes it from a skeleton with no semantic analysis. `--check-mt` compares a body's exports with that file. When the `.mt` is present, `-C`, `-H`, and `-M` write nothing unless the check passes. `--require-mt` makes a missing template a failure. Lookup uses `Unit.mh` when it exists, and `Unit.mt` only when it does not. |
 
 ---
 

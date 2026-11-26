@@ -181,7 +181,7 @@ See Language Report §8.2.
 
 An open-array formal (`T[]`, `array[] of T`, `^char[]`, or a one-step alias of those) is a slice. C is the element pointer plus a hidden `integer` `{name}_length` immediately after it. `countof` on that formal reads the length and is not a constant. The source call does not write the count. A fixed array passes its bound. A slice formal passes its length. A `VAR` or `REF` actual written `@array` counts the operand.
 
-`^T` (including `^pchar`), a fixed `T[N]`, and `^array[] of T` stay one C parameter. A flexible array member has no hidden length. A module `function main` should take `argv: ^pchar`. A program takes `args: ^char[]`, and hosted `main` passes `argc` as the length.
+`^T` (including `^pchar`), a fixed `T[N]`, and `^array[] of T` stay one C parameter. A flexible array member has no hidden length. A module `function main` should take `argv: ^pchar`. A program takes `args: ^char[]`, and hosted `main` passes `argc` as the length. A call through a procedure variable or a callable field uses that method type's formals and inserts the same count (**0.27.10.265**).
 
 See Language Report §5.4.
 

@@ -2,6 +2,22 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.10.267
+- **Character `CONST` (19 remainder).** A character literal folds to the host `int`. `const C = 'a'` emits no C object. A use emits the integer. An export is `export const C complete 97`. A client folds that integer. `'\n'` is 10. `'\x41'` and `'\101'` are 65. A byte in 128..255 is sign-extended, so `'\xff'` and `'\377'` are -1. An octal value above 255 is masked to eight bits, so `'\400'` is 0. Named escapes are the C set. Any other `\q` is `q`. Hex is `\x` and two digits. Octal is one to three digits.
+- `'a' + 1` folds when the declaration has a type. That initializer has no inferred type, because `char` is not an integer-ish name. Write `const PLUS: integer = 'a' + 1`. Unary minus keeps `char`, so `const NEG = -'a'` infers `char` and folds to -97.
+- A string, a real, an array, a record, and a brace list stay `static const`. An enumeration constant stays its C name.
+- A character literal in a `case` label still matches by token text. `case 'a'` and `case 97` stay separate in that check. A folded `const C = 'a'` is the integer 97, so `case C` collides with `case 97` in the front end. `case C` and `case 'a'` collide when the generated C is compiled.
+- **Test:** `tests/test_char_const.mc`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.10.267**. Stem **0.27.10**. `Makefile` `VERSION` is **0.27.10**. Branch **`TMod-c_0.27`**. Build **267**.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `docs/language-report.md`, `docs/parameter-passing.md`, `docs/grok_report-20261125-2147.md`, and an append in `docs/project_bible.md`. That report also records the `.mt` plan for cyclic `IMPORT`. The plan is not implemented. `docs/syntax-ebnf.md` is unchanged.
+
+## Version 0.27.10.265
+- **Slice length on a method-type call (10c hole).** A call through a procedure variable or a callable field inserts the hidden element count. The formals come from the method type. `fp(buf)` and `box.h(buf)` pass the folded bound. A slice formal passes that formal's `_length`. An actual with no count is `semantic_resolve_call: open_array actual has no element count`. The typedef already carried `{name}_length`. The parser, the stamp emitter, and `.mh` are unchanged.
+- A non-slice `VAR` or `REF` formal on a method type still does not gain `&`.
+- **Tests:** `tests/test_slice_fp.mc`, `tests/test3_slice_fp.mc`, `tests/test3_slice_field.mc`.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.10.265**. Stem **0.27.10**. `Makefile` `VERSION` is **0.27.10**. Branch **`TMod-c_0.27`**. Build **265**.
+- Docs this round: with **0.27.10.267**. Session archive: `docs/grok_report-20261125-2147.md`.
+
 ## Version 0.27.10.264
 - **Same-unit mutual recursion (10b).** After procedure bodies are resolved, `semantic_check_mutual` builds a call graph of procedures and functions that have a body, plus the module entry. An edge is a `NODE_CALL` whose resolved symbol is another of those bodies. A self-call is left to the direct check. Every other procedure or function on a cycle must carry `RECURSIVE` on the completing declaration. The diagnostic is `semantic_rec_error: indirect recursion requires RECURSIVE (calls …)` at a call on that cycle. A call through a function pointer or a callable field has no resolved procedure and is not an edge. A call into another unit is not an edge. The module `begin` block is the entry's body. The entry itself has no `RECURSIVE` tag, so a module that calls only its own entry is not reported. The graph holds 256 procedures (`MAX_REC_GRAPH`).
 - **Tests:** `tests/test_mutual.mc` (both marked), `tests/test3_mutual.mc` (neither marked), `tests/test3_mutual_one.mc` (one marked). `tests/test_proc_order.mc` marks `Ping` and `Pong`.
