@@ -13,7 +13,7 @@ end Swap
 
 
 (* bad *)
-procedure Swap2(VAR a: integer, b: integer)
+procedure Swap2(VAR a: integer, CONST b: integer)
 begin
 	var temp: integer = a
   	a := b

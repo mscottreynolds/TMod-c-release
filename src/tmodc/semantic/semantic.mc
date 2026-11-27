@@ -2088,7 +2088,8 @@ end semantic_designator_param_root
 (**
  * Forbid writes that violate parameter modes.
  * - CONST formal: no rebind and no mutation through the parameter.
- * - Non-VAR formal: no rebind of the binding (are name on LHS of :=).
+ * - REF formal: no rebind of the name. Through-writes stay legal.
+ * - Bare formal: the name is a local copy and may be assigned.
  *)
 procedure semantic_forbid_param_mode_write(lhs: pNode)
 begin
@@ -2110,8 +2111,9 @@ begin
 			"semantic_forbid_param_mode_write: cannot write through CONST parameter")
 	end
 
-	// Rebind: assignment target is the bare parameter name (not field/index).
-	if lhs^.kind == NODE_IDENT and not param^.param.is_var then
+	// REF is the caller's object. A bare formal is a local copy, so n := is
+	// legal. CONST was rejected above. A field or index write is not this test.
+	if lhs^.kind == NODE_IDENT and param^.param.is_ref then
 		semantic_error_at(lhs,
 			"semantic_forbid_param_mode_write: cannot assign to non-VAR parameter; use VAR")
 	end

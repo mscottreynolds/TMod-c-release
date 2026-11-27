@@ -2,6 +2,13 @@
 
 > **Rebrand (July 2026):** Public name **TMod-c**; legacy **Mod-c** during transition. Compiler binary target: **`tmodc`** ( **`modc`** alias retained).
 
+## Version 0.27.11.268
+- **Bare formal is a writable copy.** `n: T` may be the target of `:=`, `INC`, and `DEC`. The write changes the local copy. The caller does not change. Passing stays by value, so an expression actual stays legal. Generated C for a program that already compiled is unchanged: the formal is already a C local.
+- `const n: T` stays the freeze. A write through that formal is still `cannot write through CONST parameter`. `ref n: T` still forbids a bare-name assign. `var n: T` still writes the caller.
+- **Tests:** `tests/test_bare_param.mc`. `tests/test3_var_ref2.mc` and `tests/test3_var_pointer.mc` use `CONST` on the formal that must not be assigned. `tests/test3_var_pointer2.mc` uses `CONST REF`. `tests/test3_const_param.mc` and `tests/test3_ref_rebind.mc` stay failures.
+- The user reported `make clean-all all test-all selfhost bootstrap promote` passes on gcc, clang, and tcc, and promoted **0.27.11.268**. Stem **0.27.11**. `Makefile` `VERSION` is **0.27.11**. Branch **`TMod-c_0.27`**. Build **268**. The stem moved because this is a language change. A program that compiled before still compiles.
+- Docs this round: `changelog.md`, `CURRENT.md`, `README.md`, `docs/language-report.md`, and `docs/parameter-passing.md`. No new grok report.
+
 ## Version 0.27.10.267
 - **Character `CONST` (19 remainder).** A character literal folds to the host `int`. `const C = 'a'` emits no C object. A use emits the integer. An export is `export const C complete 97`. A client folds that integer. `'\n'` is 10. `'\x41'` and `'\101'` are 65. A byte in 128..255 is sign-extended, so `'\xff'` and `'\377'` are -1. An octal value above 255 is masked to eight bits, so `'\400'` is 0. Named escapes are the C set. Any other `\q` is `q`. Hex is `\x` and two digits. Octal is one to three digits.
 - `'a' + 1` folds when the declaration has a type. That initializer has no inferred type, because `char` is not an integer-ish name. Write `const PLUS: integer = 'a' + 1`. Unary minus keeps `char`, so `const NEG = -'a'` infers `char` and folds to -97.

@@ -14,7 +14,7 @@ end Swap
 
 
 (* Bad *)
-procedure Swap4(VAR a: ^integer, b: ^integer)
+procedure Swap4(VAR a: ^integer, CONST b: ^integer)
 begin
 	var temp: ^integer = a
   	a := b

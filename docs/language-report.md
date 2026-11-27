@@ -1,8 +1,8 @@
 # TMod-c Language Report (Draft)
 
 **Status:** Living draft — Wirth-style language report.  
-**Version alignment:** Compiler **0.27.10** (see `CURRENT.md` for implementation status).  
-**Last updated:** 25 November 2026  
+**Version alignment:** Compiler **0.27.11** (see `CURRENT.md` for implementation status).  
+**Last updated:** 26 November 2026  
 
 **Author:** M. Scott Reynolds  
 
@@ -404,7 +404,7 @@ export define SDS_HDR_VAR(T, s) = struct sdshdr##T *sh = (void*)((s)-(sizeof(str
 | Form | Role | Binding |
 |------|------|---------|
 | **`CONST`** | Compile-time named constant (Pascal/Oberon). May fold in array bounds, case labels. *Not* a C `const` object. | `=` |
-| **`LET`** | Runtime binding after initialization. **Rebind lock** (rule 2): no `n :=` / `INC(n)` / `DEC(n)` on the **name**. Through-writes (`p.x`, `pc^`, `a[i]`) are allowed. Same **body** rule as `REF` / bare formals (§8.2). Not a `CONST` formal. | `=` |
+| **`LET`** | Runtime binding after initialization. **Rebind lock** (rule 2): no `n :=` / `INC(n)` / `DEC(n)` on the **name**. Through-writes (`p.x`, `pc^`, `a[i]`) are allowed. Same **body** rule as a `REF` formal (§8.2). Not a `CONST` formal. A bare formal is a writable copy. | `=` |
 | **`VAR`** | Mutable binding (rebind and through-writes). | `:=` for later assignment; optional `=` at init |
 
 **Three states** (locals vs formals share **body** rules; ABI of `REF`/`VAR` is separate):
@@ -412,8 +412,10 @@ export define SDS_HDR_VAR(T, s) = struct sdshdr##T *sh = (void*)((s)-(sizeof(str
 | State | Rebind | Through | Locals | Formals |
 |-------|--------|---------|--------|---------|
 | **1** | Yes | Yes | `VAR` | `VAR` |
-| **2** | No | Yes | `LET` | `REF`, bare |
+| **2** | No | Yes | `LET` | `REF` |
 | **3** | No | No | declaration `CONST` (compile-time) | `CONST` |
+
+A bare formal is a local copy (**0.27.11.268**). `n :=`, `INC(n)`, and `DEC(n)` change that copy. They do not change the caller. Passing stays by value. `const n: T` stays the freeze.
 
 `LET` is not `REF`: `REF` is a view of the caller’s object. A second `let x = …` in the same scope is a **new** binding (mangled C name), not `x :=`.
 
@@ -686,7 +688,22 @@ These stay one C parameter, with no hidden length:
 - `^T`, including `^pchar` after `type pchar = ^char`. Use this for a C function that takes one pointer. A `char[]` formal would pass a count that definition does not take.
 - `^array[] of T` and `^array[N] of T`. The pointer is on the array (`T (*p)[]`).
 
-A field `buf: array[] of char` is a C flexible array member, not a slice. `countof` of that field has no stored length. Index syntax `a[i..j]` is not part of this feature.
+A field `buf: array[] of char` is a C flexible array member, not a slice. `countof` of that field has no stored length.
+
+#### Index range *Planned (26 November 2026). Not implemented.*
+
+`a[i..j]` is an inclusive view, the same bounds as `for … to`. Both ends are required. Each side is a full expression, so `a[i + 1..j - 1]` is `(i + 1)` through `(j - 1)`. The length is `end - start + 1`. A free `1..10` and a `case` label stay deferred. `for` keeps `to` and `downto`.
+
+The range is a slice actual. A direct call, a procedure variable, and a callable field accept it. Assignment, `return`, `countof(a[i..j])`, and `a[i..j][k]` are errors. `return a[i..j]` stays illegal unless a later case has no other spelling. The base is any value that already allows one index: a fixed array, a slice formal, a `^T`, a `string`, or a flexible array member. The element type is the type of `base[start]`, including const. A `string` or a string literal matches `const char[]`. A mutable array matches `char[]` and `const char[]`. A const base does not match a plain `char[]`, and it does not match a `VAR` or `REF` formal. A range does not match a fixed `array[N]` formal. For a `VAR` or `REF` open-array formal the pointer is already `&base[start]`. The call does not add a second `@`.
+
+Base, start, and end are evaluated once, left to right. The length arithmetic is signed `integer`. Overflow wraps like a C `int`. When the result is negative, the count is 0:
+
+```c
+integer __n = __hi - __lo + 1;
+if (__n < 0) __n = 0;
+```
+
+If that count is 0 and the start is negative, the address is the base. `[0..-1]` does not form `&base[-1]`. Any other start is `&base[start]`, including a negative start with a positive count and a start past the object. The compiler does not check the start against a known length, at compile time or at run time, and it does not call `strlen`. `"hello world"[0..10]` is the 11 letters. `[0..4]` lowers to `&"hello world"[0]` and `5`. There is no step, no from-the-end index, no reversed view, and no comparison of a range with a string.
 
 Hosted `main` stays `int main(int argc, char **argv)`, or `(void)` when the program has no parameters. The program function gains the length. The wrapper does not copy the program list onto `main`.
 
@@ -1185,7 +1202,7 @@ dec(n)
 assert i >= 0
 ```
 
-`ASSERT` lowers to C `assert`. `INC`/`DEC` on a formal require **`VAR`** (bare name), like `:=`.
+`ASSERT` lowers to C `assert`. `INC`/`DEC` on a `REF` formal require **`VAR`** for the bare name, like `:=`. A bare formal's copy may use `INC`/`DEC` (**0.27.11.268**). `CONST` forbids both.
 
 `ASSERT` is a **statement** (anywhere a statement is allowed). `REQUIRE` / `ENSURE` / `INVARIANT` are **contract clauses** with fixed positions (§7.5), not general statements.
 
@@ -1312,7 +1329,7 @@ end Fact
 
 `(* C: void Swap(integer *a, integer *b);  integer Fact(integer n); *)`
 
-### 8.2 Parameter modes *Implemented (0.25.0 / item 20)*
+### 8.2 Parameter modes *Implemented (0.25.0 / item 20; bare copy assign 0.27.11.268)*
 
 Formals may be prefixed with **`VAR`**, **`REF`**, or **`CONST`**. Parameter **`CONST`** is a **passing-mode / deep read-only** qualifier — not a compile-time `CONST` declaration.
 
@@ -1320,14 +1337,14 @@ Formals may be prefixed with **`VAR`**, **`REF`**, or **`CONST`**. Parameter **`
 |------|------------------------------------------|------------------------------------------|
 | **`VAR p: T`** | **Allowed** | Allowed |
 | **`REF p: T`** | **Forbidden** | Allowed |
-| **Bare `p: T`** | **Forbidden** | Selectors if used; whole-name assign illegal |
+| **Bare `p: T`** | **Allowed** (the copy; **0.27.11.268**) | Selectors if used; writes hit the copy |
 | **`CONST p: T`** | **Forbidden** | **Forbidden** (deep freeze) |
 
-**Scalar `REF n: integer`:** no fields → effectively read-only for updates. Use **`VAR`** to change the caller’s integer.
+**Scalar `REF n: integer`:** no fields → effectively read-only for updates. Use **`VAR`** to change the caller’s integer. A bare `n: integer` may assign the copy. That does not change the caller.
 
 **`VAR` / `REF` vs stacked pointers:** C out-parameters and “pointer to the caller’s object” are **`VAR p: T` / `REF p: T`**, not `^^T`. That is how TMod-c keeps APIs to one `^` in source (Power of Ten rule 9 on types; §5.3). Field auto-deref on `^T` (`p.x`) is **Done (0.26.5.176)** and does **not** replace `VAR`/`REF`. Instance method on a pointer receiver is still *Planned*.
 
-**Bare formals are by-value** in C (expression actuals allowed). They share **non-`VAR` body discipline** with `REF` (and with **`LET` locals**, §4.2) but are **not** full `REF` at the ABI. See [`parameter-passing.md`](parameter-passing.md).
+**Bare formals are by-value** in C (expression actuals allowed). The copy may be assigned (**0.27.11.268**). They are **not** full `REF` at the ABI. `REF` still forbids a bare-name assign. `CONST` and `CONST REF` still forbid a write through the formal. See [`parameter-passing.md`](parameter-passing.md).
 
 **C `...` last formal (0.26.7):** After at least one named formal, `, ...` is legal and lowers to C `, ...`. TMod-c does **not** type extra actuals and has **no** `va_list` / `va_arg` builtin. Extra actuals at the call site already parse; the C compiler accepts them only because of the emitted ellipsis. Consuming them is FFI: `import va_list, va_start, va_end from "stdarg.h"` and `vprintf` / `vsnprintf`. Illegal: `procedure f(...)` (no named formal); `...` not last; `PROGRAM` / `MODULE` parameter lists. `.mh` may write `(string, ...)`.
 
@@ -1338,7 +1355,7 @@ procedure Swap(var a: integer, var b: integer)
 	(* … *)
 procedure Scale(ref p: Point, n: integer)     (* mutate p.x; cannot p := … *)
 procedure Show(const p: Point)                (* no writes through p *)
-procedure Id(n: integer): integer             (* bare: by-value; n := illegal *)
+procedure Id(n: integer): integer             (* bare: by-value; n := changes the copy *)
 
 Swap(x, y)          (* auto-& → Swap(&x, &y) *)
 Scale(pt, 2)
@@ -1709,6 +1726,8 @@ Do not maintain a second full EBNF elsewhere.
 | 25 November 2026 | **§5.4 method-type slice call (0.27.10.265):** a call through a procedure variable or a callable field inserts the hidden `integer` length from that method type. A slice formal passes its hidden integer. An actual with no element count is an error. A non-slice `VAR` or `REF` formal on a method type does not gain `&`. |
 | 25 November 2026 | **§4.2 / §7.1 character `CONST` (0.27.10.267):** a character literal folds to the host int and emits no C object. `'\xff'` is -1. An octal value above 255 is masked to eight bits. `'a' + 1` needs a written `integer` type. A folded `const C = 'a'` is the integer 97 in a `case` label. A character literal still matches another character literal by token text. |
 | 25 November 2026 | **§3.2 `.mt` template (planned, not implemented):** a `.mt` is an export table in the same text as an `.mh`. `-T` writes it from a skeleton with no semantic analysis. `--check-mt` compares a body's exports with that file. When the `.mt` is present, `-C`, `-H`, and `-M` write nothing unless the check passes. `--require-mt` makes a missing template a failure. Lookup uses `Unit.mh` when it exists, and `Unit.mt` only when it does not. |
+| 26 November 2026 | **§5.4 index range (planned, not implemented):** `a[i..j]` is an inclusive slice actual. The length is `end - start + 1`, clamped to 0 with `if`. Both ends are required. A const base matches `const char[]`. `return a[i..j]` stays illegal. No runtime bounds check. A free `1..10` and a `case` label stay deferred. |
+| 26 November 2026 | **§4.2 / §8.2 bare formal (0.27.11.268):** `n: T` is a local copy. `n :=`, `INC(n)`, and `DEC(n)` change that copy and not the caller. Passing stays by value. `const n: T` stays the freeze. `ref` still forbids a bare-name assign. `CONST REF` still forbids a write through the formal. |
 
 ---
 

@@ -435,6 +435,8 @@ prefix-op = "NOT" | "!" | "~" | "+" | "-" | "^";
 
 postfix-expression = primary-expression
     { "[" expression "]"
+        (* Planned: "[" expression ".." expression "]". Inclusive slice actual.
+           Language Report §5.4. Not implemented. *)
     | "(" [ argument-list ] ")"		(* free call, or field+call => instance method *)
     | "." identifier                (* field; next "(" may form instance call *)
     | "^"
@@ -457,7 +459,7 @@ primary-expression = identifier
     | countof-expression
     | type-qualified-call ;
 
-range-expression = additive-expression ".." additive-expression ; (* inclusive *)
+range-expression = additive-expression ".." additive-expression ; (* inclusive. Free form and case labels stay unparsed. The locked use is the bracket slice, §5.4. *)
 
 array-literal = "{" [ expression { "," expression } ] [","] "}" ;
 

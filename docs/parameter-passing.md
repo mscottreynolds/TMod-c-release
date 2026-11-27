@@ -1,6 +1,6 @@
 # TMod-c Parameter Passing Rules
 
-**Version:** 17 September 2026 (0.25.0 / item 20; `...` last formal 0.26.7)  
+**Version:** 26 November 2026 (0.25.0 / item 20; `...` last formal 0.26.7; bare copy assign 0.27.11.268)  
 **Status:** Implemented — matches Language Report §8.2 and the current compiler  
 **SSOT for prose:** [`language-report.md`](language-report.md) §8.2  
 **Formal syntax:** [`syntax-ebnf.md`](syntax-ebnf.md) — `parameter-def`, `formal-parameters`
@@ -16,27 +16,28 @@ Keep **body discipline** and **how the actual is passed** separate:
 
 | Layer | Bare `p: T` | Explicit `REF p: T` / `VAR p: T` |
 |--------|-------------|----------------------------------|
-| **In-callee use** | No bare-name `:=` / `INC` / `DEC` (not `VAR`) | `REF`: no bare-name assign; through-designator writes OK. `VAR`: bare-name assign OK |
+| **In-callee use** | Bare-name `:=` / `INC` / `DEC` change the **copy** (**0.27.11.268**) | `REF`: no bare-name assign; through-designator writes OK. `VAR`: bare-name assign writes the caller |
 | **Passing (ABI)** | **By value** — expression actuals allowed | Non-pointer `T`: **by reference** (`T*` + address of an **lvalue**) |
 
-- Only **`VAR`** may use the **bare formal name** as the LHS of `:=` / `INC` / `DEC`.
+- A **bare** formal may use the name as the LHS of `:=` / `INC` / `DEC`. The write changes the copy (**0.27.11.268**).
+- **`VAR`** uses that same name to write the **caller**.
 - **`REF`** is a **view** of the caller’s object: through-designator writes (`p.x`, `a[i]`, …) are allowed; bare-name assign is **not**.
-- **`CONST`** freezes the formal **root**: no write through name, fields, or indices.
-- **Bare** formals share **non-`VAR` body rules** with `REF` (no rebind of the name) but **must remain pass-by-value**. They are **not** “full `REF`” and will **not** be unified with `REF` at the call site (see [Locked: bare is not full REF](#locked-bare-is-not-full-ref)).
-- **Locals** use the same three **body** states: `VAR` = 1, `LET` = 2 (`REF` / bare), declaration `CONST` = compile-time (not mid-block like `LET`). `LET` is not a `CONST` formal: `let pc: ^T` may write through a **`VAR` object**. `@` of a `LET` or declaration `CONST` is illegal (0.26.5.183) — no mutable alias. Language Report §4.2.
+- **`CONST`** freezes the formal **root**: no write through name, fields, or indices. This is the Extended Pascal `protected` value parameter.
+- **Bare** formals **must remain pass-by-value**. They are **not** full `REF` and will **not** be unified with `REF` at the call site (see [Locked: bare is not full REF](#locked-bare-is-not-full-ref)).
+- **Locals** use three **body** states: `VAR` = 1, `LET` = 2 (same name-lock as `REF`), declaration `CONST` = compile-time (not mid-block like `LET`). `LET` is not a `CONST` formal: `let pc: ^T` may write through a **`VAR` object**. `@` of a `LET` or declaration `CONST` is illegal (0.26.5.183) — no mutable alias. Language Report §4.2.
 - Call sites for by-ref **value** formals (`VAR`/`REF` on non-pointer `T`) get auto-`&` when needed (`Swap(x, y)`). Explicit `@x` is still allowed and is not double-addressed.
 
 ---
 
 ## Locked: bare is not full REF
 
-Older notes sometimes said bare “defaults to REF.” That is only true for **binding discipline** (no bare-name assign). It is **not** true for **passing**:
+Older notes sometimes said bare “defaults to REF.” That was true for the old name-lock. It is **not** true for **passing**:
 
 - Full `REF`/`VAR` on non-pointer `T` needs a pointer into the caller’s storage → the actual must be **addressable** (variable, field, element, …). The compiler takes its address (`f(x)` → `f(&x)`).
 - An **expression** (`a + b`, `len * 2`, `g()`, `Point::new(1, 2)`, …) is not an addressable object in the source language. Taking its address is rejected (or would require hidden temporaries with different lifetime rules).
 - Therefore **bare** (and pointer-value formals such as bare / `REF` `^T` where the pointer **value** is passed) are what allow **expression actuals**. Making bare lower like full `REF` would break ordinary calls such as `f(a + b)`.
 
-**Locked design:** bare = by-value + non-`VAR` body rules. Explicit `REF`/`VAR` on `T` = opt-in aliasing when the actual is an lvalue. Do **not** plan “bare-as-full-REF” as a future unification.
+**Locked design:** bare = by-value. The copy is a local variable (**0.27.11.268**). Explicit `REF`/`VAR` on `T` = opt-in aliasing when the actual is an lvalue. Do **not** plan “bare-as-full-REF” as a future unification. `const` keeps the copy read-only. `const ref` keeps the view read-only.
 
 ---
 
@@ -49,7 +50,7 @@ Older notes sometimes said bare “defaults to REF.” That is only true for **b
 | `VAR p: T` | **Yes** | Yes | `T *p` |
 | `REF p: T` | **No** | Yes | `T *p` |
 | `CONST p: T` | **No** | **No** | `const` qualification (scalar often by value) |
-| `p: T` (bare) | **No** | Selectors if used | ordinary `T` (by value) |
+| `p: T` (bare) | **Yes** (the copy; **0.27.11.268**) | Selectors if used; writes hit the copy | ordinary `T` (by value) |
 
 **Scalar `REF n: integer`:** no fields, so bare assign is illegal → effectively **read-only** for updates. Use **`VAR`** to change the caller’s integer.
 
@@ -60,7 +61,7 @@ Older notes sometimes said bare “defaults to REF.” That is only true for **b
 | `VAR p: ^T` | **Yes** | Yes | `T **p` |
 | `REF p: ^T` | **No** | Yes (e.g. `p[i]`) | `T *p` (one level) |
 | `CONST p: ^T` | **No** | **No** | e.g. `const T *p` |
-| `p: ^T` (bare) | **No** | Yes (as for bare pointer-by-value) | `T *p` |
+| `p: ^T` (bare) | **Yes** (the pointer copy; **0.27.11.268**) | Yes (as for bare pointer-by-value) | `T *p` |
 
 ---
 
@@ -72,7 +73,8 @@ Older notes sometimes said bare “defaults to REF.” That is only true for **b
 | Mutate struct fields / array elements; **not** bare `p :=` | `REF p: T` |
 | Fully read-only through the formal | `CONST p: T` |
 | Rebind a pointer variable in the caller (`p := nil`) | `VAR p: ^T` |
-| Pass a pointer; mutate target; do not rebind the pointer | `REF p: ^T` or bare `p: ^T` |
+| Pass a pointer; mutate target; do not rebind the pointer | `REF p: ^T` |
+| Pass a pointer; mutate target; reseat the local pointer copy | bare `p: ^T` |
 | Pass an **expression** (not an lvalue) | Bare `p: T` (or pass a pointer **value** into `^T` formals) — **not** `REF`/`VAR` on non-pointer `T` |
 | Mutate caller’s record via formal | `REF p: T` or `VAR p: T` with an **lvalue** actual |
 
@@ -191,7 +193,7 @@ See Language Report §5.4.
 
 - Semantic: `semantic_forbid_param_mode_write` on ASSIGN / INC / DEC (after resolve).
 - Codegen: `codegen_common.c` — formal `*`, pointee load `(*p)`, call-site auto-`&` for by-ref value formals.
-- **Breaking:** mutating a non-`VAR` formal as scratch is illegal; use a local.
+- **Bare copy assign (0.27.11.268):** the non-`VAR` name check applies to `REF` only. `CONST` and `CONST REF` stay rejected. Codegen of a bare formal was already the C local.
 - Named open-array alias as `REF` / `VAR` decays like a written open array (**0.26.10.204**). The slice length is **0.27.1.219**. The method owner stays the written name.
 - **Not planned:** lowering bare formals as full `REF` (would forbid or rewrite expression actuals).
 

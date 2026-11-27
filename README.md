@@ -102,6 +102,7 @@ Features (Early Design Goals)
 - Same-unit mutual recursion (0.27.10.264): a cycle of named calls requires `RECURSIVE` on every procedure or function on the cycle. The module entry has no tag
 - Method-type slice call (0.27.10.265): `fp(buf)` and `box.h(buf)` insert the hidden element count from the method type
 - Character `CONST` (0.27.10.267): `const C = 'a'` emits no C object. A use emits the integer. `'\xff'` is -1
+- Bare formal copy (0.27.11.268): `n: T` may assign, `INC`, or `DEC` the local copy. The caller does not change. `const` stays the freeze. `ref` still forbids a bare-name assign
 - Safety-oriented design influenced by NASA JPL Power of 10 rules and MISRA principles
 
 Status
@@ -111,6 +112,7 @@ This is an early-stage personal project (started around February 2026). The lang
 **Public source:** [github.com/mscottreynolds/TMod-c-release](https://github.com/mscottreynolds/TMod-c-release) is the `make release` tree (compiler sources, tests, selected docs, examples). It is a snapshot per promote, not the full development history.
 
 Current focus:
+- **0.27.11.268** (26 November 2026): a bare formal is a writable local copy. `n :=` does not change the caller. `const` and `const ref` still forbid that write. `ref` still forbids a bare-name assign. Branch **`TMod-c_0.27`**. Stem **0.27.11**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc.
 - **0.27.10.267** (25 November 2026): a character `CONST` folds to the host int and emits no C object. `'\xff'` is -1. An octal value above 255 is masked to eight bits. `'a' + 1` needs a written `integer` type. Branch **`TMod-c_0.27`**. Stem **0.27.10**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261125-2147.md`.
 - **Plan, not built** (25 November 2026): cyclic `IMPORT` uses a `.mt` export table. `-T` writes it from a skeleton. `--check-mt` is the contract check. When a `.mt` is present, `-C`, `-H`, and `-M` write nothing unless that check passes. `-M` still writes the `.mh`. The same archive records the plan.
 - **0.27.10.265** (25 November 2026): a call through a procedure variable or a callable field inserts the hidden slice length. `fp(buf)` and `box.h(buf)` pass the folded bound. A slice formal passes its `_length`. Branch **`TMod-c_0.27`**. Stem **0.27.10**. Reported `make clean-all all test-all selfhost bootstrap promote` on gcc, clang, and tcc. Session archive: `docs/grok_report-20261125-2147.md`.
